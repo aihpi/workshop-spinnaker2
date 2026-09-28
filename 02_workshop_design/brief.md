@@ -38,7 +38,7 @@ After the workshop, participants understand why neuromorphic hardware can save e
 
 ## Open questions
 
-- [ ] How do participants get cluster access, and how long does account creation take? This decides the registration deadline.
+- [ ] How do participants get cluster access, and how long does account creation take? 
 - [ ] How many participants can use the chips at the same time? How many chips and boards do we have?
 - [ ] Does power measurement work on our setup? The energy story depends on it.
 - [ ] Which py-spinnaker2 features does the Brian2 backend support? Every notebook needs to run on both paths.
