@@ -1,67 +1,31 @@
 <div style="background-color: #ffffff; color: #000000; padding: 10px;">
 <img src="00_aisc/img/logo_aisc_bmftr.jpg">
-<h1> Your title.
+<h1> Workshop: Neuromorphic Computing on SpiNNaker2
 </div>
 
-Your project description in two or three sentences: what it does, for whom, and what makes it worth a look.
+Material for a 3-hour hands-on workshop on the SpiNNaker2 neuromorphic chip, aimed at ML researchers and software developers. Participants learn why neuromorphic hardware can save energy, the basics of spiking neurons and networks, and how to run their own spiking networks on SpiNNaker2 chips with [py-spinnaker2](https://spinnaker2.gitlab.io/py-spinnaker2/).
 
-![Screenshot of the application](00_aisc/img/screenshot_app.png)
+> **Status:** planning. The workshop is planned for early November 2026.
 
-Replace `00_aisc/img/screenshot_app.png` with a screenshot of your application. Keep the image under the description so it is the first thing a visitor sees after the title; a 1280 by 720 PNG renders well on GitHub.
+## Repository structure
 
-## Features
+| Folder | Content |
+|---|---|
+| `00_aisc/` | AISC logos and images |
+| `01_knowledge_base/` | Notes and sources (local only, not tracked in git) |
+| `02_workshop_design/` | Brief, outline and demo plans |
 
-- **Key Feature 1**: A description of the Key features
-- **Key Feature 2**: A description of the Key features
+## Setup
 
-## Setup and Installation
+TODO: running on the chips via the HPI cluster, and the Brian2 fallback.
 
-### Prerequisites
+## Workshop outline
 
-- Docker and Docker Compose
-- NVIDIA GPU with CUDA support (optional, but recommended for faster performance)
-
-### Quick Start
-
-1. Clone the repository:
-   ```bash
-   git clone ...
-   cd ...
-   ```
-
-2. Run the setup or install dependencies:
-   ```bash
-   chmod +x setup.sh
-   ./setup.sh
-   ```
-
-3. Access the application:
-   - Frontend: ...
-   - Backend API: ...
-
-## User Guide
-
-### Using the Tool
-1. A brief description of using the tool.
-2. Be clear and simple.
-
-### Recommendations
-Any additional hints for using the tool.
-
-
-## Limitations
-
-- **Limitation 1**: List of Limitations
-- **Limitation 2**: List of Limitations
-
-
-## References
-
-- [Reference 1](https://hpi.de/kisz)
-- [Reference 2](https://hpi.de/kisz)
+TODO, see `02_workshop_design/brief.md` for the current draft.
 
 ## Author
-- [Your Name](https://hpi.de/kisz)
+
+- [David Goll](https://hpi.de/kisz)
 
 ## Issues and the project board
 
@@ -74,6 +38,7 @@ Until the secret exists, the workflow fails on every new issue with `Input requi
 
 ## License
 
+[MIT](LICENSE)
 
 ---
 
