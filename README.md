@@ -16,7 +16,7 @@ Replace `00_aisc/img/screenshot_app.png` with a screenshot of your application. 
 | Folder | Content |
 |---|---|
 | `00_aisc/` | AISC logos and images |
-| `01_knowledge_base/` | Notes and sources (local only, not tracked in git yet) |
+| `01_knowledge_base/` | Notes, sources and figures |
 | `02_workshop_design/` | Brief, outline and demo plans |
 
 ## Setup

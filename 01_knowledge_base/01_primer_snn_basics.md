@@ -1,0 +1,484 @@
+# Primer: Spiking Neurons and Networks
+
+The groundwork for the "Basics" block of the workshop (30 min) and a reference for the workshop material. Written for readers with a physics or ML background and no prior knowledge of neuroscience. All chip-specific details refer to py-spinnaker2 v0.8 ([neuron models](https://spinnaker2.gitlab.io/py-spinnaker2/api_reference/neuron-models.html), [SNN intro](https://spinnaker2.gitlab.io/py-spinnaker2/user_guide/snn-intro.html)).
+
+Each section ends with a line **Workshop:** saying what of it is taught in the workshop.
+
+## 1. Why spikes?
+
+A biological neuron collects input from thousands of others through its [synapses](https://en.wikipedia.org/wiki/Synapse). The input charges its membrane. Once the membrane potential crosses a threshold, the neuron fires a short electrical pulse, a *spike* ([action potential](https://en.wikipedia.org/wiki/Action_potential)), and then resets. The spike has a fixed shape, so all information sits in *whether* and *when* a neuron fires, not in the pulse itself.
+
+Two consequences matter for computing:
+
+- **Communication is binary and event-based.** A neuron sends one bit ("I fired") at a point in time instead of a floating-point activation every step.
+- **Activity is sparse.** Most neurons are silent most of the time. If hardware only computes when a spike arrives, it does very little work for a silent network. This is the root of the energy argument (section 9).
+
+**Workshop:** 2 min, one picture of a spike train.
+
+## 2. From Hodgkin-Huxley to LIF
+
+Neuron models form a ladder: the more variables, the more biological detail, and the more computation per neuron. Computing only needs what carries information, which is *when* spikes happen, so the useful direction is down the ladder.
+
+![Three neuron models, tuned to the same firing rate](figures/01_primer_snn_basics/02_models_hh_fhn_lif.png)
+
+***Figure 1.** Top: a constant input current, switched on at 10 ms. Each model has its own units, so the values of $I_0$ differ. Hodgkin-Huxley is the reference. FitzHugh-Nagumo's time axis is stretched and LIF's parameters are fitted so that all three fire at the same times (grey lines: HH upstrokes). Only the spike shape and the cost differ.*
+
+<details>
+<summary><b>Reading Figure 1:</b> soft vs. hard threshold, and why the fitted LIF needs a long refractory period</summary>
+
+- **HH and FitzHugh-Nagumo have no fixed threshold.** A spike is a process: once $V$ gets to around −55 mV, the sodium channels open faster than the leak can pull $V$ back, and $V$ runs away upward. The peak follows about 1 ms later. This *soft threshold* emerges from the dynamics and even shifts with how fast the input rises. In FitzHugh-Nagumo, it's the knee of the phase plane (Figure 2).
+- **In LIF, the threshold crossing is the spike.** It happens instantly, and the drawn vertical line is only a marker. That's why LIF's spikes sit at the *start* of the HH upstrokes, not at the peaks.
+- **HH responds quickly but recovers slowly.** The first spike comes about 2 ms after the input switches on, and after each spike the potassium channels take over 10 ms to close again. A plain LIF can't reproduce both, so the fitted LIF resets below rest (−75 mV, like HH's [afterhyperpolarization](https://en.wikipedia.org/wiki/Afterhyperpolarization)) and holds there for an 11 ms [refractory period](https://en.wikipedia.org/wiki/Refractory_period_(physiology)). This is the typical LIF trade: the slow recovery dynamics become a fixed waiting time.
+
+</details>
+
+<br>
+
+### 2.1 Hodgkin-Huxley (4 variables)
+
+[Hodgkin-Huxley](https://en.wikipedia.org/wiki/Hodgkin%E2%80%93Huxley_model) describes the [membrane potential](https://en.wikipedia.org/wiki/Membrane_potential) $V$ plus three gating variables $m, h, n$ for the sodium and potassium channels. It reproduces the spike shape accurately, but needs four coupled non-linear ODEs and a small integration step. The spike shape is always the same, so modelling it in detail costs compute without adding information.
+
+### 2.2 FitzHugh-Nagumo (2 variables)
+
+The [FitzHugh-Nagumo model](https://en.wikipedia.org/wiki/FitzHugh%E2%80%93Nagumo_model) reduces HH to two variables that keep its qualitative behaviour:
+
+$$\frac{dv}{dt} = v - \frac{v^3}{3} - w + I, \qquad \tau_w \frac{dw}{dt} = v + a - b\,w \tag{1}$$
+
+- $v$ is fast and plays the role of the membrane potential (HH's $V$ together with the fast sodium activation $m$).
+- $w$ is slow, a "recovery" variable (HH's slow gates $h$ and $n$). It builds up during a spike and pulls $v$ back down.
+- The cubic term $-v^3/3$ makes the neuron *excitable*. A small push decays back to rest, but a push past a critical point triggers a large excursion, the spike.
+
+The dynamics are easiest to see in the [phase plane](https://en.wikipedia.org/wiki/Phase_plane), with $v$ against $w$:
+
+![FitzHugh-Nagumo phase plane](figures/01_primer_snn_basics/02_fhn_phase_plane.png)
+
+***Figure 2.** The [nullclines](https://en.wikipedia.org/wiki/Nullcline): where $dv/dt = 0$ (cubic curve) and $dw/dt = 0$ (straight line), the state doesn't change in that direction. Because $v$ is much faster than $w$, the trajectory creeps along the outer branches of the cubic curve and jumps quickly between them. Grey arrows: direction of the flow. Black arrows: flow on the nullclines. Green arrowheads: direction of travel. With constant input $I$ = 0.5 this gives a closed loop (a [limit cycle](https://en.wikipedia.org/wiki/Limit_cycle)), repeated spiking.*
+
+The loop has five steps. ① The state drifts slowly along the left branch. ② At the knee, the left branch ends, so there is no stable state left, and ③ $v$ jumps quickly to the right branch: a spike. ④ On the right branch, $w$ rises slowly (recovery) until ⑤ that branch ends too and $v$ falls back to the left. Then the loop repeats.
+
+<details>
+<summary><b>What starts the loop:</b> how the input destabilises the resting state</summary>
+
+Before the input is switched on ($I = 0$, dotted cubic), the two nullclines intersect at a stable fixed point, the resting state. The input $I$ appears only in $dv/dt$, so switching it on shifts the whole cubic up by $I$ while the straight line stays put. The old resting point now lies below the new cubic, where $dv/dt = I > 0$, and is pushed to the right. The nullclines now intersect just past the knee, on the middle branch. That fixed point is unstable (open circle): it repels the state instead of attracting it. With no stable state left, the trajectory settles onto the limit cycle. For weak input, the intersection stays on the left branch, remains stable, and the neuron doesn't spike. This is the counterpart of LIF's critical input. For these parameters the switch happens at $I \approx 0.33$, a [Hopf bifurcation](https://en.wikipedia.org/wiki/Hopf_bifurcation).
+
+</details>
+
+<br>
+
+<details>
+<summary><b>Why the loop runs counterclockwise:</b> reading the flow from the nullclines</summary>
+
+The sign of each derivative flips at its nullcline, and the arrows in Figure 2 show which way:
+
+- **Horizontal direction**, from $dv/dt = v - v^3/3 - w + I$: below the cubic curve $dv/dt > 0$, so the flow goes right. Above it the flow goes left. *On* the cubic curve, $dv/dt = 0$, so the flow there is purely vertical (black arrows on the solid line).
+- **Vertical direction**, from $\tau_w\,dw/dt = v + a - b\,w$: below and to the right of the straight line $dw/dt > 0$, so the flow goes up. Above and to the left, it goes down. *On* the line, the flow is purely horizontal (black arrows on the dashed line).
+- **Speed:** $v$ is much faster than $w$ ($\tau_w$ = 12.5), so almost everywhere the flow is nearly horizontal (grey arrows). The state rushes sideways until it hits the cubic curve, where $dv/dt$ vanishes, and only there does the slow vertical motion take over.
+
+Combined: on the right, the flow goes up. At the top, it goes left. On the left, it goes down, and at the bottom it goes right. That is a counterclockwise rotation (green arrowheads).
+
+</details>
+
+<br>
+
+### 2.3 From FitzHugh-Nagumo to LIF (1 variable)
+
+LIF is not a mathematical limit of FitzHugh-Nagumo but a caricature of the same structure. Every step of the loop maps to a simpler rule:
+
+| FitzHugh-Nagumo | LIF |
+|---|---|
+| Near rest, on the left branch, the dynamics are approximately linear: $v$ is pulled back to rest in proportion to its distance from it | Keep only this linear part: a leaky integrator (the ODE below) |
+| The knee, past which a spike becomes unavoidable | A fixed threshold $V_\text{th}$ |
+| The fast excursion, the spike itself | An event: "neuron fired at time $t$". The shape is dropped. |
+| The slow return via $w$ | Reset $V$ to a fixed value, optionally hold it there for a refractory period |
+
+So LIF needs one variable instead of two or four, and the part it dropped is the part that carries no information. (Historically, the order is reversed: [Lapicque](https://en.wikipedia.org/wiki/Louis_Lapicque) proposed integrate-and-fire in 1907, before Hodgkin-Huxley in 1952 and FitzHugh-Nagumo in 1961/62.)
+
+### 2.4 The LIF equation, term by term
+
+Physically, LIF (see [biological neuron models](https://en.wikipedia.org/wiki/Biological_neuron_model)) is an [RC circuit](https://en.wikipedia.org/wiki/RC_circuit): the membrane is a capacitor $C$, the ion channels at rest form a leak resistor $R$, and the input is a current $I(t)$. The LIF equation follows from current conservation in this circuit:
+
+<details>
+<summary><b>Derivation:</b> from the RC circuit to the LIF equation</summary>
+
+<br>
+
+**The circuit.** The membrane separates the inside of the cell from the outside and is modelled by two parallel branches, a capacitor on one and a resistor in series with a battery on the other:
+
+- a **capacitor** $C$: the conducting fluids inside and outside act as two plates, and the lipid bilayer, only about 5 nm thick, is the insulator between them. Charging the membrane means ions piling up on both sides of it.
+- a **leak resistor** $R$: ion channels that are always open let some current through
+- a **battery** $V_\text{rest}$ in series with the resistor: concentration differences of the ions across the membrane drive a current even without input. The battery voltage is the [resting potential](https://en.wikipedia.org/wiki/Resting_potential) (more precisely, the [reversal potential](https://en.wikipedia.org/wiki/Reversal_potential) of the leak channels), typically around −65 mV.
+
+An input current $I(t)$, from synapses or an electrode, is injected into the cell.
+
+<img src="figures/01_primer_snn_basics/02_rc_circuit.png" alt="The membrane as an RC circuit" width="480">
+
+***Figure 3.** The membrane as an electrical circuit. The top wire is the inside of the cell, the bottom wire the outside. Only potential differences matter, so the outside serves as the reference at 0 V (like ground in a circuit), and $V$ is the voltage across the membrane, inside minus outside. The input current splits into a capacitive current $I_C$ that charges the membrane and a leak current $I_L$ through the ion channels.*
+
+**Step 1: currents through each element.**
+
+- Capacitor: the stored charge $Q$ (in coulombs) is proportional to the voltage, $Q = C V$, with the capacitance $C$ (in farads, F = C/V) saying how much charge is stored per volt. A current is charge per time, so the current that charges it is $I_C = \dfrac{dQ}{dt} = C\,\dfrac{dV}{dt}$.
+- Leak branch (resistor and battery): Ohm's law applies to the voltage across the resistor alone, which is the membrane voltage minus the battery voltage. So $I_L = \dfrac{V - V_\text{rest}}{R}$. At $V = V_\text{rest}$ no leak current flows, and that's what makes it the resting state.
+
+**Step 2: current conservation.** By [Kirchhoff's current law](https://en.wikipedia.org/wiki/Kirchhoff%27s_circuit_laws), the injected current has to go somewhere. It splits between the two parallel branches:
+
+$$I = I_C + I_L = C\,\frac{dV}{dt} + \frac{V - V_\text{rest}}{R} \tag{2}$$
+
+**Step 3: solve for the rate of change.**
+
+$$C\,\frac{dV}{dt} = -\frac{V - V_\text{rest}}{R} + I \tag{3}$$
+
+The input current charges the capacitor, and the leak current discharges it.
+
+**Step 4: multiply by $R$.**
+
+$$RC\,\frac{dV}{dt} = -(V - V_\text{rest}) + R\,I \tag{4}$$
+
+Now every term has units of voltage. The product $\tau_m = RC$ has units of time (Ω · F = s) and is the membrane time constant. The input appears as $R\,I$: the voltage a constant current $I$ would produce across the resistor alone. That's also where $V$ settles for constant input: $V$ keeps changing until the leak current exactly cancels the input, so that no current is left to charge the capacitor and $dV/dt = 0$. Setting $dV/dt = 0$ in Eq. (4) gives $V_\infty = V_\text{rest} + R I$. All input current then flows through the resistor and causes the voltage drop $R I$ across it.
+
+**Typical values**, per unit membrane area: $C_m \approx$ 1 µF/cm² and $R_m \approx$ 10–20 kΩ·cm², so $\tau_m \approx$ 10–20 ms. The area cancels in $\tau_m$, so the time constant is a property of the membrane material and not of the cell's size.
+
+</details>
+
+<br>
+
+With $\tau_m = RC$:
+
+$$\underbrace{\tau_m \frac{dV}{dt}}_{\text{rate of change}} = \underbrace{-(V - V_\text{rest})}_{\text{leak: pulls back to rest}} + \underbrace{R\,I(t)}_{\text{input: pushes up}}, \qquad \tau_m = RC \tag{5}$$
+
+- **Leak:** the further $V$ is from rest, the harder it's pulled back (Ohm's law for the leak current).
+- **Input:** pushes $V$ up (excitatory) or down (inhibitory).
+- **[Time constant](https://en.wikipedia.org/wiki/Time_constant) $\tau_m$:** how fast $V$ reacts, typically 10–20 ms in biology. It sets how long the neuron "remembers" past input.
+
+For constant input, the two terms balance at the steady state $V_\infty = V_\text{rest} + RI$, and $V$ approaches it exponentially:
+
+$$V(t) = V_\infty + (V_0 - V_\infty)\,e^{-t/\tau_m} \tag{6}$$
+
+![Charging and discharging of the membrane](figures/01_primer_snn_basics/02_rc_charging.png)
+
+***Figure 4.** Below threshold, the neuron is just an RC circuit. When the input switches on, $V$ charges towards $R I_0$ and reaches 63 % of it after one $\tau$. When the input switches off, $V$ leaks back to rest. A larger $\tau$ reacts more slowly and remembers longer.*
+
+### 2.5 Threshold, reset and the firing rate
+
+Add the non-linear rule: **if $V \geq V_\text{th}$, emit a spike and reset $V$** (here to 0). The input keeps flowing after the reset, so $V$ charges up again, crosses the threshold, resets, and so on. The **firing rate** is how often this cycle repeats per second.
+
+![LIF neuron at three input strengths](figures/01_primer_snn_basics/02_lif_spiking.png)
+
+***Figure 5.** Three constant inputs. Dashed line: the steady state $RI$ the neuron is charging towards. Dotted line: threshold. If $RI$ stays below threshold, $V$ saturates and there are no spikes. Above it, $V$ is reset before reaching $RI$. The stronger the input, the faster the charging and the shorter the cycle.*
+
+Plotting the firing rate $f$ against the input strength gives the **f-I curve**:
+
+![f-I curve](figures/01_primer_snn_basics/02_fi_curve.png)
+
+***Figure 6.** Firing rate of an LIF neuron for constant input. The three dots are the three neurons of Figure 5. Below the critical input (grey area), $V$ never reaches the threshold and the neuron stays silent. Above it, the rate rises steeply at first and then almost linearly, the same shape as a ReLU (dashed).*
+
+This shape is why LIF neurons connect to deep learning. [ReLU](https://en.wikipedia.org/wiki/Rectifier_(neural_networks)) is also zero below a threshold and linear above it. A spiking neuron's firing rate behaves like a ReLU activation, which is the basis of ANN-to-SNN conversion (section 8).
+
+<details>
+<summary><b>Formula:</b> the firing rate as a function of the input</summary>
+
+<br>
+
+The time $T$ from reset (0) to threshold follows from the charging curve, Eq. (6) with $V_0 = 0$ and $V_\infty = RI$: setting $V_\text{th} = RI(1 - e^{-T/\tau_m})$ and solving for $T$ gives
+
+$$T = \tau_m \ln\frac{RI}{RI - V_\text{th}} \quad\text{for } RI > V_\text{th}, \qquad f = \frac{1}{t_\text{ref} + T} \tag{7}$$
+
+with an optional refractory period $t_\text{ref}$ after each spike. This is the curve plotted in Figure 6.
+
+- **At the critical input $RI = V_\text{th}$**, $V$ approaches the threshold but never reaches it: $T \to \infty$, $f = 0$.
+- **Just above it**, the neuron fires very slowly, and the rate rises steeply at first. That's why the curve in Figure 6 starts almost vertically.
+- **For strong input**, $T \approx \tau_m V_\text{th} / (RI)$, so $f$ grows almost linearly with $I$ (without a refractory period), like a ReLU.
+- **With a refractory period**, a neuron can fire at most once per $t_\text{ref}$, so for very strong input the rate saturates at $1/t_\text{ref}$ instead of growing without bound (e.g. 200 Hz for $t_\text{ref}$ = 5 ms).
+
+</details>
+
+<br>
+
+<details>
+<summary><b>Worked example:</b> the same in discrete timesteps, as on the chip</summary>
+
+The same in discrete steps, as on the chip (section 3), with `alpha_decay` = 0.9, threshold = 1, reset to 0:
+
+| Input per step | Voltage after each step | Spike after | Rate |
+|---|---|---|---|
+| 0.1 | 0.1, 0.19, 0.27, … approaches 1.0 but never reaches it | never | 0 |
+| 0.2 | 0.2, 0.38, 0.54, 0.69, 0.82, 0.94, **1.04** | 7 steps | 1/7 |
+| 0.5 | 0.5, 0.95, **1.36** | 3 steps | 1/3 |
+
+</details>
+
+<br>
+
+Figures are generated by `figures/01_primer_snn_basics/make_figures.py` (`uv run --with numpy --with matplotlib --with schemdraw make_figures.py`), which also checks that the simulated rates match the formula for $T$ and that the fitted LIF fires within 0.3 ms of every HH spike.
+
+**Workshop:** 7 min. One slide with the three models (HH and FitzHugh-Nagumo only as context), then the RC analogy, the spiking figure and the f-I curve. These are the key pictures of the whole basics block.
+
+## 3. LIF in discrete time, as on the chip
+
+SpiNNaker2 computes in discrete timesteps. Solving the LIF equation (5) exactly over one step $\Delta t$ with rest at 0 gives the update used by py-spinnaker2's `lif` model:
+
+$$v[t] = \alpha \, v[t-1] + I_\text{syn}[t] + i_\text{offset}, \qquad \alpha = e^{-\Delta t / \tau_m} \tag{8}$$
+
+<details>
+<summary><b>Derivation:</b> from the LIF equation to the update on the chip</summary>
+
+<br>
+
+**Starting point.** Eq. (5) with the resting potential shifted to 0 ($v = V - V_\text{rest}$) and the input written as $u(t) = R\,I(t)$:
+
+$$\tau_m \frac{dv}{dt} = -v + u(t) \tag{9}$$
+
+**Step 1: solve over one timestep.** This is a linear first-order ODE, so it can be solved exactly with an integrating factor. Over one step from $t - \Delta t$ to $t$:
+
+$$\begin{aligned} \tau_m \frac{dv}{ds} &= -v + u(s) \\ \frac{dv}{ds} + \frac{v}{\tau_m} &= \frac{u(s)}{\tau_m} \\ e^{s/\tau_m}\frac{dv}{ds} + \frac{e^{s/\tau_m}}{\tau_m}\,v &= \frac{e^{s/\tau_m}}{\tau_m}\,u(s) \\ \frac{d}{ds}\left(e^{s/\tau_m}\, v(s)\right) &= \frac{e^{s/\tau_m}}{\tau_m}\,u(s) \\ \int_{t-\Delta t}^{t} \frac{d}{ds}\left(e^{s/\tau_m}\, v(s)\right) ds &= \frac{1}{\tau_m}\int_{t-\Delta t}^{t} e^{s/\tau_m}\, u(s)\, ds \\ e^{t/\tau_m}\, v(t) - e^{(t-\Delta t)/\tau_m}\, v(t-\Delta t) &= \frac{1}{\tau_m}\int_{t-\Delta t}^{t} e^{s/\tau_m}\, u(s)\, ds \\ v(t) &= e^{-\Delta t/\tau_m}\, v(t-\Delta t) + \frac{1}{\tau_m}\int_{t-\Delta t}^{t} e^{-(t-s)/\tau_m}\, u(s)\, ds \\ s &= t - \Delta t + s', \quad ds = ds', \quad s\big|_{t-\Delta t}^{t} \;\to\; s'\big|_{0}^{\Delta t}, \quad t - s = \Delta t - s' \\ v(t) &= e^{-\Delta t/\tau_m}\, v(t-\Delta t) + \frac{1}{\tau_m}\int_{0}^{\Delta t} e^{-(\Delta t-s')/\tau_m}\, u(t-\Delta t+s')\, ds' \\ v(t) &= \underbrace{e^{-\Delta t/\tau_m}}_{\alpha}\, v(t-\Delta t) + \frac{1}{\tau_m}\int_{0}^{\Delta t} e^{-(\Delta t-s)/\tau_m}\, u(t-\Delta t+s)\, ds \end{aligned} \tag{10}$$
+
+The first term is the old value, decayed for one step. The integral collects the input received during the step, where input from early in the step has decayed more than input from late in the step.
+
+**Step 2: constant input → `i_offset`.** For a constant input $u$, the integral in Eq. (10) is a fixed amount per step, the bias term `i_offset`:
+
+$$\begin{aligned} u(t - \Delta t + s) &= u = \text{const} \\ \frac{1}{\tau_m}\int_{0}^{\Delta t} e^{-(\Delta t-s)/\tau_m}\, u\, ds &= \frac{u}{\tau_m}\, e^{-\Delta t/\tau_m} \int_{0}^{\Delta t} e^{s/\tau_m}\, ds \\ &= \frac{u}{\tau_m}\, e^{-\Delta t/\tau_m}\, \tau_m \left(e^{\Delta t/\tau_m} - 1\right) \\ &= u \left(1 - e^{-\Delta t/\tau_m}\right) \\ &= (1 - \alpha)\, u \;\equiv\; i_\text{offset} \end{aligned} \tag{11}$$
+
+**Step 3: input spikes → `I_syn`.** A spike makes $v$ jump by its weight $w$. As an input, this is a delta pulse whose area is chosen so that the jump is exactly $w$. The spikes arriving in one step, at times $s_k$ within the step, then contribute:
+
+$$\begin{aligned} \tau_m \frac{dv}{ds} &= \tau_m\, w\, \delta(s - s_k) \;\Rightarrow\; v(s_k^+) - v(s_k^-) = \int_{s_k^-}^{s_k^+} w\, \delta(s - s_k)\, ds = w \\ u(t - \Delta t + s) &= \tau_m \sum_k w_k\, \delta(s - s_k), \qquad 0 < s_k \le \Delta t \\ \frac{1}{\tau_m}\int_{0}^{\Delta t} e^{-(\Delta t-s)/\tau_m}\, \tau_m \sum_k w_k\, \delta(s - s_k)\, ds &= \sum_k w_k\, e^{-(\Delta t - s_k)/\tau_m} \\ s_k = \Delta t \;\Rightarrow\; \sum_k w_k\, e^{0} &= \sum_k w_k \;\equiv\; I_\text{syn}[t] \end{aligned} \tag{12}$$
+
+The last line is the chip's simplification: arrival times within a step aren't resolved, so every spike of a step counts as arriving at its end and contributes its full weight.
+
+**Result.** Writing $v[t]$ for $v(t)$ at the end of step $t$ and combining the three terms gives Eq. (8):
+
+$$v[t] = \alpha\, v[t-1] + I_\text{syn}[t] + i_\text{offset} \tag{13}$$
+
+**Why not simply Euler?** The forward Euler method, $v[t] = v[t-1] + \frac{\Delta t}{\tau_m}\left(-v[t-1] + u\right)$, gives the same form with $\alpha_\text{Euler} = 1 - \Delta t/\tau_m$. This matches $e^{-\Delta t/\tau_m}$ only for $\Delta t \ll \tau_m$, and it becomes unstable (negative $\alpha$) for $\Delta t > \tau_m$. The exact solution is correct for any step size, which is why coarse steps of about 1 ms work for LIF.
+
+</details>
+
+<br>
+
+- `alpha_decay` = $\alpha$ in $[0, 1]$. For $\Delta t$ = 1 ms: $\tau_m$ = 10 ms gives $\alpha \approx 0.905$, $\tau_m$ = 15 ms gives $\alpha \approx 0.936$. $\alpha$ = 1 means no leak (pure integrate-and-fire), $\alpha$ = 0 means no memory at all.
+- `I_syn[t]` is the sum of the weights of all spikes arriving in this step.
+- `i_offset` is a constant bias current.
+- `threshold`, `v_init`: as expected. Resting potential is 0, and everything is in dimensionless units.
+- `reset`: `reset_by_subtraction` (default, $v \leftarrow v - \text{threshold}$) keeps the leftover charge, so the firing rate tracks the input more faithfully. This is preferred for ML and ANN conversion. `reset_to_v_reset` ($v \leftarrow$ `v_reset`) is the textbook version.
+
+Each step does three things: decay the old value by $\alpha$, add the input of this step, and compare with the threshold.
+
+![The discrete LIF update step by step](figures/01_primer_snn_basics/03_discrete_update.png)
+
+***Figure 7.** Eq. (8) step by step, with `alpha_decay` = 0.8, `threshold` = 10 and reset to 0. Top: arrival times of input spikes. Each spike makes $v$ jump by its weight, and between spikes $v$ shrinks by the factor 0.8 per step. Isolated spikes (steps 2 and 6) mostly leak away before the next one arrives. Spikes close together (steps 12–14 and 20–23) add up, cross the threshold and trigger an output spike (orange), after which $v$ restarts from 0.*
+
+<details>
+<summary><b>Choosing <code>alpha_decay</code>:</b> how it sets the memory of the neuron</summary>
+
+<br>
+
+`alpha_decay` sets how long the neuron remembers an input: after $n$ steps, a fraction $\alpha^n$ of it is left. The number of steps until $1/e$ is left is the time constant in units of steps, $\tau_m / \Delta t = -1/\ln\alpha$.
+
+![Effect of alpha_decay](figures/01_primer_snn_basics/03_alpha_decay.png)
+
+***Figure 8.** Decay of $v$ after a single input spike, for different values of `alpha_decay`. Values close to 1 give a long memory (the neuron integrates over many steps), small values a short one (only nearly coincident inputs add up). `alpha_decay` = 1 means no leak at all.*
+
+</details>
+
+<br>
+
+<details>
+<summary><b>Reset modes:</b> where the overshoot goes, and why it matters for ANN conversion</summary>
+
+<br>
+
+The two reset modes differ in what happens to the charge above the threshold. With `reset_by_subtraction`, the overshoot is carried over to the next cycle. With `reset_to_v_reset`, it's lost.
+
+![Reset by subtraction vs. reset to a fixed value](figures/01_primer_snn_basics/03_reset_modes.png)
+
+***Figure 9.** A: the same constant input with both reset modes, without leak. After a reset by subtraction, $v$ keeps the overshoot (e.g. 1.2 − 1 = 0.2), so the next spike comes sooner. After a reset to 0 the overshoot is lost. B: as a result, the firing rate with reset by subtraction is exactly proportional to the input (input / threshold spikes per step), like a ReLU. With reset to 0 it's a staircase that lies below it, because each cycle needs a whole number of steps.*
+
+- **Reset by subtraction** carries the overshoot into the next cycle. No input is lost, so on average the rate is exactly input / threshold.
+- **Reset to a fixed value** discards the overshoot, so every cycle takes a whole number of steps and the rate drops to the staircase in Figure 9B.
+
+**Why this matters for ML.** In ANN-to-SNN conversion, the firing rate of each spiking neuron has to reproduce an ANN activation, the output of a ReLU. With reset by subtraction the rate is proportional to the input. With reset to a fixed value, every neuron makes a rounding error, and these errors accumulate from layer to layer.
+
+**Why "textbook version".** Biological neurons, and the classic LIF model, return to a fixed value after each spike, however strong the input was. HH, for example, always drops back to about −75 mV (Figure 1).
+
+</details>
+
+<br>
+
+Time on the chip has no unit (`hw.run(net, timesteps=50)`), so the meaning of one step is a modelling choice. The clustered network example uses time constants in ms. Where (and whether) py-spinnaker2 fixes a physical step duration is still to be checked.
+
+<details>
+<summary><b>Note on units:</b> why every model uses different numbers, and how to map physical values onto the chip</summary>
+
+<br>
+
+Each neuron model comes with its own system of units, so input values are not comparable across models. In the model comparison of section 2 (Figure 1):
+
+| Model | Input | Units |
+|---|---|---|
+| Hodgkin-Huxley | $I_0$ = 10 µA/cm² | Physical, per unit membrane area: $C_m$ = 1 µF/cm², conductances in mS/cm². With $C_m\,dV/dt = I - I_\text{ion}$, 10 µA/cm² initially raises $V$ by 10 mV/ms. |
+| FitzHugh-Nagumo | $I_0$ = 0.5 | Dimensionless: $v$, $w$ and time are rescaled so all units drop out. No fixed conversion to physical values exists. |
+| LIF | $R I_0$ = 62 mV | The input is written as a voltage: $R I$ is where $V$ would settle above rest without a threshold. |
+| SpiNNaker2 | `threshold`, weights, `i_offset` | Dimensionless, like FitzHugh-Nagumo. |
+
+Physical units can be converted into each other. With $C_m$ = 1 µF/cm² and $\tau_m$ = 10 ms, the LIF resistance is $R = \tau_m / C_m$ = 10 kΩ·cm², so $R I_0$ = 62 mV corresponds to $I_0$ = 6.2 µA/cm², the same order of magnitude as HH's 10 µA/cm². (They differ because the LIF was fitted to HH's spike times, not to its input.)
+
+**Mapping a physical LIF onto the chip.** Choose two scales: the duration of one timestep $\Delta t$ and a voltage unit $U$. For example, `threshold` = 1 could stand for 10 mV above rest. Then:
+
+- `alpha_decay` $= e^{-\Delta t / \tau_m}$
+- A constant input $R I$ becomes `i_offset` $= (1 - \alpha)\, R I / U$. This follows from integrating the ODE exactly over one step (Eq. (11) in the derivation), and it gives the correct steady state: `i_offset` $/ (1 - \alpha) = R I / U$.
+- A synaptic weight $w$ makes $v$ jump by $w$ units, i.e. by $w \cdot U$ in physical terms. It is the height of the voltage step a single input spike causes.
+
+**What actually matters are ratios**, not absolute values:
+
+- input relative to the critical input: does the neuron fire at all, and how fast?
+- weight relative to threshold: `threshold / weight` is roughly the number of coincident input spikes needed to make the neuron fire
+- $\tau_m$ relative to $\Delta t$: how many steps the neuron remembers
+
+With integer weights this becomes a design decision. On a model with weights in [−15, 15], a threshold of 15 lets a single strong spike trigger a neuron. A threshold of 150 needs at least ten coincident spikes, but gives finer control over how much each input contributes.
+
+</details>
+
+<br>
+
+**Workshop:** 5 min, this equation is what participants set parameters for in hands-on 1. Show the conversion $\tau \to \alpha$.
+
+## 4. Synapses
+
+A **synapse** connects a presynaptic neuron to a postsynaptic one and has a **weight** (positive = excitatory, negative = inhibitory) and a **delay** (steps until the spike arrives). In py-spinnaker2, a connection is `[pre_index, post_index, weight, delay]`, and the effective delay is `delay + 1`, because a spike is processed in the step after it's emitted.
+
+![Synaptic delay](figures/01_primer_snn_basics/04_delay.png)
+
+***Figure 10.** A presynaptic spike at step 2, sent through a connection with `delay` = 3, reaches the postsynaptic neuron at step 6. There, $v$ jumps by the weight (here 5) and then decays with `alpha_decay` = 0.8.*
+
+Two synapse types on the chip:
+
+- **Instantaneous (delta) synapses** (`lif`): the weight jumps straight into $v$. Simple, one state variable per neuron.
+- **Current-based exponential synapses** (`lif_curr_exp`): each spike adds to a synaptic current that decays with its own time constant, and that current feeds $v$. Separate excitatory and inhibitory currents with decays `exc_decay`, `inh_decay`:
+
+$$I_\text{exc}[t] = \beta_e I_\text{exc}[t-1] + \textstyle\sum w_\text{exc}, \quad I_\text{inh}[t] = \beta_i I_\text{inh}[t-1] + \textstyle\sum |w_\text{inh}|, \quad v[t] = \alpha v[t-1] + I_\text{exc}[t] - I_\text{inh}[t] + i_\text{offset} \tag{14}$$
+
+  This smooths the input over time and is closer to biology. The clustered network example uses it.
+
+![Delta synapses vs. exponential synapses](figures/01_primer_snn_basics/04_synapse_types.png)
+
+***Figure 11.** The same input spikes into both synapse types. With delta synapses (`lif`, blue), each spike makes $v$ jump by its weight. With exponential synapses (`lif_curr_exp`), each spike first raises a synaptic current that decays over a few steps (middle), and $v$ integrates this current, so it rises and falls smoothly (orange). Two spikes close together (steps 20 and 22) add up in both cases. For the same weight, the exponential synapse has a larger total effect, because the current keeps feeding $v$ for several steps. Weights therefore need to be scaled differently between the two models.*
+
+**Weights are small integers.** This is the biggest practical constraint for ML people, and it depends on the model variant:
+
+| Model variant | Weights | Delays | Note |
+|---|---|---|---|
+| `lif`, `lif_curr_exp`, `alif` | 5 bit, [-15, 15] | 0–7 | default |
+| `*_no_delay` | 8 bit, [-127, 127] | 0 only | precision instead of delays |
+| `*_no_delay_1024` | 5 bit, [-31, 31] | 0 only | 1024 neurons per core |
+| `*_32bit` | 20 bit | 0–7 | more precision, more memory |
+| `lif_conv2d` | 8 bit, [-128, 127] | 0 only | convolutional layers |
+
+Weights outside the range are clipped and rounded toward zero. The trade-off between weight precision, delays and neurons per core comes from limited memory per core. It's a good example of hardware shaping the model.
+
+Weights trained as floating-point numbers therefore have to be mapped onto these few integers. A common approach: multiply by a scale factor so that the largest weights land near the edge of the range, then round.
+
+![Quantisation of trained weights to 5 bit](figures/01_primer_snn_basics/04_weight_quantization.png)
+
+***Figure 12.** Mapping 5000 normally distributed "trained" weights onto the 5-bit range [−15, 15]. A: the scale is chosen so that 99 % of the weights fit into the range. The rest is clipped to ±15. Rounding toward zero maps everything with $|w \cdot \text{scale}| < 1$ to 0. B: as a result, 13 % of the weights become 0, i.e. the connection disappears, and the remaining weights take only 30 distinct values. A larger scale keeps more small weights but clips more large ones. This trade-off is why quantisation-aware training helps (section 8).*
+
+**Workshop:** 5 min, weight and delay, excitatory and inhibitory, the quantisation table.
+
+## 5. Other neuron models on the chip
+
+- **ALIF (adaptive LIF):** the threshold rises by `threshold_adp_inc` after each spike and decays back with `threshold_adp_decay`. The neuron gets "tired", and the adaptation variable keeps a memory much longer than $\tau_m$. This matters for ML: networks with adaptive neurons (LSNNs, Bellec et al. 2018) handle tasks with long time dependencies.
+- **Izhikevich:** two variables with a quadratic term. Cheap, yet reproduces many biological firing patterns (bursting, chattering). Mainly for neuroscience.
+- **Probabilistic LIF** (`lif_prob`): spikes with probability `firing_prob` once above threshold. Noise as a feature, for sampling and optimisation.
+- **QUBO neuron:** specialised for solving optimisation problems (QUBO Max-Cut example).
+- Custom models can be written in C (advanced topic, not for the workshop).
+
+**Workshop:** 1 min, name them, show that the chip is programmable and not fixed to one model.
+
+## 6. Getting data in and out
+
+The network speaks spikes, so data needs to be encoded:
+
+- **Rate coding** ([neural coding](https://en.wikipedia.org/wiki/Neural_coding)): a value becomes a firing rate. On the chip, the `poisson_process` model ([Poisson process](https://en.wikipedia.org/wiki/Poisson_point_process)) spikes with probability `p` per step. Robust, but needs many steps and spikes, so it costs time and energy.
+- **Latency coding:** a larger value means an earlier spike, $t = t_\text{max}(x_\text{max} - x)/x_\text{max}$ (`spikes_from_array_latency_code`). One spike per input, so very sparse.
+- **Explicit spike times:** `spike_list` with `{neuron_id: [t1, t2, ...]}`. Used in the tutorials.
+- **[Event cameras](https://en.wikipedia.org/wiki/Event_camera) (DVS)** produce spikes natively, which is why datasets like NMNIST and DVS Gesture are the standard neuromorphic benchmarks.
+
+Decoding the output: count spikes per output neuron (rate), take the first neuron to spike, or read the membrane potential of non-spiking output neurons (`record=["v_last"]`).
+
+**Workshop:** 3 min. The rate vs latency trade-off ties directly into the energy story.
+
+## 7. Networks
+
+**Building blocks in py-spinnaker2:** a `Population` is a group of neurons with the same model and parameters. A `Projection` is a list of connections between two populations. A `Network` holds both and runs on the `SpiNNaker2Chip`:
+
+```python
+from spinnaker2 import snn, hardware
+
+stim = snn.Population(size=10, neuron_model="spike_list", params={0: [1, 2, 3], 5: [20, 30]})
+pop = snn.Population(size=20, neuron_model="lif", params={"alpha_decay": 0.8, "threshold": 1.0}, record=["spikes", "v"])
+proj = snn.Projection(pre=stim, post=pop, connections=[[0, 1, 2, 1], [0, 0, -2, 1]])
+
+net = snn.Network("my network")
+net.add(stim, pop, proj)
+hardware.SpiNNaker2Chip().run(net, timesteps=50)
+```
+
+**Architectures:**
+
+- **Feed-forward:** layers like an MLP or CNN. What ML models trained elsewhere look like (section 8).
+- **Recurrent:** neurons connect back into their own population. That gives rich dynamics, memory and self-sustained activity.
+
+**Excitation-inhibition balance:** biological circuits have excitatory and inhibitory neurons (about 80:20). Inhibition keeps activity from exploding. In a *balanced* network, large excitatory and inhibitory inputs roughly cancel, and neurons fire irregularly, driven by fluctuations.
+
+**Clustered networks:** the excitatory neurons are split into groups that are strongly connected internally and weakly connected to each other, with shared inhibition on top. The py-spinnaker2 example uses 200 excitatory neurons in 10 clusters of 20, and 50 inhibitory neurons:
+
+| Connection | Probability | Weight |
+|---|---|---|
+| E→E within cluster | 0.5 | 6 |
+| E→E between clusters | 0.05 | 2 |
+| E→I | 0.3 | 3 |
+| I→E | 0.4 | −7 |
+| I→I | 0.5 | −3 |
+
+The result is **competition**. A cluster that becomes active excites itself, and through the inhibitory neurons it suppresses the others. With noisy input, activity jumps between clusters: one cluster is "on" for a while, then another takes over (*metastable dynamics*, see Litwin-Kumar & Doiron 2012). These dynamics play out in time, which makes them a natural fit for neuromorphic hardware and a good visual demo (raster plot with switching clusters).
+
+**Workshop:** 5 min on concepts, plus the clustered network as a live demo in the final block.
+
+## 8. SNNs and deep learning
+
+The bridge for an ML audience:
+
+- **An LIF neuron is a recurrent cell.** $v[t] = \alpha v[t-1] + W x[t]$ with a binary output $s[t] = \Theta(v[t] - \text{th})$ is a leaky RNN with a step-function activation. A [spiking neural network](https://en.wikipedia.org/wiki/Spiking_neural_network) is an [RNN](https://en.wikipedia.org/wiki/Recurrent_neural_network) with binary, sparse communication.
+- **Training problem:** the step function $\Theta$ has zero derivative almost everywhere. **Surrogate gradients** solve this: use $\Theta$ in the forward pass and a smooth function (e.g. a fast sigmoid) in the backward pass, then train with [backpropagation through time](https://en.wikipedia.org/wiki/Backpropagation_through_time). Libraries: snnTorch, Norse, and others, all on top of PyTorch.
+- **ANN-to-SNN conversion:** the firing rate of an IF neuron with reset by subtraction approximates ReLU. So a trained ANN can be converted by replacing ReLUs with spiking neurons, at the cost of many timesteps.
+- **Deployment:** the trained model is exported to **NIR** and imported with py-spinnaker2's `s2_nir`. Weights are quantised to the chip's integer ranges (section 4), and quantisation-aware training helps (see the DVS gesture paper in `00_sources.md`).
+
+**Workshop:** 5 min. This is where the ML audience engages most, and it leads into hands-on 2 (NIR model on the chip).
+
+## 9. Why this can save energy
+
+- **Event-driven computing:** work happens only when a spike arrives. A silent neuron costs (almost) nothing. A GPU computes every multiply-accumulate (MAC), whether the activation is zero or not.
+- **Cheaper operations:** a spike arriving at a synapse is an addition of a weight (an "accumulate"), not a multiplication.
+- **Local memory:** weights sit in SRAM next to each core, so less data moves to and from DRAM, which is where most energy goes in conventional accelerators.
+
+The saving depends on **sparsity**. With dense activity or many timesteps (rate coding), the advantage shrinks or disappears. Claims like "18× more efficient than GPUs" are workload-dependent, and an ML audience will ask how they were measured. The workshop should therefore show its own measurement (power measurement in py-spinnaker2) rather than quote marketing numbers. Details go into the hardware notes.
+
+**Workshop:** the core of the 20 min motivation block, and revisited with real numbers in hands-on 2.
+
+## Glossary
+
+| Term | Meaning |
+|---|---|
+| Membrane potential $v$ | The neuron's state variable, integrated input |
+| Spike | Binary event emitted when $v$ crosses threshold |
+| Synapse, weight, delay | Connection, its strength, its transmission time |
+| Excitatory / inhibitory | Positive / negative weights, pushing $v$ up / down |
+| Population, Projection | py-spinnaker2's group of neurons, set of connections |
+| Rate / latency coding | Information in how often / how early neurons spike |
+| Surrogate gradient | Smooth stand-in for the spike derivative during training |
+| NIR | Neuromorphic Intermediate Representation, like [ONNX](https://en.wikipedia.org/wiki/Open_Neural_Network_Exchange) for SNNs |
+| SynOp | Synaptic operation, the unit of work on neuromorphic hardware |
+
+## To check on the cluster
+
+- [ ] Where is the physical duration of a timestep configured, and what is the default?
+- [ ] Does the chip use fixed-point or floating-point for $v$ and `alpha_decay` (the ARM M4F has a floating-point unit)?
+- [ ] Which of these models does the Brian2 backend support?
+- [ ] The docs list `*_no_delay_1024` as "5 bit, [-31, 31]", but 5 signed bits only cover [-16, 15]. Check the actual range.
