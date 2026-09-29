@@ -1,4 +1,4 @@
-"""Figures for the primer, sections 2 to 4. Run: uv run --with numpy --with matplotlib --with schemdraw make_figures.py"""
+"""Figures for the primer, sections 2 to 5. Run: uv run --with numpy --with matplotlib --with schemdraw make_figures.py"""
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -94,7 +94,7 @@ def fig_spiking():
         ax.axhline(ri, color=color, ls="--", lw=0.8)
         rate = f"{rate_analytic([ri])[0]:.0f} Hz" if ri > 1 else "no spikes"
         ax.set_title(f"R·I = {ri} × threshold → {rate}", loc="left", fontsize=10, color=color)
-        ax.set_ylabel("V")
+        ax.set_ylabel("V (units of\nthreshold)")
     axes[0].text(99, 1.03, "threshold", ha="right", va="bottom", fontsize=8)
     axes[-1].text(99, 2.03, "steady state R·I (never reached)", ha="right", va="bottom", fontsize=8, color=ORANGE)
     axes[-1].set_xlabel("time (ms)")
@@ -193,7 +193,7 @@ def fig_models():
     ax_i.plot(t, np.where(t >= 10, 1, 0), color="k")
     ax_i.set_yticks([0, 1], ["0", "I₀"])
     ax_i.set_ylim(-0.15, 1.3)
-    ax_i.set_ylabel("input")
+    ax_i.set_ylabel("input\ncurrent")
     ax_i.set_title("Constant input current, switched on at 10 ms", loc="left", fontsize=10)
     ax_i.text(99, 0.45, f"HH: I₀ = 10 µA/cm²   FHN: I₀ = 0.5   LIF: R·I₀ = {ri:.0f} mV", ha="right", fontsize=8)
     axes[0].plot(t, v_hh, color=GREY)
@@ -205,7 +205,7 @@ def fig_models():
     axes[1].axhline(-1, color="k", ls=":", lw=0.8)
     axes[1].text(1, -0.9, "knee v = −1", ha="left", va="bottom", fontsize=8)
     axes[1].set_title("FitzHugh-Nagumo: 2 variables, time scaled to the same rate", loc="left", fontsize=10)
-    axes[1].set_ylabel("v (a.u.)")
+    axes[1].set_ylabel("v (dimensionless)")
     axes[2].plot(t, v_lif, color=BLUE)
     axes[2].vlines(spikes, -55, -35, color=BLUE, lw=1.5)
     axes[2].axhline(-55, color="k", ls=":", lw=0.8)
@@ -273,8 +273,8 @@ def fig_fhn_phase():
     ax.annotate("④ slow rise of w = recovery\n(LIF: refractory period)", (1.75, 0.46), (0.9, 2.0), fontsize=8,
                 arrowprops=arrow)
     ax.annotate("⑤ fast jump back\n(LIF: reset)", (0, 1.36), (-0.4, 2.2), fontsize=8, arrowprops=arrow)
-    ax.set_xlabel("v (membrane potential)")
-    ax.set_ylabel("w (recovery variable)")
+    ax.set_xlabel("v, membrane potential (dimensionless)")
+    ax.set_ylabel("w, recovery variable (dimensionless)")
     ax.set_xlim(-2.5, 2.5)
     ax.set_ylim(-1.5, 2.6)
     ax.legend(frameon=False, fontsize=7.5, loc="lower right")
@@ -304,6 +304,7 @@ def fig_discrete_update():
     fig, (ax_s, ax_v) = plt.subplots(2, 1, figsize=(7, 4.2), sharex=True, gridspec_kw={"height_ratios": [1, 3]})
     ax_s.vlines(t_in, 0, 1, color=GREY, lw=2)
     ax_s.set_yticks([])
+    ax_s.set_ylabel("input\nspikes")
     ax_s.set_title(f"input spikes, weight {w} each", loc="left", fontsize=10)
     t = np.arange(steps)
     shown = trace.copy()
@@ -317,7 +318,7 @@ def fig_discrete_update():
     ax_v.annotate(f"decay: × {alpha} per step", (4, 4 * alpha**2), (5, 1.0), fontsize=8, arrowprops={"arrowstyle": "->"})
     ax_v.annotate("inputs close together add up:\nthreshold crossed → spike, reset to 0", (14, trace[14]),
                   (15.2, 12.2), fontsize=8, arrowprops={"arrowstyle": "->"})
-    ax_v.set_ylabel("v[t]")
+    ax_v.set_ylabel("v[t] (dimensionless)")
     ax_v.set_xlabel("timestep t")
     ax_v.set_ylim(0, 15)
     fig.tight_layout()
@@ -349,7 +350,7 @@ def fig_reset_modes():
     ax_a.axhline(th, color="k", ls=":", lw=0.8)
     ax_a.set_title(f"A: constant input i_offset = {i_off}, no leak", loc="left", fontsize=10)
     ax_a.set_xlabel("timestep t")
-    ax_a.set_ylabel("v[t] (before reset)")
+    ax_a.set_ylabel("v[t] before reset\n(units of threshold)")
     ax_a.set_ylim(0, 1.6)
     ax_a.legend(frameon=False, fontsize=8, loc="upper left")
     inp = np.linspace(0.01, 1, 400)
@@ -385,6 +386,7 @@ def fig_delay():
     fig, (ax_p, ax_v) = plt.subplots(2, 1, figsize=(7, 3.2), sharex=True, gridspec_kw={"height_ratios": [1, 2]})
     ax_p.vlines([pre_t], 0, 1, color=GREY, lw=3)
     ax_p.set_yticks([])
+    ax_p.set_ylabel("spike")
     ax_p.set_title("presynaptic neuron fires", loc="left", fontsize=10)
     ax_v.plot(np.arange(steps), v, "o-", color=BLUE, ms=4, lw=1)
     ax_v.set_title("postsynaptic neuron: v[t]", loc="left", fontsize=10)
@@ -393,6 +395,7 @@ def fig_delay():
               ha="center", fontsize=8, color=ORANGE)
     ax_v.axvline(pre_t, color=GREY, ls=":", lw=0.8)
     ax_v.set_ylim(-0.3, 7.5)
+    ax_v.set_ylabel("v[t]\n(dimensionless)")
     ax_v.set_xlabel("timestep t")
     ax_v.set_xticks(range(0, steps, 2))
     fig.tight_layout()
@@ -409,6 +412,7 @@ def fig_synapse_types():
     axes[0].vlines(exc, 0, 1, color=GREEN, lw=2, label=f"excitatory, weight +{w}")
     axes[0].vlines(inh, 0, 1, color="#d62728", lw=2, label=f"inhibitory, weight −{w}")
     axes[0].set_yticks([])
+    axes[0].set_ylabel("input\nspikes")
     axes[0].set_title("input spikes", loc="left", fontsize=10)
     axes[0].legend(frameon=False, fontsize=8, loc="upper right", ncol=2, bbox_to_anchor=(1, 1.45))
     i_exc, i_inh, v_exp = chip_lif_curr_exp(steps, alpha, 0.7, 0.7, inputs)
@@ -416,15 +420,17 @@ def fig_synapse_types():
     axes[1].plot(t, i_exc, "o-", color=GREEN, ms=3, lw=1, label="I_exc (exc_decay = 0.7)")
     axes[1].plot(t, -i_inh, "o-", color="#d62728", ms=3, lw=1, label="−I_inh (inh_decay = 0.7)")
     axes[1].axhline(0, color="k", lw=0.5)
-    axes[1].set_title("lif_curr_exp: synaptic currents", loc="left", fontsize=10)
+    axes[1].set_title("lif_curr_exp only: synaptic currents", loc="left", fontsize=10)
+    axes[1].set_ylabel("synaptic current\n(dimensionless)")
     axes[1].legend(frameon=False, fontsize=8, loc="upper right")
     v_delta, _ = chip_lif(steps, alpha, 1e9, inputs=inputs)
     axes[2].plot(t, v_delta, "o-", color=BLUE, ms=3, lw=1, label="lif (delta synapse): jumps by the weight")
     axes[2].plot(t, v_exp, "o-", color=ORANGE, ms=3, lw=1, label="lif_curr_exp: smooth rise and fall")
     axes[2].axhline(0, color="k", lw=0.5)
     axes[2].set_title("membrane potential v[t], alpha_decay = 0.9", loc="left", fontsize=10)
+    axes[2].set_ylabel("v[t]\n(dimensionless)")
     axes[2].set_xlabel("timestep t")
-    axes[2].legend(frameon=False, fontsize=8, loc="upper right")
+    axes[2].legend(frameon=False, fontsize=8, loc="upper left")
     fig.tight_layout()
     fig.savefig(OUT / "04_synapse_types.png")
 
@@ -449,7 +455,7 @@ def fig_quantization():
     ax_a.annotate("clipped", (0.4, 15), (0.22, 19), fontsize=8, arrowprops={"arrowstyle": "->"})
     ax_a.set_title("A: rounding toward zero and clipping", loc="left", fontsize=10)
     ax_a.set_xlabel("trained weight w (float)")
-    ax_a.set_ylabel("weight on the chip")
+    ax_a.set_ylabel("weight on the chip (integer)")
     ax_a.set_ylim(-22, 22)
     ax_a.legend(frameon=False, fontsize=8, loc="upper left")
     levels = np.arange(-15, 16)
@@ -458,11 +464,203 @@ def fig_quantization():
               label="trained weights × scale")
     ax_b.bar(levels, [(q == k).mean() for k in levels], width=0.35, color=BLUE, label="5-bit weights on the chip")
     ax_b.set_title(f"B: 5000 weights, {100 * (q == 0).mean():.0f} % become 0", loc="left", fontsize=10)
-    ax_b.set_xlabel("weight × scale")
+    ax_b.set_xlabel("weight × scale (dimensionless)")
     ax_b.set_ylabel("fraction of weights")
     ax_b.legend(frameon=False, fontsize=8, loc="upper right")
     fig.tight_layout()
     fig.savefig(OUT / "04_weight_quantization.png")
+
+
+def chip_alif(steps, alpha, threshold, i_offset, adp_inc, adp_decay):
+    """py-spinnaker2 `alif`: threshold rises by adp_inc per spike and decays by adp_decay. Reset to 0 for clarity."""
+    v, adp = 0.0, 0.0
+    trace, thr, spikes = np.zeros(steps), np.zeros(steps), []
+    for t in range(steps):
+        v = alpha * v + i_offset
+        adp = adp_decay * adp
+        trace[t], thr[t] = v, threshold + adp
+        if v >= threshold + adp:
+            spikes.append(t)
+            adp += adp_inc
+            v = 0.0
+    return trace, thr, np.array(spikes)
+
+
+def fig_alif():
+    steps, alpha, th, i_off, inc = 120, 0.9, 1.0, 0.25, 0.4
+    v_lif, sp_lif = chip_lif(steps, alpha, th, i_offset=i_off, reset="reset_to_v_reset")
+    v_alif, thr, sp_alif = chip_alif(steps, alpha, th, i_off, adp_inc=inc, adp_decay=0.97)
+    t = np.arange(steps)
+    fig, (ax_l, ax_a, ax_i) = plt.subplots(3, 1, figsize=(7, 6.5), sharex=True, gridspec_kw={"height_ratios": [2, 2, 1.6]})
+    for ax, v, threshold, spikes, color, name in [(ax_l, v_lif, np.full(steps, th), sp_lif, BLUE, "LIF"),
+                                                   (ax_a, v_alif, thr, sp_alif, ORANGE, "ALIF")]:
+        ax.plot(t, v, color=color, lw=1, label="v[t]")
+        ax.plot(t, threshold, color="k", lw=1.5, label="threshold")
+        ax.plot(spikes, v[spikes], "o", color=color, mec="k", ms=6, zorder=5, label="spike (threshold reached)")
+        ax.set_ylim(0, 2.8)
+        ax.set_ylabel("v[t] (units of\nbase threshold)")
+    ax_l.set_title(f"LIF: the threshold is constant → regular firing ({len(sp_lif)} spikes)", loc="left", fontsize=10)
+    ax_a.set_title(f"ALIF: the threshold moves → firing slows down ({len(sp_alif)} spikes)", loc="left", fontsize=10)
+    ax_l.legend(frameon=False, fontsize=8, loc="upper left", ncol=3)
+    k = sp_alif[1]
+    ax_a.annotate(f"each spike: threshold jumps by {inc}", (k + 0.5, (thr[k] + thr[k + 1]) / 2), (k - 8, 2.5),
+                  fontsize=8, arrowprops={"arrowstyle": "->"})
+    k2 = (sp_alif[5] + sp_alif[6]) // 2
+    ax_a.annotate("between spikes: threshold decays back towards 1", (k2, thr[k2]), (k2 - 4, 2.5), fontsize=8,
+                  arrowprops={"arrowstyle": "->"})
+    for spikes, color, name in [(sp_lif, BLUE, "LIF"), (sp_alif, ORANGE, "ALIF")]:
+        ax_i.plot(spikes[1:], np.diff(spikes), "o-", color=color, ms=4, lw=1, label=name)
+    ax_i.set_title("time between consecutive spikes", loc="left", fontsize=10)
+    ax_i.set_ylabel("interval\n(timesteps)")
+    ax_i.set_ylim(0, 16)
+    ax_i.legend(frameon=False, fontsize=8, loc="lower right")
+    ax_i.set_xlabel("timestep t (same constant input for both: i_offset = 0.25, alpha_decay = 0.9)")
+    fig.tight_layout()
+    fig.savefig(OUT / "05_alif_adaptation.png")
+
+
+def izhikevich(a, b, c, d, i_amp=10.0, t_end=200, t_on=20, dt=0.25):
+    """dv/dt = 0.04 v^2 + 5 v + 140 - u + I, du/dt = a (b v - u); at v >= 30 mV: v <- c, u <- u + d. v in mV, t in ms."""
+    t = np.arange(0, t_end, dt)
+    v, u = np.full_like(t, -70.0), np.zeros_like(t)  # start at rest
+    u[0] = b * v[0]
+    for k in range(1, len(t)):
+        inp = i_amp if t[k] >= t_on else 0.0
+        vk = v[k - 1] + dt * (0.04 * v[k - 1] ** 2 + 5 * v[k - 1] + 140 - u[k - 1] + inp)
+        uk = u[k - 1] + dt * a * (b * v[k - 1] - u[k - 1])
+        if vk >= 30:
+            v[k - 1] = 30  # draw the spike peak
+            vk, uk = c, uk + d
+        v[k], u[k] = vk, uk
+    return t, v
+
+
+def fig_izhikevich():
+    patterns = [("regular spiking", (0.02, 0.2, -65, 8), BLUE), ("intrinsically bursting", (0.02, 0.2, -55, 4), GREEN),
+                ("chattering (repeated bursts)", (0.02, 0.2, -50, 2), ORANGE), ("fast spiking", (0.1, 0.2, -65, 2), "#9467bd")]
+    fig, axes = plt.subplots(len(patterns), 1, figsize=(7, 6), sharex=True, sharey=True)
+    for ax, (name, (a, b, c, d), color) in zip(axes, patterns):
+        t, v = izhikevich(a, b, c, d)
+        ax.plot(t, v, color=color, lw=0.8)
+        ax.set_title(f"{name}:  a = {a}, b = {b}, c = {c}, d = {d}", loc="left", fontsize=9)
+        ax.set_ylabel("v (mV)")
+    axes[-1].set_xlabel("time (ms), constant input I = 10 switched on at 20 ms")
+    fig.tight_layout()
+    fig.savefig(OUT / "05_izhikevich_patterns.png")
+
+
+def chip_lif_prob(steps, alpha, threshold, i_offset, p, rng):
+    """`lif_prob` as assumed here: above threshold the neuron fires with probability p (then reset to 0),
+    otherwise v keeps integrating. What the chip does without a spike is still to be checked."""
+    v, trace, spikes = 0.0, np.zeros(steps), []
+    for t in range(steps):
+        v = alpha * v + i_offset
+        trace[t] = v
+        if v >= threshold and rng.random() < p:
+            spikes.append(t)
+            v = 0.0
+    return trace, np.array(spikes)
+
+
+def fig_lif_prob():
+    steps, alpha, th, i_off, p, trials = 80, 0.9, 1.0, 0.25, 0.3, 15
+    rng = np.random.default_rng(1)
+    t = np.arange(steps)
+    v_det, sp_det = chip_lif(steps, alpha, th, i_offset=i_off, reset="reset_to_v_reset")
+    runs = [chip_lif_prob(steps, alpha, th, i_off, p, rng) for _ in range(trials)]
+    v_prob, sp_prob = runs[0]  # the trial shown in panel A is also trial 1 in panel C
+    fig, (ax_v, ax_d, ax_p) = plt.subplots(3, 1, figsize=(7, 6.5), sharex=True, gridspec_kw={"height_ratios": [1.8, 1, 1.6]})
+    ax_v.plot(t, v_det, color=BLUE, lw=1, label="lif")
+    ax_v.plot(sp_det, v_det[sp_det], "o", color=BLUE, mec="k", ms=5, zorder=5)
+    ax_v.plot(t, v_prob, color=ORANGE, lw=1, label=f"lif_prob (firing_prob = {p})")
+    ax_v.plot(sp_prob, v_prob[sp_prob], "o", color=ORANGE, mec="k", ms=6, zorder=5)
+    ax_v.axhline(th, color="k", lw=1.2, label="threshold")
+    ax_v.set_title("A: one trial of each, circles = spikes", loc="left", fontsize=10)
+    ax_v.set_ylabel("v[t] (units of\nthreshold)")
+    ax_v.legend(frameon=False, fontsize=8, loc="upper left", ncol=3)
+    ax_v.set_ylim(0, 2.6)
+    for k in range(trials):
+        row = k  # trial 1 at the bottom
+        ax_d.vlines(sp_det, row, row + 0.8, color=BLUE, lw=1.2)
+        ax_p.vlines(runs[k][1], row, row + 0.8, color=ORANGE, lw=2.2 if k == 0 else 1.2)
+    ax_p.text(steps + 0.5, 0.4, "← trial\n    in A", fontsize=7, va="center")
+    ax_d.set_title(f"B: lif, {trials} repetitions: identical every time", loc="left", fontsize=10)
+    ax_p.set_title(f"C: lif_prob, {trials} repetitions: new random numbers, different spike times", loc="left", fontsize=10)
+    for ax in (ax_d, ax_p):
+        ax.set_ylabel("trial\n(repetition)")
+        ax.set_yticks([0.4, trials - 0.6], ["1", str(trials)])
+    ax_p.set_xlabel("timestep t (same constant input in every trial: i_offset = 0.25, alpha_decay = 0.9)")
+    fig.tight_layout()
+    fig.savefig(OUT / "05_lif_prob.png")
+
+
+def maxcut_graph():
+    """Small example graph: 8 nodes on a ring plus chords. The chords create triangles, so not every edge can be cut."""
+    n = 8
+    return n, [(i, (i + 1) % n) for i in range(n)] + [(0, 2), (1, 5), (3, 6), (4, 7), (2, 5)]
+
+
+def cut_size(x, edges):
+    return sum(x[i] != x[j] for i, j in edges)
+
+
+def qubo_dynamics(n, edges, steps=400, alpha=1.0, seed=3):
+    """Principle of the `qubo_neuron`: v[t] = alpha v - 0.1 I_syn - 0.15 v (v^2 - 1) + noise.
+    Simplified: I_syn is the sum of the neighbours' v (continuous), the noise is annealed from strong to weak."""
+    rng = np.random.default_rng(seed)
+    adj = np.zeros((n, n))
+    for i, j in edges:
+        adj[i, j] = adj[j, i] = 1
+    v = rng.normal(0, 0.05, n)
+    vs, cuts = np.zeros((steps, n)), np.zeros(steps)
+    for t in range(steps):
+        sigma = 0.25 * (1 - t / steps) + 0.01
+        v = alpha * v - 0.1 * adj @ v - 0.15 * v * (v**2 - 1) + rng.normal(0, sigma, n)
+        vs[t], cuts[t] = v, cut_size(v > 0, edges)
+    return vs, cuts
+
+
+def fig_qubo():
+    n, edges = maxcut_graph()
+    best = max(cut_size([(k >> i) & 1 for i in range(n)], edges) for k in range(2**n))
+    vs, cuts = qubo_dynamics(n, edges)
+    fig = plt.figure(figsize=(9.5, 5.5))
+    gs = fig.add_gridspec(2, 2)
+    ax_w, ax_v, ax_c, ax_g = fig.add_subplot(gs[0, 0]), fig.add_subplot(gs[0, 1]), fig.add_subplot(gs[1, 0]), fig.add_subplot(gs[1, 1])
+    x = np.linspace(-1.6, 1.6, 200)
+    ax_w.plot(x, 0.15 * (x**4 / 4 - x**2 / 2), color="k")
+    ax_w.set_title("A: two stable states per neuron", loc="left", fontsize=10)
+    ax_w.set_xlabel("v (dimensionless)")
+    ax_w.set_ylabel("U(v), potential of the\nterm −0.15 v (v² − 1)")
+    ax_w.text(-1, 0.002, "group 0\n(orange)", ha="center", fontsize=8, color=ORANGE)
+    ax_w.text(1, 0.002, "group 1\n(blue)", ha="center", fontsize=8, color=BLUE)
+    t = np.arange(len(cuts))
+    for i in range(n):
+        ax_v.plot(t, vs[:, i], lw=0.8, color=BLUE if vs[-1, i] > 0 else ORANGE)
+    ax_v.set_title("B: each neuron settles into one well", loc="left", fontsize=10)
+    ax_v.set_xlabel("timestep t (colour = final group)")
+    ax_v.set_ylabel("v[t] (dimensionless)")
+    ax_c.plot(t, cuts, color="k", lw=1)
+    ax_c.axhline(best, color=GREEN, ls="--", lw=1)
+    ax_c.text(len(t) - 1, best - 0.4, f"best possible cut: {best} of {len(edges)} edges", ha="right", va="top", fontsize=8,
+              color=GREEN)
+    ax_c.set_title("C: edges between the two groups (cut edges)", loc="left", fontsize=10)
+    ax_c.set_ylabel("number of\ncut edges")
+    ax_c.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
+    ax_c.set_xlabel("timestep t (noise decreases over time)")
+    ax_c.set_ylim(0, len(edges) + 1)
+    ang = np.linspace(0, 2 * np.pi, n, endpoint=False)
+    pos = np.c_[np.cos(ang), np.sin(ang)]
+    final = vs[-1] > 0
+    for i, j in edges:
+        cut = final[i] != final[j]
+        ax_g.plot(*pos[[i, j]].T, color=GREEN if cut else "0.75", lw=2 if cut else 1, ls="-" if cut else ":")
+    ax_g.scatter(*pos.T, s=180, c=[BLUE if f else ORANGE for f in final], edgecolors="k", zorder=3)
+    ax_g.set_title("D: final groups, green edges are cut,\ndotted grey edges are not", loc="left", fontsize=10)
+    ax_g.set_aspect("equal")
+    ax_g.axis("off")
+    fig.tight_layout()
+    fig.savefig(OUT / "05_qubo_maxcut.png")
 
 
 def check():
@@ -483,6 +681,13 @@ def check():
         _, sp = chip_lif(10_000, 1.0, 1.0, i_offset=i_off, reset="reset_to_v_reset")
         assert abs(len(sp) / 10_000 - 1 / np.ceil(1 / i_off)) < 1e-3, i_off
     # quantisation: round toward zero, then clip
+    # ALIF: adaptation makes inter-spike intervals grow
+    _, _, sp = chip_alif(120, 0.9, 1.0, 0.25, 0.4, 0.97)
+    assert np.diff(sp)[-1] > np.diff(sp)[0]
+    # QUBO illustration reaches the optimal cut of the example graph
+    n, edges = maxcut_graph()
+    best = max(cut_size([(k >> i) & 1 for i in range(n)], edges) for k in range(2**n))
+    assert qubo_dynamics(n, edges)[1][-1] == best
     assert list(quantize(np.array([0.9, -0.9, 1.7, -1.7, 20, -20]), 1.0)) == [0, 0, 1, -1, 15, -15]
 
 
@@ -500,3 +705,7 @@ if __name__ == "__main__":
     fig_delay()
     fig_synapse_types()
     fig_quantization()
+    fig_alif()
+    fig_izhikevich()
+    fig_lif_prob()
+    fig_qubo()

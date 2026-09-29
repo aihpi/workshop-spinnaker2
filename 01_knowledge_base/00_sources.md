@@ -116,6 +116,20 @@ The main software for the workshop. Python interface for running experiments on 
 | [Kudithipudi et al. 2025, Neuromorphic computing at scale (Nature)](https://www.nature.com/articles/s41586-024-08253-8) | Field overview, good for the workshop intro | todo |
 | [Brian2 simulator](https://briansimulator.org/) | Out of scope for now | skip |
 
+## Further reading: optimisation and energy-based models
+
+Not for the workshop (at most a short outlook on QUBO), but worth reading later. Background for the QUBO neuron in section 5 of the primer.
+
+| Source | What | Status |
+|---|---|---|
+| [QUBO](https://en.wikipedia.org/wiki/Quadratic_unconstrained_binary_optimization) · [Ising model](https://en.wikipedia.org/wiki/Ising_model) · [spin glass](https://en.wikipedia.org/wiki/Spin_glass) | The problem class and its physics formulation | todo |
+| [Lucas 2014, Ising formulations of many NP problems](https://arxiv.org/abs/1302.5843) | How Max-Cut, colouring, scheduling, TSP etc. map onto QUBO/Ising | todo |
+| [Kirkpatrick, Gelatt, Vecchi 1983, Optimization by simulated annealing (Science)](https://doi.org/10.1126/science.220.4598.671) · [Wikipedia](https://en.wikipedia.org/wiki/Simulated_annealing) | Annealing as an optimisation method, borrowed from statistical physics | todo |
+| [Quantum annealing](https://en.wikipedia.org/wiki/Quantum_annealing) | Principle behind D-Wave; digital annealers (Fujitsu) as the classical counterpart | todo |
+| [Hopfield 1982, Neural networks and physical systems with emergent collective computational abilities (PNAS)](https://doi.org/10.1073/pnas.79.8.2554) · [Wikipedia](https://en.wikipedia.org/wiki/Hopfield_network) | Networks that compute by relaxing into energy minima | todo |
+| [Ackley, Hinton, Sejnowski 1985, A learning algorithm for Boltzmann machines (Cognitive Science)](https://doi.org/10.1207/s15516709cog0901_7) · [Wikipedia](https://en.wikipedia.org/wiki/Boltzmann_machine) | Stochastic version of the Hopfield network, with learning | todo |
+| [Nobel Prize in Physics 2024](https://www.nobelprize.org/prizes/physics/2024/summary/) | Hopfield and Hinton, for these foundations of machine learning | todo |
+
 ## Company and press
 
 Useful for the motivation part of the workshop.

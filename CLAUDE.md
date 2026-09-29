@@ -16,6 +16,7 @@ The notes serve three purposes: learning material, preparation for workshop slid
 - **Neutral tone.** Don't address the reader or a specific person ("you", "we should", "your background").
 - **Collapsible blocks** (`<details><summary>…</summary>`) for derivations, side topics and worked examples, so the main text stays lean. Leave a blank line after `</summary>` so markdown renders inside. Put `<br>` after every `</details>` (on its own line, after a blank line), otherwise the layout is too cramped.
 - **Equation numbers** on every display equation, numbered sequentially per file with `\tag{n}` inside `$$…$$`. Refer to them as "Eq. (n)". Renumber when inserting a new equation.
+- **Axis labels** on every figure axis, always with a unit or scale description ("time (ms)", "v[t] (dimensionless)", "V (units of threshold)"). Spike raster panels get a label too. Never produce a figure without them.
 - **Figure numbers** on every figure, numbered sequentially per file. The italic caption starts with `**Figure n.**`. Refer to figures as "Figure n", not "the figure above". Renumber when inserting a new figure.
 - **Wikipedia links** at the first mention of important, well-known topics (models, concepts). Verify the URL exists.
 - **Workshop lines:** each primer section ends with `**Workshop:**` saying what is taught and for how long.
