@@ -4,6 +4,25 @@ The groundwork for the "Basics" block of the workshop (30 min) and a reference f
 
 Each section ends with a line **Workshop:** saying what of it is taught in the workshop.
 
+## Contents
+
+- [1. Why spikes?](#1-why-spikes)
+- [2. From Hodgkin-Huxley to LIF](#2-from-hodgkin-huxley-to-lif)
+  - [2.1 Hodgkin-Huxley (4 variables)](#21-hodgkin-huxley-4-variables)
+  - [2.2 FitzHugh-Nagumo (2 variables)](#22-fitzhugh-nagumo-2-variables)
+  - [2.3 From FitzHugh-Nagumo to LIF (1 variable)](#23-from-fitzhugh-nagumo-to-lif-1-variable)
+  - [2.4 The LIF equation, term by term](#24-the-lif-equation-term-by-term)
+  - [2.5 Threshold, reset and the firing rate](#25-threshold-reset-and-the-firing-rate)
+- [3. LIF in discrete time, as on the chip](#3-lif-in-discrete-time-as-on-the-chip)
+- [4. Synapses](#4-synapses)
+- [5. Other neuron models on the chip](#5-other-neuron-models-on-the-chip)
+- [6. Getting data in and out](#6-getting-data-in-and-out)
+- [7. Networks](#7-networks)
+- [8. SNNs and deep learning](#8-snns-and-deep-learning)
+- [9. Why this can save energy](#9-why-this-can-save-energy)
+- [Glossary](#glossary)
+- [To check on the cluster](#to-check-on-the-cluster)
+
 ## 1. Why spikes?
 
 A biological neuron collects input from thousands of others through its [synapses](https://en.wikipedia.org/wiki/Synapse). The input charges its membrane. Once the membrane potential crosses a threshold, the neuron fires a short electrical pulse, a *spike* ([action potential](https://en.wikipedia.org/wiki/Action_potential)), and then resets. The spike has a fixed shape, so all information sits in *whether* and *when* a neuron fires, not in the pulse itself.
@@ -21,7 +40,7 @@ Neuron models form a ladder: the more variables, the more biological detail, and
 
 ![Three neuron models, tuned to the same firing rate](figures/01_primer_snn_basics/02_models_hh_fhn_lif.png)
 
-***Figure 1.** Top: a constant input current, switched on at 10 ms. Each model has its own units, so the values of $I_0$ differ. Hodgkin-Huxley is the reference. FitzHugh-Nagumo's time axis is stretched and LIF's parameters are fitted so that all three fire at the same times (grey lines: HH upstrokes). Only the spike shape and the cost differ.*
+***Figure 1.** Top: a constant input current, switched on at 10 ms. Each model has its own units, so the values of $I_0$ differ. Hodgkin-Huxley is the reference. FitzHugh-Nagumo's time axis is stretched and LIF's parameters are fitted so that all three fire at the same times (grey lines: HH upstrokes). Only the spike shape and the cost differ. **Source:** Simulated here in `make_figures.py`: Hodgkin-Huxley with the classic squid-axon parameters, FitzHugh-Nagumo with the standard parameters ($a$ = 0.7, $b$ = 0.8, $\tau_w$ = 12.5), LIF fitted to the HH spike times.*
 
 <details>
 <summary><b>Reading Figure 1:</b> soft vs. hard threshold, and why the fitted LIF needs a long refractory period</summary>
@@ -52,7 +71,7 @@ The dynamics are easiest to see in the [phase plane](https://en.wikipedia.org/wi
 
 ![FitzHugh-Nagumo phase plane](figures/01_primer_snn_basics/02_fhn_phase_plane.png)
 
-***Figure 2.** The [nullclines](https://en.wikipedia.org/wiki/Nullcline): where $dv/dt = 0$ (cubic curve) and $dw/dt = 0$ (straight line), the state doesn't change in that direction. Because $v$ is much faster than $w$, the trajectory creeps along the outer branches of the cubic curve and jumps quickly between them. Grey arrows: direction of the flow. Black arrows: flow on the nullclines. Green arrowheads: direction of travel. With constant input $I$ = 0.5 this gives a closed loop (a [limit cycle](https://en.wikipedia.org/wiki/Limit_cycle)), repeated spiking.*
+***Figure 2.** The [nullclines](https://en.wikipedia.org/wiki/Nullcline): where $dv/dt = 0$ (cubic curve) and $dw/dt = 0$ (straight line), the state doesn't change in that direction. Because $v$ is much faster than $w$, the trajectory creeps along the outer branches of the cubic curve and jumps quickly between them. Grey arrows: direction of the flow. Black arrows: flow on the nullclines. Green arrowheads: direction of travel. With constant input $I$ = 0.5 this gives a closed loop (a [limit cycle](https://en.wikipedia.org/wiki/Limit_cycle)), repeated spiking. **Source:** Simulated here in `make_figures.py` (FitzHugh-Nagumo, same parameters as Figure 1).*
 
 The loop has five steps. ① The state drifts slowly along the left branch. ② At the knee, the left branch ends, so there is no stable state left, and ③ $v$ jumps quickly to the right branch: a spike. ④ On the right branch, $w$ rises slowly (recovery) until ⑤ that branch ends too and $v$ falls back to the left. Then the loop repeats.
 
@@ -112,7 +131,7 @@ An input current $I(t)$, from synapses or an electrode, is injected into the cel
 
 <img src="figures/01_primer_snn_basics/02_rc_circuit.png" alt="The membrane as an RC circuit" width="480">
 
-***Figure 3.** The membrane as an electrical circuit. The top wire is the inside of the cell, the bottom wire the outside. Only potential differences matter, so the outside serves as the reference at 0 V (like ground in a circuit), and $V$ is the voltage across the membrane, inside minus outside. The input current splits into a capacitive current $I_C$ that charges the membrane and a leak current $I_L$ through the ion channels.*
+***Figure 3.** The membrane as an electrical circuit. The top wire is the inside of the cell, the bottom wire the outside. Only potential differences matter, so the outside serves as the reference at 0 V (like ground in a circuit), and $V$ is the voltage across the membrane, inside minus outside. The input current splits into a capacitive current $I_C$ that charges the membrane and a leak current $I_L$ through the ion channels. **Source:** Diagram.*
 
 **Step 1: currents through each element.**
 
@@ -155,7 +174,7 @@ $$V(t) = V_\infty + (V_0 - V_\infty)\,e^{-t/\tau_m} \tag{6}$$
 
 ![Charging and discharging of the membrane](figures/01_primer_snn_basics/02_rc_charging.png)
 
-***Figure 4.** Below threshold, the neuron is just an RC circuit. When the input switches on, $V$ charges towards $R I_0$ and reaches 63 % of it after one $\tau$. When the input switches off, $V$ leaks back to rest. A larger $\tau$ reacts more slowly and remembers longer.*
+***Figure 4.** Below threshold, the neuron is just an RC circuit. When the input switches on, $V$ charges towards $R I_0$ and reaches 63 % of it after one $\tau$. When the input switches off, $V$ leaks back to rest. A larger $\tau$ reacts more slowly and remembers longer. **Source:** Simulated here in `make_figures.py`, identical to Eq. (6).*
 
 ### 2.5 Threshold, reset and the firing rate
 
@@ -163,13 +182,13 @@ Add the non-linear rule: **if $V \geq V_\text{th}$, emit a spike and reset $V$**
 
 ![LIF neuron at three input strengths](figures/01_primer_snn_basics/02_lif_spiking.png)
 
-***Figure 5.** Three constant inputs. Dashed line: the steady state $RI$ the neuron is charging towards. Dotted line: threshold. If $RI$ stays below threshold, $V$ saturates and there are no spikes. Above it, $V$ is reset before reaching $RI$. The stronger the input, the faster the charging and the shorter the cycle.*
+***Figure 5.** Three constant inputs. Dashed line: the steady state $RI$ the neuron is charging towards. Dotted line: threshold. If $RI$ stays below threshold, $V$ saturates and there are no spikes. Above it, $V$ is reset before reaching $RI$. The stronger the input, the faster the charging and the shorter the cycle. **Source:** Simulated here in `make_figures.py` (LIF with $\tau_m$ = 10 ms).*
 
 Plotting the firing rate $f$ against the input strength gives the **f-I curve**:
 
 ![f-I curve](figures/01_primer_snn_basics/02_fi_curve.png)
 
-***Figure 6.** Firing rate of an LIF neuron for constant input. The three dots are the three neurons of Figure 5. Below the critical input (grey area), $V$ never reaches the threshold and the neuron stays silent. Above it, the rate rises steeply at first and then almost linearly, the same shape as a ReLU (dashed).*
+***Figure 6.** Firing rate of an LIF neuron for constant input. The three dots are the three neurons of Figure 5. Below the critical input (grey area), $V$ never reaches the threshold and the neuron stays silent. Above it, the rate rises steeply at first and then almost linearly, the same shape as a ReLU (dashed). **Source:** Computed here from Eq. (8), checked against simulation in `make_figures.py`.*
 
 This shape is why LIF neurons connect to deep learning. [ReLU](https://en.wikipedia.org/wiki/Rectifier_(neural_networks)) is also zero below a threshold and linear above it. A spiking neuron's firing rate behaves like a ReLU activation, which is the basis of ANN-to-SNN conversion (section 8).
 
@@ -290,7 +309,7 @@ Each step does three things: decay the old value by $\alpha$, add the input of t
 
 ![The discrete LIF update step by step](figures/01_primer_snn_basics/03_discrete_update.png)
 
-***Figure 7.** Eq. (9) step by step, with `alpha_decay` = 0.8, `threshold` = 10 and reset to 0. Top: arrival times of input spikes. Each spike makes $v$ jump by its weight, and between spikes $v$ shrinks by the factor 0.8 per step. Isolated spikes (steps 2 and 6) mostly leak away before the next one arrives. Spikes close together (steps 12–14 and 20–23) add up, cross the threshold and trigger an output spike (orange), after which $v$ restarts from 0.*
+***Figure 7.** Eq. (9) step by step, with `alpha_decay` = 0.8, `threshold` = 10 and reset to 0. Top: arrival times of input spikes. Each spike makes $v$ jump by its weight, and between spikes $v$ shrinks by the factor 0.8 per step. Isolated spikes (steps 2 and 6) mostly leak away before the next one arrives. Spikes close together (steps 12–14 and 20–23) add up, cross the threshold and trigger an output spike (orange), after which $v$ restarts from 0. **Source:** Simulated here in `make_figures.py` with the update rule documented for py-spinnaker2 v0.8, not yet run on the chip.*
 
 <details>
 <summary><b>Choosing <code>alpha_decay</code>:</b> how it sets the memory of the neuron</summary>
@@ -301,7 +320,7 @@ Each step does three things: decay the old value by $\alpha$, add the input of t
 
 ![Effect of alpha_decay](figures/01_primer_snn_basics/03_alpha_decay.png)
 
-***Figure 8.** Decay of $v$ after a single input spike, for different values of `alpha_decay`. Values close to 1 give a long memory (the neuron integrates over many steps), small values a short one (only nearly coincident inputs add up). `alpha_decay` = 1 means no leak at all.*
+***Figure 8.** Decay of $v$ after a single input spike, for different values of `alpha_decay`. Values close to 1 give a long memory (the neuron integrates over many steps), small values a short one (only nearly coincident inputs add up). `alpha_decay` = 1 means no leak at all. **Source:** Computed here: $v[t]/v[0] = \alpha^t$.*
 
 </details>
 
@@ -316,7 +335,7 @@ The two reset modes differ in what happens to the charge above the threshold. Wi
 
 ![Reset by subtraction vs. reset to a fixed value](figures/01_primer_snn_basics/03_reset_modes.png)
 
-***Figure 9.** A: the same constant input with both reset modes, without leak. After a reset by subtraction, $v$ keeps the overshoot (e.g. 1.2 − 1 = 0.2), so the next spike comes sooner. After a reset to 0 the overshoot is lost. B: as a result, the firing rate with reset by subtraction is exactly proportional to the input (input / threshold spikes per step), like a ReLU. With reset to 0 it's a staircase that lies below it, because each cycle needs a whole number of steps.*
+***Figure 9.** A: the same constant input with both reset modes, without leak. After a reset by subtraction, $v$ keeps the overshoot (e.g. 1.2 − 1 = 0.2), so the next spike comes sooner. After a reset to 0 the overshoot is lost. B: as a result, the firing rate with reset by subtraction is exactly proportional to the input (input / threshold spikes per step), like a ReLU. With reset to 0 it's a staircase that lies below it, because each cycle needs a whole number of steps. **Source:** Simulated here in `make_figures.py` with the update rule documented for py-spinnaker2 v0.8, not yet run on the chip.*
 
 - **Reset by subtraction** carries the overshoot into the next cycle. No input is lost, so on average the rate is exactly input / threshold.
 - **Reset to a fixed value** discards the overshoot, so every cycle takes a whole number of steps and the rate drops to the staircase in Figure 9B.
@@ -373,7 +392,7 @@ A **synapse** connects a presynaptic neuron to a postsynaptic one and has a **we
 
 ![Synaptic delay](figures/01_primer_snn_basics/04_delay.png)
 
-***Figure 10.** A presynaptic spike at step 2, sent through a connection with `delay` = 3, reaches the postsynaptic neuron at step 6. There, $v$ jumps by the weight (here 5) and then decays with `alpha_decay` = 0.8.*
+***Figure 10.** A presynaptic spike at step 2, sent through a connection with `delay` = 3, reaches the postsynaptic neuron at step 6. There, $v$ jumps by the weight (here 5) and then decays with `alpha_decay` = 0.8. **Source:** Simulated here in `make_figures.py` with the update rule documented for py-spinnaker2 v0.8, not yet run on the chip.*
 
 Two synapse types on the chip:
 
@@ -386,7 +405,7 @@ $$I_\text{exc}[t] = \beta_e I_\text{exc}[t-1] + \textstyle\sum w_\text{exc}, \qu
 
 ![Delta synapses vs. exponential synapses](figures/01_primer_snn_basics/04_synapse_types.png)
 
-***Figure 11.** The same input spikes into both synapse types. With delta synapses (`lif`, blue), each spike makes $v$ jump by its weight. With exponential synapses (`lif_curr_exp`), each spike first raises a synaptic current that decays over a few steps (middle), and $v$ integrates this current, so it rises and falls smoothly (orange). Two spikes close together (steps 20 and 22) add up in both cases. For the same weight, the exponential synapse has a larger total effect, because the current keeps feeding $v$ for several steps. Weights therefore need to be scaled differently between the two models.*
+***Figure 11.** The same input spikes into both synapse types. With delta synapses (`lif`, blue), each spike makes $v$ jump by its weight. With exponential synapses (`lif_curr_exp`), each spike first raises a synaptic current that decays over a few steps (middle), and $v$ integrates this current, so it rises and falls smoothly (orange). Two spikes close together (steps 20 and 22) add up in both cases. For the same weight, the exponential synapse has a larger total effect, because the current keeps feeding $v$ for several steps. Weights therefore need to be scaled differently between the two models. **Source:** Simulated here in `make_figures.py` with the update rule documented for py-spinnaker2 v0.8, not yet run on the chip.*
 
 <details>
 <summary><b>Delta vs. exponential synapses:</b> what happens after a spike arrives, and when to use which</summary>
@@ -439,7 +458,7 @@ Weights trained as floating-point numbers therefore have to be mapped onto these
 
 ![Quantisation of trained weights to 5 bit](figures/01_primer_snn_basics/04_weight_quantization.png)
 
-***Figure 12.** Mapping 5000 normally distributed "trained" weights onto the 5-bit range [−15, 15]. A: the scale is chosen so that 99 % of the weights fit into the range. The rest is clipped to ±15. Rounding toward zero maps everything with $|w \cdot \text{scale}| < 1$ to 0. B: as a result, 13 % of the weights become 0, i.e. the connection disappears, and the remaining weights take only 30 distinct values. A larger scale keeps more small weights but clips more large ones. This trade-off is why quantisation-aware training helps (section 8).*
+***Figure 12.** Mapping 5000 normally distributed "trained" weights onto the 5-bit range [−15, 15]. A: the scale is chosen so that 99 % of the weights fit into the range. The rest is clipped to ±15. Rounding toward zero maps everything with $|w \cdot \text{scale}| < 1$ to 0. B: as a result, 13 % of the weights become 0, i.e. the connection disappears, and the remaining weights take only 30 distinct values. A larger scale keeps more small weights but clips more large ones. This trade-off is why quantisation-aware training helps (section 8). **Source:** Synthetic, normally distributed weights, quantised here with the rounding and clipping rule documented for py-spinnaker2 v0.8, not yet run on the chip.*
 
 **Workshop:** 5 min, weight and delay, excitatory and inhibitory, the quantisation table.
 
@@ -454,7 +473,7 @@ Weights trained as floating-point numbers therefore have to be mapped onto these
 
 ![ALIF vs. LIF under constant input](figures/01_primer_snn_basics/05_alif_adaptation.png)
 
-***Figure 13.** The same constant input into an LIF neuron (top) and an ALIF neuron (middle), both reset to 0 after a spike. The only difference is the threshold (black). In LIF it is constant, so every cycle takes the same time and the neuron fires regularly. In ALIF, every spike raises the threshold by `threshold_adp_inc` = 0.4, and between spikes it decays back towards 1 with `threshold_adp_decay` = 0.97. The neuron needs longer and longer to reach the raised threshold, so the intervals between spikes grow (bottom) until the increase per spike balances the decay (spike-frequency adaptation). The raised threshold stores information about recent activity for many steps, much longer than $v$ itself.*
+***Figure 13.** The same constant input into an LIF neuron (top) and an ALIF neuron (middle), both reset to 0 after a spike. The only difference is the threshold (black). In LIF it is constant, so every cycle takes the same time and the neuron fires regularly. In ALIF, every spike raises the threshold by `threshold_adp_inc` = 0.4, and between spikes it decays back towards 1 with `threshold_adp_decay` = 0.97. The neuron needs longer and longer to reach the raised threshold, so the intervals between spikes grow (bottom) until the increase per spike balances the decay (spike-frequency adaptation). The raised threshold stores information about recent activity for many steps, much longer than $v$ itself. **Source:** Simulated here in `make_figures.py` with the update rule documented for py-spinnaker2 v0.8, not yet run on the chip. Reset to 0 instead of the default reset by subtraction, for clarity.*
 
 </details>
 
@@ -469,7 +488,7 @@ Weights trained as floating-point numbers therefore have to be mapped onto these
 
 ![Firing patterns of the Izhikevich model](figures/01_primer_snn_basics/05_izhikevich_patterns.png)
 
-***Figure 14.** The Izhikevich model with four parameter sets from Izhikevich (2003), all driven by the same constant input. Only the four parameters $a, b, c, d$ differ: $a$ and $b$ set the time scale and sensitivity of the recovery variable $u$, $c$ is the reset value of $v$, and $d$ the increase of $u$ after each spike. Regular spiking slows down over time like ALIF, bursting neurons fire groups of spikes, fast-spiking neurons fire at a high, constant rate. Simulated here with 0.25 ms steps in physical units (mV, ms), as in the original model.*
+***Figure 14.** The Izhikevich model with four parameter sets from Izhikevich (2003), all driven by the same constant input. Only the four parameters $a, b, c, d$ differ: $a$ and $b$ set the time scale and sensitivity of the recovery variable $u$, $c$ is the reset value of $v$, and $d$ the increase of $u$ after each spike. Regular spiking slows down over time like ALIF, bursting neurons fire groups of spikes, fast-spiking neurons fire at a high, constant rate. **Source:** Simulated here in `make_figures.py` with the parameter sets of Izhikevich (2003), in physical units (mV, ms) with 0.25 ms steps as in the original model, not yet run on the chip.*
 
 </details>
 
@@ -484,7 +503,7 @@ Weights trained as floating-point numbers therefore have to be mapped onto these
 
 ![Probabilistic LIF vs. LIF](figures/01_primer_snn_basics/05_lif_prob.png)
 
-***Figure 15.** A deterministic `lif` neuron and a probabilistic `lif_prob` neuron (`firing_prob` = 0.3) with the same constant input. A: one trial of each. `lif` (blue) fires as soon as $v$ reaches the threshold. `lif_prob` (orange) flips a coin in every step above the threshold and fires only with probability 0.3. Until it does, $v$ keeps integrating, so it can climb well above the threshold. B and C: 15 trials, i.e. repetitions of the same simulation with the same input. `lif` fires at exactly the same times in every trial (B, the same times as in A). `lif_prob` draws new random numbers in each trial, so the spike times differ (C, the thick row, trial 1, is the trial from A). The randomness is intended: networks of such neurons can sample from probability distributions, and noise helps optimisation escape poor solutions. The behaviour of $v$ without a spike is an assumption here and still to be checked on the chip.*
+***Figure 15.** A deterministic `lif` neuron and a probabilistic `lif_prob` neuron (`firing_prob` = 0.3) with the same constant input. A: one trial of each. `lif` (blue) fires as soon as $v$ reaches the threshold. `lif_prob` (orange) flips a coin in every step above the threshold and fires only with probability 0.3. Until it does, $v$ keeps integrating, so it can climb well above the threshold. B and C: 15 trials, i.e. repetitions of the same simulation with the same input. `lif` fires at exactly the same times in every trial (B, the same times as in A). `lif_prob` draws new random numbers in each trial, so the spike times differ (C, the thick row, trial 1, is the trial from A). The randomness is intended: networks of such neurons can sample from probability distributions, and noise helps optimisation escape poor solutions. **Source:** Simulated here in `make_figures.py` with the update rule documented for py-spinnaker2 v0.8, not yet run on the chip. What happens to $v$ above the threshold without a spike is not documented: the figure assumes it keeps integrating.*
 
 </details>
 
@@ -534,7 +553,7 @@ The underlying idea, computing by relaxing into an energy minimum, is the same a
 
 ![QUBO neurons solving Max-Cut](figures/01_primer_snn_basics/05_qubo_maxcut.png)
 
-***Figure 16.** Principle of the QUBO neuron on a small [Max-Cut](https://en.wikipedia.org/wiki/Maximum_cut) problem. The task: split the nodes of a graph into two groups so that as many edges as possible run between the two groups. Such edges are called *cut edges*, because a line separating the groups would cut through them. A: the cubic term of Eq. (17) acts like the force of a double-well potential $U(v)$, so each neuron settles near $v = -1$ or $v = +1$. This represents the group its node belongs to. B: one neuron per node, coupled to its neighbours so that neighbours are pushed into opposite groups. Strong noise early on lets the network escape poor configurations, and it decreases over time. The coupling also pushes the states somewhat beyond ±1. C: the number of cut edges grows until it reaches the best possible value, 11 of 13 edges, checked here by trying all 256 partitions. Not all edges can be cut, because the graph contains odd cycles such as triangles: around an odd cycle, the two groups can't alternate, so at least one of its edges stays uncut. D: the final groups (blue, orange) and the cut edges (green). This is an illustration of the principle with $\alpha = 1$ and a simplified continuous coupling, not the chip's exact spike-based dynamics.*
+***Figure 16.** Principle of the QUBO neuron on a small [Max-Cut](https://en.wikipedia.org/wiki/Maximum_cut) problem. The task: split the nodes of a graph into two groups so that as many edges as possible run between the two groups. Such edges are called *cut edges*, because a line separating the groups would cut through them. A: the cubic term of Eq. (17) acts like the force of a double-well potential $U(v)$, so each neuron settles near $v = -1$ or $v = +1$. This represents the group its node belongs to. B: one neuron per node, coupled to its neighbours so that neighbours are pushed into opposite groups. Strong noise early on lets the network escape poor configurations, and it decreases over time. The coupling also pushes the states somewhat beyond ±1. C: the number of cut edges grows until it reaches the best possible value, 11 of 13 edges, checked here by trying all 256 partitions. Not all edges can be cut, because the graph contains odd cycles such as triangles: around an odd cycle, the two groups can't alternate, so at least one of its edges stays uncut. D: the final groups (blue, orange) and the cut edges (green). **Source:** Illustration simulated here in `make_figures.py`: update equation (17) with $\alpha$ = 1 and a simplified continuous coupling instead of the chip's spike-based coupling, not run on the chip. The optimal cut is computed exactly by trying all partitions.*
 
 </details>
 
@@ -591,7 +610,7 @@ Encoders available on the chip, with the brightness $x \in [0, 1]$ of an image p
 
 ![Rate coding vs. latency coding](figures/01_primer_snn_basics/06_rate_vs_latency.png)
 
-***Figure 17.** The full path from values to spikes and back, for rate coding (top) and latency coding (bottom). ① Five input neurons, each with a value to encode. ② The spikes each neuron produces, one tick per spike. Rate coding (`poisson_process`, $p = 0.25\,x$, 3 steps refractory period): larger values give more spikes on average, at random times. Latency coding (`spikes_from_array_latency_code`): one spike per neuron, and the larger the value, the earlier. ③ The values read back from the spikes (bars) compared with the true inputs (black lines). Rate coding recovers them only roughly after 60 steps: neuron 3 happened to fire more often than neuron 1, and its value is overestimated (Figure 18 shows how the error shrinks with longer windows). Latency coding recovers them almost exactly, with 5 spikes instead of 29. The price is that the network has to react to precise spike times.*
+***Figure 17.** The full path from values to spikes and back, for rate coding (top) and latency coding (bottom). ① Five input neurons, each with a value to encode. ② The spikes each neuron produces, one tick per spike. Rate coding (`poisson_process`, $p = 0.25\,x$, 3 steps refractory period): larger values give more spikes on average, at random times. Latency coding (`spikes_from_array_latency_code`): one spike per neuron, and the larger the value, the earlier. ③ The values read back from the spikes (bars) compared with the true inputs (black lines). Rate coding recovers them only roughly after 60 steps: neuron 3 happened to fire more often than neuron 1, and its value is overestimated (Figure 18 shows how the error shrinks with longer windows). Latency coding recovers them almost exactly, with 5 spikes instead of 29. The price is that the network has to react to precise spike times. **Source:** Simulated here in `make_figures.py` with the encoders as documented for py-spinnaker2 v0.8 (`poisson_process`, `spikes_from_array_latency_code`), not yet run on the chip.*
 
 <details>
 <summary><b>The cost of rate coding:</b> how many timesteps a precise value needs</summary>
@@ -602,7 +621,7 @@ A rate-coded value is read out by counting spikes in a window of $N$ timesteps. 
 
 ![Precision of rate coding](figures/01_primer_snn_basics/06_rate_precision.png)
 
-***Figure 18.** How precisely a value can be read from a rate-coded spike train. A `poisson_process` source fires with probability $p = 0.1$ per step, and the spikes are counted over a window of $N$ steps. Because the spikes are random, the count fluctuates from run to run. The plot shows the size of these fluctuations relative to the mean, i.e. the typical error of the value read from the count (dots: 300 simulated runs per window, dashed: theory). The error falls only with $1/\sqrt{N}$: 100 steps (about 10 spikes) give about 30 %, 1000 steps (about 100 spikes) about 9 %. A 10 times longer window, and 10 times more spikes, reduces the error only by a factor of about 3. The top axis shows the expected number of spikes: the error is roughly $1/\sqrt{\text{number of spikes}}$.*
+***Figure 18.** How precisely a value can be read from a rate-coded spike train. A `poisson_process` source fires with probability $p = 0.1$ per step, and the spikes are counted over a window of $N$ steps. Because the spikes are random, the count fluctuates from run to run. The plot shows the size of these fluctuations relative to the mean, i.e. the typical error of the value read from the count (dots: 300 simulated runs per window, dashed: theory). The error falls only with $1/\sqrt{N}$: 100 steps (about 10 spikes) give about 30 %, 1000 steps (about 100 spikes) about 9 %. A 10 times longer window, and 10 times more spikes, reduces the error only by a factor of about 3. The top axis shows the expected number of spikes: the error is roughly $1/\sqrt{\text{number of spikes}}$. **Source:** Simulated here in `make_figures.py` (300 runs per window) and compared with the binomial formula.*
 
 </details>
 
@@ -628,7 +647,7 @@ The built-in encoder does the same on the chip: `snn.Population(size=784, neuron
 
 ![Encoding an MNIST digit](figures/01_primer_snn_basics/06_mnist_encoding.png)
 
-***Figure 19.** An MNIST digit as spike input. A: the image, the first digit of the MNIST test set. B: latency coding assigns each pixel one spike time. The saturated core of the stroke (31 pixels with values of 251–255, about a quarter) spikes at step 0, the softer edges later. Black background pixels don't spike at all, so only 116 of the 784 input neurons are active. C: the same spikes as a raster, one row per input neuron, 116 spikes in total. The neurons are numbered row by row, so every 28 neurons form one image row (right axis), and the active band between neurons 200 and 750 is the part of the image covered by the digit. The 31 simultaneous spikes at step 0 merge into one vertical line. Neuron 0 is at the top, like pixel row 0 in the image, so the raster shows the digit the right way up. Inside the band, most neurons are silent too, but at this resolution neighbouring neurons are less than a screen pixel apart and the spike markers cover the gaps. The inset zooms in on image row 17 (neurons 476–503): only 3 of its 28 neurons fire, the others are black pixels. D: rate coding of the same image over 50 steps: 619 spikes, more than five times as many, and the value of each pixel can only be estimated roughly (Figure 18). Red: one example pixel followed through all panels (row 17, column 15, value 126 → neuron 28 · 17 + 15 = 491, one spike at step 25 with latency coding, 6 spikes with rate coding). In both codes, most input neurons stay silent because most of the image is background. This sparsity is exactly what event-driven hardware profits from.*
+***Figure 19.** An MNIST digit as spike input. A: the image, the first digit of the MNIST test set. B: latency coding assigns each pixel one spike time. The saturated core of the stroke (31 pixels with values of 251–255, about a quarter) spikes at step 0, the softer edges later. Black background pixels don't spike at all, so only 116 of the 784 input neurons are active. C: the same spikes as a raster, one row per input neuron, 116 spikes in total. The neurons are numbered row by row, so every 28 neurons form one image row (right axis), and the active band between neurons 200 and 750 is the part of the image covered by the digit. The 31 simultaneous spikes at step 0 merge into one vertical line. Neuron 0 is at the top, like pixel row 0 in the image, so the raster shows the digit the right way up. Inside the band, most neurons are silent too, but at this resolution neighbouring neurons are less than a screen pixel apart and the spike markers cover the gaps. The inset zooms in on image row 17 (neurons 476–503): only 3 of its 28 neurons fire, the others are black pixels. D: rate coding of the same image over 50 steps: 619 spikes, more than five times as many, and the value of each pixel can only be estimated roughly (Figure 18). Red: one example pixel followed through all panels (row 17, column 15, value 126 → neuron 28 · 17 + 15 = 491, one spike at step 25 with latency coding, 6 spikes with rate coding). In both codes, most input neurons stay silent because most of the image is background. This sparsity is exactly what event-driven hardware profits from. **Source:** Image: MNIST test set (LeCun, Cortes, Burges, CC BY-SA 3.0). Encoding computed here in `make_figures.py`, not yet run on the chip.*
 
 **Decoding the output.** For a classification with one output neuron per class, three readouts are common: the neuron with the most spikes, the neuron that fires first, or the highest membrane potential of output neurons that don't spike at all (`record=["v_last"]`).
 <details>
@@ -670,9 +689,13 @@ hardware.SpiNNaker2Chip().run(net, timesteps=50)
 - **Feed-forward:** layers like an MLP or CNN. What ML models trained elsewhere look like (section 8).
 - **Recurrent:** neurons connect back into their own population. That gives rich dynamics, memory and self-sustained activity.
 
+![Feed-forward and recurrent networks](figures/01_primer_snn_basics/07_architectures.png)
+
+***Figure 20.** A: a feed-forward network. Every neuron sends its spikes only to the next layer, as in an MLP. B: a recurrent network of excitatory neurons (triangles) and inhibitory neurons (circles). Excitatory neurons also excite each other, so activity can circulate and persist without input. The inhibitory neurons receive excitation and feed back inhibition, which keeps this activity in check. **Source:** Diagram.*
+
 **Excitation-inhibition balance:** biological circuits have excitatory and inhibitory neurons (about 80:20). Inhibition keeps activity from exploding. In a *balanced* network, large excitatory and inhibitory inputs roughly cancel, and neurons fire irregularly, driven by fluctuations.
 
-**Clustered networks:** the excitatory neurons are split into groups that are strongly connected internally and weakly connected to each other, with shared inhibition on top. The py-spinnaker2 example uses 200 excitatory neurons in 10 clusters of 20, and 50 inhibitory neurons:
+**Clustered networks:** the excitatory neurons are split into groups that are strongly connected internally and weakly connected to each other, with shared inhibition on top. The [clustered SNN example](https://spinnaker2.gitlab.io/py-spinnaker2/examples/clustered_snn.html) of py-spinnaker2 uses 200 excitatory neurons in 10 clusters of 20, and 50 inhibitory neurons:
 
 | Connection | Probability | Weight |
 |---|---|---|
@@ -683,6 +706,10 @@ hardware.SpiNNaker2Chip().run(net, timesteps=50)
 | I→I | 0.5 | −3 |
 
 The result is **competition**. A cluster that becomes active excites itself, and through the inhibitory neurons it suppresses the others. With noisy input, activity jumps between clusters: one cluster is "on" for a while, then another takes over (*metastable dynamics*, see Litwin-Kumar & Doiron 2012). These dynamics play out in time, which makes them a natural fit for neuromorphic hardware and a good visual demo (raster plot with switching clusters).
+
+![Clustered network with switching activity](figures/01_primer_snn_basics/07_clustered_network.png)
+
+***Figure 21.** A clustered network, simulated with the connection table above and the time constants of the py-spinnaker2 example (`lif_curr_exp`, membrane time constants 15 ms for excitatory and 10 ms for inhibitory neurons, synaptic time constants 3 ms and 5 ms, one timestep = 1 ms). A: the connection matrix. The dark blue squares on the diagonal are the dense, strong connections within the 10 clusters, the light blue dots the sparse, weak connections between clusters, the red columns the inhibition. B: the spikes of all neurons, coloured by cluster (neurons 0–19 form cluster 1, 20–39 cluster 2, and so on, inhibitory neurons in grey). C: the firing rate of each cluster over time. Most of the time, exactly one cluster is active at a high rate while the others are almost silent: cluster 10 at the beginning, then cluster 6 for about half a second, later clusters 4 and 6 again. The inhibitory neurons fire whenever a cluster is active, which suppresses the other clusters. Random input eventually ends each episode, and another cluster takes over. **Source:** Simulated here in `make_figures.py`, not yet run on the chip. Connection table and time constants from the py-spinnaker2 example. Threshold (55), external Poisson input (probability 0.04 per step, weight 6) and refractory period (2 steps) are chosen here, not taken from the example.*
 
 **Workshop:** 5 min on concepts, plus the clustered network as a live demo in the final block.
 
@@ -695,6 +722,28 @@ The bridge for an ML audience:
 - **ANN-to-SNN conversion:** the firing rate of an IF neuron with reset by subtraction approximates ReLU. So a trained ANN can be converted by replacing ReLUs with spiking neurons, at the cost of many timesteps (details in section 2.5, "Why the ReLU shape matters").
 - **Deployment:** the trained model is exported to **NIR** and imported with py-spinnaker2's `s2_nir`. Weights are quantised to the chip's integer ranges (section 4), and quantisation-aware training helps (see the DVS gesture paper in `00_sources.md`).
 
+![An LIF neuron unrolled in time](figures/01_primer_snn_basics/08_lif_unrolled.png)
+
+***Figure 22.** An LIF layer unrolled over three timesteps, drawn like an RNN. In every step, the membrane potential $v$ combines its own decayed previous value (blue, factor $\alpha$) with the weighted input $W x$, and the spike output $s$ is a step function of $v$. After a spike, the reset feeds back into the next step (orange). $W$ and $\alpha$ are the same in every step, so training works as for an RNN, with backpropagation through time. The difference to a standard RNN is the output: a sparse binary spike instead of a continuous activation. **Source:** Diagram.*
+
+![Surrogate gradient](figures/01_primer_snn_basics/08_surrogate_gradient.png)
+
+***Figure 23.** Why SNNs need a trick to be trained with gradient descent. A: in the forward pass, the spike output is a step function of the membrane potential. B: its true derivative is zero everywhere except exactly at the threshold, so backpropagation would receive no gradient and nothing would learn. Surrogate-gradient training keeps the step in the forward pass but uses a smooth stand-in for the derivative in the backward pass (orange, here the "fast sigmoid" used e.g. by snnTorch). Neurons whose $v$ is close to the threshold then receive a gradient, and the weights can be adjusted. **Source:** Plot of the functions. The surrogate is the fast sigmoid of snnTorch.*
+
+![From a trained model to the chip](figures/01_primer_snn_basics/08_deployment_pipeline.png)
+
+***Figure 24.** The deployment path used in hands-on 2, followed for one MNIST network with 784 input, 128 hidden and 10 output neurons. ① The network is trained in a PyTorch-based SNN library with surrogate gradients (Figure 23). Its weights are floating-point numbers. ② It is exported to NIR, a hardware-independent graph of layers (Affine = weight matrix) and neuron models with their parameters. ③ py-spinnaker2 imports the graph with `s2_nir` and turns it into its own objects: one population per layer, one projection per weight matrix. ④ When the network is run, py-spinnaker2 distributes the neurons across the 152 cores of the chip and converts the weights to the chip's integer ranges (Figure 12). ⑤ The chip runs the network: input spikes (here the latency-coded digit of Figure 19) go in, output spikes come out, and the output neuron with the most spikes is the prediction. **Source:** Diagram. Stages ④ and ⑤ are schematic: the core allocation is illustrative (the real one depends on the neuron model and py-spinnaker2's mapping), and the output spikes are made up, not from a trained model.*
+
+**Sources for moving a model onto SpiNNaker2**, roughly in reading order:
+
+1. [NIR quick start](https://spinnaker2.gitlab.io/py-spinnaker2/user_guide/qs-nir.html) (py-spinnaker2 user guide): the minimal steps from an NIR file to a network on the chip.
+2. [Tutorial 08, NIR workflow](https://spinnaker2.gitlab.io/py-spinnaker2/tutorials/deep_dive/08_nir.html): the same workflow step by step.
+3. [Example: end-to-end NIR deployment](https://spinnaker2.gitlab.io/py-spinnaker2/examples/end_to_end_NIR.html): train, export, import and run in one notebook.
+4. [Example: NMNIST with a pre-trained NIR model](https://spinnaker2.gitlab.io/py-spinnaker2/examples/nir_demo.html): a ready-made model on event-camera data, the likely starting point for hands-on 2.
+5. [API reference of `s2_nir`](https://spinnaker2.gitlab.io/py-spinnaker2/api_reference/s2_nir-api.html): the functions of the import module.
+6. [snnTorch export to NIR](https://snntorch.readthedocs.io/en/latest/snntorch.export_nir.html): the export step on the training side. The [NIR documentation](https://neuroir.org/docs/) lists the other supported libraries (Norse, Sinabs, Lava-dl, Spyx, …).
+7. Background: the [NIR paper](https://www.nature.com/articles/s41467-024-52259-9) (Nature Communications 2024), and two papers that deploy models on SpiNNaker2 this way, with quantisation: [DVS gesture recognition via NIR](https://arxiv.org/abs/2504.06748) and [hardware-aware fine-tuning of spiking Q-networks](https://arxiv.org/abs/2507.23562).
+
 **Workshop:** 5 min. This is where the ML audience engages most, and it leads into hands-on 2 (NIR model on the chip).
 
 ## 9. Why this can save energy
@@ -703,7 +752,15 @@ The bridge for an ML audience:
 - **Cheaper operations:** a spike arriving at a synapse is an addition of a weight (an "accumulate"), not a multiplication.
 - **Local memory:** weights sit in SRAM next to each core, so less data moves to and from DRAM, which is where most energy goes in conventional accelerators.
 
+![Energy per operation](figures/01_primer_snn_basics/09_energy_per_operation.png)
+
+***Figure 25.** Energy of basic operations in a 45 nm chip process, a widely used reference. Newer processes need less energy per operation, but the ratios are similar. Two things matter for neuromorphic hardware: an addition, which is what a spike costs at a synapse, is several times cheaper than a multiply-accumulate (MAC), the basic operation of an ANN layer. And reading data from off-chip DRAM costs about 100 times more than reading it from on-chip SRAM, and more than 1000 times more than a 32-bit addition. Keeping the weights in local SRAM next to each core (as on SpiNNaker2) avoids the most expensive item on the list. **Source:** Reported data: [Horowitz (ISSCC 2014)](https://doi.org/10.1109/ISSCC.2014.6757323), 45 nm process.*
+
 The saving depends on **sparsity**. With dense activity or many timesteps (rate coding), the advantage shrinks or disappears. Claims like "18× more efficient than GPUs" are workload-dependent, and an ML audience will ask how they were measured. The workshop should therefore show its own measurement (power measurement in py-spinnaker2) rather than quote marketing numbers. Details go into the hardware notes.
+
+![When an SNN saves energy](figures/01_primer_snn_basics/09_energy_breakeven.png)
+
+***Figure 26.** An **estimate from a simple model, not a measurement**, of when sparsity pays off. Only the energy per operation comes from published data (Horowitz 2014, Figure 25). Everything else is computed here from the following assumptions. An ANN layer performs one MAC per connection and inference, whatever the input. An SNN performs one addition per spike and connection, so its cost grows with the number of spikes. With 32-bit values (MAC 4.6 pJ, addition 0.9 pJ), the estimated energy ratio is (spikes per neuron) × 0.9 / 4.6, so the SNN is cheaper as long as each neuron fires fewer than about 5 spikes per inference. The MNIST examples of section 6 lie well below this (0.15 spikes per input neuron with latency coding, 0.8 with rate coding over 50 steps). Rate coding with 10 % precision (Figure 18) needs about 100 spikes, which gives an estimated factor of about 20 in favour of the ANN. The model counts only synaptic operations: it ignores neuron updates in every timestep, memory access and communication, and the real chip uses integer weights rather than 32-bit floats. The numbers show the trend, not actual energies, which is why the workshop needs its own measurements on the chip. **Source:** Estimate computed here in `make_figures.py` from the Horowitz values of Figure 25 and the assumptions above, not a measurement.*
 
 **Workshop:** the core of the 20 min motivation block, and revisited with real numbers in hands-on 2.
 
@@ -742,5 +799,8 @@ The saving depends on **sparsity**. With dense activity or many timesteps (rate 
   - [ ] Figure 16 (`qubo_neuron`): compare with the QUBO Max-Cut example of py-spinnaker2, which uses the real spike-based coupling
   - [ ] Figure 17 (`poisson_process`, `spikes_from_array_latency_code`): refractory period, mapping of values to spike times and rounding
   - [ ] Figure 19 (MNIST): run the `spike_list` snippet and the built-in encoder on the same image and compare the spike times
+  - [ ] Figure 21 (clustered network): run the py-spinnaker2 clustered SNN example and compare its raster with this simulation; also check the connection table and time constants against the example's code
+  - [ ] Figure 24 (deployment): replace the schematic stages ④ and ⑤ with the real core allocation and output spikes of a trained MNIST model (hands-on 2)
+  - [ ] Figure 26 (energy estimate): compare with the power measurement of py-spinnaker2 for the same network at different spike rates
 
   Mark each figure as verified in its caption once it matches, or fix the script.

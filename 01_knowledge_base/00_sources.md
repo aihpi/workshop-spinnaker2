@@ -113,6 +113,8 @@ The main software for the workshop. Python interface for running experiments on 
 |---|---|---|
 | [Pedersen et al. 2024, Neuromorphic Intermediate Representation (Nature Communications)](https://www.nature.com/articles/s41467-024-52259-9) | Cross-platform model format that py-spinnaker2 supports | todo |
 | [NIR website](https://neuroir.org/) · [docs](https://neuroir.org/docs/) · [GitHub](https://github.com/neuromorphs/NIR) | | todo |
+| [snnTorch export to NIR](https://snntorch.readthedocs.io/en/latest/snntorch.export_nir.html) | Export step on the training side | todo |
+| [Horowitz 2014, Computing's energy problem (and what we can do about it), ISSCC](https://doi.org/10.1109/ISSCC.2014.6757323) | Energy per operation and memory access (45 nm), the standard reference for energy arguments | todo |
 | [Kudithipudi et al. 2025, Neuromorphic computing at scale (Nature)](https://www.nature.com/articles/s41586-024-08253-8) | Field overview, good for the workshop intro | todo |
 | [Brian2 simulator](https://briansimulator.org/) | Out of scope for now | skip |
 

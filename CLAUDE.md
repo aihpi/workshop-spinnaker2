@@ -19,6 +19,8 @@ The notes serve three purposes: learning material, preparation for workshop slid
 - **Axis labels** on every figure axis, always with a unit or scale description ("time (ms)", "v[t] (dimensionless)", "V (units of threshold)"). Spike raster panels get a label too. Never produce a figure without them.
 - **Figure numbers** on every figure, numbered sequentially per file. The italic caption starts with `**Figure n.**`. Refer to figures as "Figure n", not "the figure above". Renumber when inserting a new figure.
 - **Wikipedia links** at the first mention of important, well-known topics (models, concepts). Verify the URL exists.
+- **Table of contents:** long notes start with a `## Contents` list linking all `##` and `###` headings (GitHub anchor format). Update it whenever headings change.
+- **Figure sources:** every caption ends with `**Source:**` saying whether the figure is a diagram, simulated or computed here (and whether it has been run on the chip), or reported data with citation.
 - **Workshop lines:** each primer section ends with `**Workshop:**` saying what is taught and for how long.
 - No hard line wraps in prose.
 
@@ -26,3 +28,4 @@ The notes serve three purposes: learning material, preparation for workshop slid
 
 - Chip-specific details (neuron models, parameter names, weight ranges) must match the py-spinnaker2 v0.8 docs: https://spinnaker2.gitlab.io/py-spinnaker2/
 - Anything not yet verified on the hardware goes into the "To check on the cluster" list of the relevant note.
+- Every figure and number says where it comes from: measured on the chip, reported in a source (with citation), or estimated / simulated here. Estimates and illustrations are labelled as such in the figure itself and in its caption, together with their assumptions.

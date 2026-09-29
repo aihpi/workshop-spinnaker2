@@ -1,4 +1,4 @@
-"""Figures for the primer, sections 2 to 6. Run: uv run --with numpy --with matplotlib --with schemdraw make_figures.py"""
+"""Figures for the primer, sections 2 to 9. Run: uv run --with numpy --with matplotlib --with schemdraw make_figures.py"""
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -466,7 +466,7 @@ def fig_quantization():
     ax_b.set_title(f"B: 5000 weights, {100 * (q == 0).mean():.0f} % become 0", loc="left", fontsize=10)
     ax_b.set_xlabel("weight × scale (dimensionless)")
     ax_b.set_ylabel("fraction of weights")
-    ax_b.legend(frameon=False, fontsize=8, loc="upper right")
+    ax_b.legend(frameon=False, fontsize=8, loc="upper left")
     fig.tight_layout()
     fig.savefig(OUT / "04_weight_quantization.png")
 
@@ -845,6 +845,348 @@ def fig_mnist():
     fig.savefig(OUT / "06_mnist_encoding.png")
 
 
+def fig_architectures():
+    fig, (ax_f, ax_r) = plt.subplots(1, 2, figsize=(10, 4.2))
+    arrow = {"arrowstyle": "-|>", "color": "0.55", "lw": 0.8, "shrinkA": 8, "shrinkB": 8}
+    layers = [4, 5, 3]
+    pos = [[(2 * x, y - (n - 1) / 2) for y in range(n)] for x, n in enumerate(layers)]
+    for a, b in zip(pos[:-1], pos[1:]):
+        for p in a:
+            for q in b:
+                ax_f.annotate("", q, p, arrowprops=arrow)
+    for k, layer in enumerate(pos):
+        ax_f.scatter(*zip(*layer), s=260, color=[GREY, BLUE, ORANGE][k], edgecolors="k", zorder=3)
+    for x, name in enumerate(["input layer", "hidden layer", "output layer"]):
+        ax_f.text(2 * x, -3.1, name, ha="center", fontsize=9)
+    ax_f.set_xlim(-0.8, 4.8)
+    ax_f.set_ylim(-3.5, 2.8)
+    ax_f.set_title("A: feed-forward: signals flow in one direction", loc="left", fontsize=10)
+    rng = np.random.default_rng(3)
+    ang = np.linspace(0, 2 * np.pi, 8, endpoint=False)
+    exc = np.c_[np.cos(ang), np.sin(ang)] * 1.8
+    inh = np.array([[-0.45, 0.2], [0.45, -0.2]])
+    for i in range(len(exc)):  # recurrent excitation between E neurons
+        for j in rng.choice([k for k in range(len(exc)) if k != i], 2, replace=False):
+            ax_r.annotate("", exc[j], exc[i], arrowprops={**arrow, "color": BLUE, "alpha": 0.7})
+    for k, e in enumerate(exc):  # each E excites one I neuron, which inhibits the E neurons
+        q = inh[k % 2]
+        ax_r.annotate("", q, e, arrowprops={**arrow, "color": BLUE, "alpha": 0.35})
+        ax_r.annotate("", e, q, arrowprops={**arrow, "color": "#d62728", "alpha": 0.5, "ls": "--"})
+    ax_r.scatter(*exc.T, s=260, marker="^", color=BLUE, edgecolors="k", zorder=3)
+    ax_r.scatter(*inh.T, s=240, marker="o", color="#d62728", edgecolors="k", zorder=3)
+    ax_r.plot([], [], "^", color=BLUE, mec="k", ms=10, label="excitatory neuron")
+    ax_r.plot([], [], "o", color="#d62728", mec="k", ms=10, label="inhibitory neuron")
+    ax_r.plot([], [], color=BLUE, label="excitatory connection")
+    ax_r.plot([], [], color="#d62728", ls="--", label="inhibitory connection")
+    ax_r.legend(frameon=False, fontsize=8, loc="center left", bbox_to_anchor=(1.0, 0.5))
+    ax_r.set_xlim(-2.3, 2.3)
+    ax_r.set_ylim(-2.3, 2.3)
+    ax_r.set_title("B: recurrent: neurons also connect back", loc="left", fontsize=10)
+    for ax in (ax_f, ax_r):
+        ax.set_aspect("equal")
+        ax.axis("off")
+    fig.tight_layout()
+    fig.savefig(OUT / "07_architectures.png")
+    plt.close(fig)
+
+
+def clustered_network(steps=3000, threshold=55, rate=0.04, w_in=6, t_ref=2, seed=0):
+    """Clustered E/I network with the connection table of the py-spinnaker2 example (lif_curr_exp, 1 step = 1 ms).
+    Threshold, external Poisson input and refractory period are chosen here, they are not taken from the example."""
+    rng = np.random.default_rng(seed)
+    n_cl, cl_size, ni = 10, 20, 50
+    ne = n_cl * cl_size
+    n = ne + ni
+    cluster = np.repeat(np.arange(n_cl), cl_size)
+    same = cluster[:, None] == cluster[None, :]
+    w = np.zeros((n, n))  # w[post, pre]
+    w[:ne, :ne] = np.where(same, (rng.random((ne, ne)) < 0.5) * 6, (rng.random((ne, ne)) < 0.05) * 2)
+    w[ne:, :ne] = (rng.random((ni, ne)) < 0.3) * 3
+    w[:ne, ne:] = (rng.random((ne, ni)) < 0.4) * -7
+    w[ne:, ne:] = (rng.random((ni, ni)) < 0.5) * -3
+    np.fill_diagonal(w, 0)
+    alpha = np.r_[np.full(ne, np.exp(-1 / 15)), np.full(ni, np.exp(-1 / 10))]  # tau_m = 15 ms (E), 10 ms (I)
+    b_exc, b_inh = np.exp(-1 / 3), np.exp(-1 / 5)  # tau_syn = 3 ms (exc), 5 ms (inh)
+    v, i_exc, i_inh = np.zeros(n), np.zeros(n), np.zeros(n)
+    last, fired, spikes = np.full(n, -100), np.zeros(n, bool), []
+    for t in range(steps):
+        syn = w @ fired
+        i_exc = b_exc * i_exc + np.maximum(syn, 0) + (rng.random(n) < rate) * w_in
+        i_inh = b_inh * i_inh + np.maximum(-syn, 0)
+        v = alpha * v + i_exc - i_inh
+        v[t - last <= t_ref] = 0
+        fired = v >= threshold
+        v[fired] = 0
+        last[fired] = t
+        spikes += [(t, k) for k in np.where(fired)[0]]
+    return np.array(spikes), w, cluster, ne
+
+
+def cluster_rates(spikes, cluster, ne, steps, bin_ms=50):
+    """Firing rate per excitatory cluster in Hz, in time bins of bin_ms."""
+    exc = spikes[spikes[:, 1] < ne]
+    bins = np.arange(0, steps + 1, bin_ms)
+    counts = np.array([np.histogram(exc[cluster[exc[:, 1]] == c, 0], bins)[0] for c in range(cluster.max() + 1)])
+    return counts / (np.bincount(cluster)[:, None] * bin_ms / 1000), bins
+
+
+def fig_clustered():
+    steps = 3000
+    spikes, w, cluster, ne = clustered_network(steps)
+    rates, bins = cluster_rates(spikes, cluster, ne, steps)
+    fig = plt.figure(figsize=(11, 6.5))
+    gs = fig.add_gridspec(2, 2, width_ratios=[1, 2.3], height_ratios=[1.6, 1])
+    ax_w, ax_s, ax_h = fig.add_subplot(gs[:, 0]), fig.add_subplot(gs[0, 1]), fig.add_subplot(gs[1, 1])
+    lim = np.abs(w).max()
+    im = ax_w.imshow(w, cmap="RdBu", vmin=-lim, vmax=lim, interpolation="nearest")
+    ax_w.set_title("A: connection weights", loc="left", fontsize=10)
+    ax_w.set_xlabel("presynaptic neuron (sender)\n0–199 excitatory, 200–249 inhibitory")
+    ax_w.set_ylabel("postsynaptic neuron (receiver)")
+    ax_w.axhline(ne - 0.5, color="k", lw=0.8)
+    ax_w.axvline(ne - 0.5, color="k", lw=0.8)
+    fig.colorbar(im, ax=ax_w, orientation="horizontal", pad=0.12, label="weight (blue: excitatory, red: inhibitory)")
+    colors = plt.cm.tab10(np.arange(10))
+    exc = spikes[spikes[:, 1] < ne]
+    ax_s.scatter(exc[:, 0], exc[:, 1], s=1, c=colors[cluster[exc[:, 1]]], marker="|", linewidths=0.6)
+    inh = spikes[spikes[:, 1] >= ne]
+    ax_s.scatter(inh[:, 0], inh[:, 1], s=1, color="0.4", marker="|", linewidths=0.6)
+    ax_s.set_xlim(0, steps)
+    ax_s.set_ylim(len(w), 0)
+    ax_s.set_ylabel("neuron\n(0–199 excitatory, in clusters\nof 20; 200–249 inhibitory)")
+    ax_s.set_title("B: spikes of all 250 neurons, colour = cluster (time axis as in C)", loc="left", fontsize=10)
+    ax_s.tick_params(labelbottom=False)
+    im2 = ax_h.imshow(rates, aspect="auto", cmap="magma", extent=[0, steps, 9.5, -0.5], interpolation="nearest")
+    ax_h.set_yticks(range(10), [str(c + 1) for c in range(10)], fontsize=7)
+    ax_h.set_ylabel("cluster")
+    ax_h.set_xlabel("time (ms), 1 timestep = 1 ms")
+    ax_h.set_title("C: firing rate of each cluster: one cluster at a time is \"on\"", loc="left", fontsize=10)
+    cax = ax_h.inset_axes([1.01, 0, 0.015, 1])  # outside the axes, so B and C keep the same width
+    fig.colorbar(im2, cax=cax, label="firing rate (Hz)")
+    fig.tight_layout()
+    fig.savefig(OUT / "07_clustered_network.png")
+    plt.close(fig)
+
+
+def box(ax, xy, text, color="white", w=1.3, h=0.7, fs=9):
+    ax.add_patch(plt.matplotlib.patches.FancyBboxPatch((xy[0] - w / 2, xy[1] - h / 2), w, h,
+                 boxstyle="round,pad=0.05", fc=color, ec="k", lw=1))
+    ax.text(*xy, text, ha="center", va="center", fontsize=fs)
+
+
+def fig_unrolled():
+    fig, ax = plt.subplots(figsize=(10, 3.8))
+    arrow = {"arrowstyle": "-|>", "color": "k", "lw": 1, "shrinkA": 0, "shrinkB": 0}
+    xs = [0, 3, 6]
+    for k, x in enumerate(xs):
+        t = ["t − 1", "t", "t + 1"][k]
+        box(ax, (x, 2.2), f"input\nx[{t}]", color="#e8e8e8")
+        box(ax, (x, 0.8), f"v[{t}] = α v[{['t−2', 't−1', 't'][k]}]\n+ W x[{t}]", color="#cfe2f3", w=1.9, h=0.8)
+        box(ax, (x, -0.7), f"spike\ns[{t}] = Θ(v − th)", color="#fde0c5", w=1.7)
+        ax.annotate("", (x, 1.22), (x, 1.85), arrowprops=arrow)
+        ax.annotate("", (x, -0.32), (x, 0.38), arrowprops=arrow)
+        ax.text(x + 0.08, 1.52, "W", fontsize=9)
+        if k < 2:
+            ax.annotate("", (xs[k + 1] - 0.97, 0.8), (x + 0.97, 0.8), arrowprops={**arrow, "color": BLUE, "lw": 1.5})
+            ax.text(x + 1.5, 0.95, "× α  (leak)", ha="center", fontsize=8, color=BLUE)
+            ax.annotate("", (xs[k + 1] - 0.97, 0.55), (x + 0.87, -0.55),
+                        arrowprops={**arrow, "color": ORANGE, "lw": 1, "ls": "--", "connectionstyle": "arc3,rad=-0.2"})
+            ax.text(x + 1.5, -0.35, "reset", ha="center", fontsize=8, color=ORANGE)
+    ax.annotate("", (-0.97, 0.8), (-1.8, 0.8), arrowprops={**arrow, "color": BLUE, "lw": 1.5})
+    ax.annotate("", (7.8, 0.8), (6.97, 0.8), arrowprops={**arrow, "color": BLUE, "lw": 1.5})
+    ax.text(-1.9, -1.55, "same weights W and α in every step → a recurrent network unrolled in time, "
+            "trained with backpropagation through time", fontsize=8.5)
+    ax.set_xlim(-2, 8)
+    ax.set_ylim(-1.7, 2.8)
+    ax.axis("off")
+    fig.tight_layout()
+    fig.savefig(OUT / "08_lif_unrolled.png")
+    plt.close(fig)
+
+
+def fig_surrogate():
+    u = np.linspace(-2, 2, 801)  # v - threshold, in units of the threshold
+    k = 5
+    fig, (ax_f, ax_b) = plt.subplots(1, 2, figsize=(9.5, 3.6))
+    ax_f.plot(u, (u >= 0).astype(float), color="k", lw=2)
+    ax_f.set_title("A: forward pass: the spike is a step", loc="left", fontsize=10)
+    ax_f.set_ylabel("spike output s = Θ(v − th)")
+    ax_b.plot(u, np.zeros_like(u), color="k", lw=2, label="true derivative: 0 everywhere\n(infinite at v = th)")
+    ax_b.annotate("", (0, 1.25), (0, 0), arrowprops={"arrowstyle": "-|>", "color": "k", "lw": 2})
+    ax_b.plot(u, 1 / (1 + k * np.abs(u)) ** 2, color=ORANGE, lw=2, label=f"surrogate: 1 / (1 + {k}·|v − th|)²")
+    ax_b.set_title("B: backward pass: replace the derivative", loc="left", fontsize=10)
+    ax_b.set_ylabel("ds / dv")
+    ax_b.set_ylim(-0.05, 1.35)
+    ax_b.legend(frameon=False, fontsize=8, loc="upper right")
+    for ax in (ax_f, ax_b):
+        ax.axvline(0, color=GREY, ls=":", lw=0.8)
+        ax.set_xlabel("v − threshold (units of the threshold)")
+    fig.tight_layout()
+    fig.savefig(OUT / "08_surrogate_gradient.png")
+    plt.close(fig)
+
+
+def fig_deployment():
+    """Schematic: one MNIST network (784 -> 128 -> 10) followed through the deployment path."""
+    fig, axes = plt.subplots(1, 5, figsize=(14, 4.6), gridspec_kw={"width_ratios": [1, 1, 1, 1.1, 1.2]})
+    arrow = {"arrowstyle": "-|>", "color": "0.3", "lw": 1, "shrinkA": 0, "shrinkB": 0}
+    rng = np.random.default_rng(7)
+    # 1 trained network with float weights
+    ax = axes[0]
+    layers = [5, 4, 3]
+    pos = [[(1.2 * x, 1.1 * (y - (n - 1) / 2)) for y in range(n)] for x, n in enumerate(layers)]
+    for a, b in zip(pos[:-1], pos[1:]):
+        for p_ in a:
+            for q in b:
+                wv = rng.normal()
+                ax.plot(*zip(p_, q), color=BLUE if wv > 0 else "#d62728", lw=0.4 + 1.2 * abs(wv) / 2, alpha=0.7)
+    for layer, name in zip(pos, ["784", "128", "10"]):
+        ax.scatter(*zip(*layer), s=90, color="white", edgecolors="k", zorder=3)
+        ax.text(layer[0][0], -3.0, name, ha="center", fontsize=8)
+    ax.text(1.2, -3.6, "neurons per layer", ha="center", fontsize=7, color=GREY)
+    ax.text(1.2, 3.0, "weights: float32, e.g. w = 0.137\nblue positive, red negative", ha="center", fontsize=8)
+    ax.set_xlim(-0.6, 3.0)
+    ax.set_ylim(-4, 3.8)
+    # 2 NIR graph
+    ax = axes[1]
+    nodes = ["Input (784)", "Affine  W₁: 784 × 128", "LIF  τ, threshold", "Affine  W₂: 128 × 10", "LIF  τ, threshold",
+             "Output (10)"]
+    for k, name in enumerate(nodes):
+        y = 3 - 1.25 * k
+        box(ax, (0, y), name, color="#d9ead3", w=2.4, h=0.7, fs=7.5)
+        if k < len(nodes) - 1:
+            ax.annotate("", (0, y - 0.9), (0, y - 0.35), arrowprops=arrow)
+    ax.set_xlim(-1.5, 1.5)
+    ax.set_ylim(-4, 3.8)
+    # 3 py-spinnaker2 objects
+    ax = axes[2]
+    pops = [("Population\nsize 784, spike_list", 2.4), ("Population\nsize 128, lif", 0), ("Population\nsize 10, lif", -2.4)]
+    for k, (name, y) in enumerate(pops):
+        box(ax, (0, y), name, color="#cfe2f3", w=2.4, h=0.95, fs=7.5)
+        if k < 2:
+            ax.annotate("", (0, y - 1.9), (0, y - 0.5), arrowprops=arrow)
+            ax.text(0.1, y - 1.2, f"Projection {k + 1}\n[pre, post, weight, delay]", fontsize=6.5, va="center")
+    ax.set_xlim(-1.5, 1.5)
+    ax.set_ylim(-4, 3.8)
+    # 4 mapping onto the chip: cores and integer weights
+    ax = axes[3]
+    rows, cols = 8, 19  # 152 processing elements, drawn as a grid
+    use = {0: BLUE, 1: BLUE, 2: BLUE, 3: BLUE, 4: GREEN, 5: ORANGE}
+    for k in range(rows * cols):
+        r, c = divmod(k, cols)
+        ax.add_patch(plt.Rectangle((c * 0.16, 2.4 - r * 0.36), 0.13, 0.3, color=use.get(k, "0.85")))
+    ax.text(1.5, 3.0, "152 cores (schematic allocation)", ha="center", fontsize=7.5)
+    for k, (label, color) in enumerate([("input: 4 cores", BLUE), ("hidden: 1 core", GREEN), ("output: 1 core", ORANGE)]):
+        ax.add_patch(plt.Rectangle((0.05, -0.75 - 0.45 * k), 0.13, 0.3, color=color))
+        ax.text(0.3, -0.6 - 0.45 * k, label, fontsize=7.5, va="center")
+    ax.text(1.5, -2.6, "weights → integers\n0.137 × scale → 4", ha="center", fontsize=8)
+    ax.text(1.5, -3.4, "(5 bit: −15 … 15, Figure 12)", ha="center", fontsize=7, color=GREY)
+    ax.set_xlim(-0.1, 3.1)
+    ax.set_ylim(-4, 3.8)
+    # 5 run: spikes in, spikes out
+    ax = axes[4]
+    lat = mnist_to_spike_list(mnist_digit())
+    t_in = np.array([t for (t,) in lat.values()])
+    idx = np.array(list(lat.keys()))
+    ax.plot(t_in, 3.5 - 2.2 * idx / 783, "|", color=GREY, ms=2)
+    ax.text(25, 3.65, "input: the digit of Figure 19", ha="center", fontsize=7.5)
+    for n in range(10):  # illustrative output spikes, class 7 wins
+        k = 12 if n == 7 else rng.integers(0, 3)
+        ax.plot(np.sort(rng.uniform(5, 50, k)), np.full(k, -0.8 - 0.28 * n), "|", color=ORANGE if n == 7 else "0.6", ms=4)
+        ax.text(-2, -0.8 - 0.28 * n, str(n), fontsize=6, ha="right", va="center")
+    ax.text(25, -0.35, "output neurons 0–9 (illustrative)", ha="center", fontsize=7.5)
+    ax.text(52, -0.8 - 0.28 * 7, "← most spikes:\n    prediction 7", fontsize=7.5, color=ORANGE, va="center")
+    ax.set_xlim(-5, 68)
+    ax.set_ylim(-4, 3.8)
+    titles = ["① train", "② export to NIR", "③ import with s2_nir", "④ map onto the chip", "⑤ run"]
+    subs = ["network with float weights", "hardware-independent graph", "py-spinnaker2 objects", "cores and integer weights",
+            "spikes in, spikes out"]
+    for ax, t, sub in zip(axes, titles, subs):
+        ax.set_title(f"{t}\n", loc="left", fontsize=11, fontweight="bold")
+        ax.text(0.0, 1.02, sub, transform=ax.transAxes, fontsize=8.5, color="0.3")
+        ax.axis("off")
+    fig.tight_layout(rect=(0, 0.12, 1, 1))
+    for a, b in zip(axes[:-1], axes[1:]):  # arrows between stages
+        y = 0.55
+        x0, x1 = a.get_position().x1, b.get_position().x0
+        fig.patches.append(plt.matplotlib.patches.FancyArrowPatch((x0 - 0.005, y), (x1 + 0.005, y), transform=fig.transFigure,
+                           arrowstyle="-|>", mutation_scale=18, color="0.4", lw=1.5))
+    for (a, b), label in [((0, 1), "workstation or GPU, any PyTorch SNN library"), ((2, 3), "host computer, py-spinnaker2"),
+                          ((4, 4), "SpiNNaker2 chip")]:
+        x0, x1 = axes[a].get_position().x0, axes[b].get_position().x1
+        fig.add_artist(plt.Line2D([x0, x0, x1, x1], [0.11, 0.08, 0.08, 0.11], color=GREY, lw=1, transform=fig.transFigure))
+        fig.text((x0 + x1) / 2, 0.04, label, ha="center", fontsize=9, color="0.35")
+    fig.savefig(OUT / "08_deployment_pipeline.png")
+    plt.close(fig)
+
+
+# Energy per operation in a 45 nm process, from M. Horowitz, "Computing's energy problem", ISSCC 2014
+# (doi:10.1109/ISSCC.2014.6757323). Absolute values are smaller in newer processes, the ratios are similar.
+HOROWITZ_PJ = {"8-bit integer add": 0.03, "32-bit integer add": 0.1, "32-bit float add": 0.9,
+               "8-bit integer multiply": 0.2, "32-bit float multiply": 3.7, "32-bit float MAC\n(multiply + add)": 4.6,
+               "SRAM read, 64 bit\n(8 KB, on chip)": 10, "DRAM read, 64 bit\n(off chip)": 1300}
+
+
+def fig_energy_ops():
+    names = list(HOROWITZ_PJ)
+    vals = np.array(list(HOROWITZ_PJ.values()))
+    colors = [GREEN, GREEN, GREEN, ORANGE, ORANGE, ORANGE, BLUE, "#d62728"]
+    fig, ax = plt.subplots(figsize=(8, 4.2))
+    y = np.arange(len(names))[::-1]
+    ax.barh(y, vals, color=colors, height=0.6)
+    for yy, v in zip(y, vals):
+        ax.text(v * 1.15, yy, f"{v:g} pJ", va="center", fontsize=8)
+    ax.set_yticks(y, names, fontsize=8)
+    ax.set_xscale("log")
+    ax.set_xlim(0.01, 30000)
+    ax.set_xlabel("energy per operation (pJ, logarithmic scale)")
+    ax.set_title("Energy per operation, 45 nm process (Horowitz 2014)", loc="left", fontsize=10)
+    handles = [plt.matplotlib.patches.Patch(color=c, label=l) for l, c in [
+        ("additions (what a spike costs at a synapse)", GREEN), ("multiplications / MAC (ANN layers)", ORANGE),
+        ("on-chip memory access", BLUE), ("off-chip memory access", "#d62728")]]
+    ax.legend(handles=handles, frameon=False, fontsize=8, loc="upper right")
+    fig.tight_layout()
+    fig.savefig(OUT / "09_energy_per_operation.png")
+    plt.close(fig)
+
+
+def fig_energy_breakeven():
+    """Synaptic operations only: ANN = one MAC per connection, SNN = one addition per spike and connection."""
+    e_mac, e_add = HOROWITZ_PJ["32-bit float MAC\n(multiply + add)"], HOROWITZ_PJ["32-bit float add"]
+    spikes = np.logspace(-2, np.log10(400), 400)  # average spikes per neuron and inference
+    ratio = spikes * e_add / e_mac
+    breakeven = e_mac / e_add
+    fig, ax = plt.subplots(figsize=(7.5, 4.2))
+    ax.plot(spikes, ratio, color="k", lw=2)
+    ax.axhline(1, color=GREY, ls="--", lw=1)
+    ax.axvline(breakeven, color=GREY, ls=":", lw=1)
+    ax.fill_between(spikes, 1e-3, 1, color=GREEN, alpha=0.12)
+    ax.fill_between(spikes, 1, 1e3, color="#d62728", alpha=0.08)
+    ax.text(0.012, 0.3, "SNN needs less energy", fontsize=9, color=GREEN)
+    ax.text(0.012, 3, "SNN needs more energy", fontsize=9, color="#d62728")
+    ax.text(breakeven * 1.1, 0.0025, f"break-even:\n≈ {breakeven:.0f} spikes per neuron", fontsize=8, color="0.3")
+    for x, label, off in [(116 / 784, "latency coding, MNIST input\n(Figure 19): 0.15 spikes", (2.5, 0.08)),
+                          (619 / 784, "rate coding, 50 steps, MNIST\ninput (Figure 19): 0.8 spikes", (2.5, 0.08)),
+                          (0.1 * 1000, "rate coding, 10 % precision\n(Figure 18): 100 spikes", (0.06, 5))]:
+        y = x * e_add / e_mac
+        ax.plot(x, y, "o", color=ORANGE, mec="k", ms=7, zorder=5)
+        ax.annotate(label, (x, y), (x * off[0], y * off[1]), fontsize=7.5, arrowprops={"arrowstyle": "->", "color": "0.3"})
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlim(0.01, 400)
+    ax.set_ylim(1e-3, 1e3)
+    ax.set_xlabel("average number of spikes per neuron and inference")
+    ax.set_ylabel("estimated energy of synaptic\noperations, SNN relative to ANN")
+    ax.set_title("When does an SNN save energy? ESTIMATE from a simple model, not a measurement", loc="left", fontsize=10)
+    ax.text(0.015, 0.97, "assumptions: energy per operation from Horowitz 2014 (Figure 25),\n"
+            "32-bit float MAC (ANN) vs. 32-bit float addition per spike (SNN),\n"
+            "only synaptic operations counted: no neuron updates,\nno memory access, no communication",
+            transform=ax.transAxes, ha="left", va="top", fontsize=7, color="0.25",
+            bbox={"boxstyle": "round,pad=0.3", "fc": "white", "ec": "0.6"})
+    fig.tight_layout()
+    fig.savefig(OUT / "09_energy_breakeven.png")
+    plt.close(fig)
+
+
 def check():
     """Simulated LIF rates match the analytic formula used in the primer."""
     for ri in [1.2, 2.0, 3.0]:
@@ -877,6 +1219,11 @@ def check():
     # MNIST example: one latency spike per non-zero pixel, brightest pixels at t = 0
     lat = mnist_to_spike_list(mnist_digit())
     assert len(lat) == (mnist_digit() > 0).sum() == 116 and min(t for (t,) in lat.values()) == 0
+    # clustered network: several different clusters take turns being the most active one
+    sp, _, cl, ne = clustered_network()
+    rates, _ = cluster_rates(sp, cl, ne, 3000, bin_ms=100)
+    active = rates.max(0) > 20
+    assert len(set(rates.argmax(0)[active])) >= 3
     assert list(quantize(np.array([0.9, -0.9, 1.7, -1.7, 20, -20]), 1.0)) == [0, 0, 1, -1, 15, -15]
 
 
@@ -901,3 +1248,10 @@ if __name__ == "__main__":
     fig_coding()
     fig_rate_precision()
     fig_mnist()
+    fig_architectures()
+    fig_clustered()
+    fig_unrolled()
+    fig_surrogate()
+    fig_deployment()
+    fig_energy_ops()
+    fig_energy_breakeven()
