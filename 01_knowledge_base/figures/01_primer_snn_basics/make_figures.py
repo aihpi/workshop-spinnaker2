@@ -1,4 +1,4 @@
-"""Figures for the primer, sections 2 to 5. Run: uv run --with numpy --with matplotlib --with schemdraw make_figures.py"""
+"""Figures for the primer, sections 2 to 6. Run: uv run --with numpy --with matplotlib --with schemdraw make_figures.py"""
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -663,6 +663,188 @@ def fig_qubo():
     fig.savefig(OUT / "05_qubo_maxcut.png")
 
 
+def poisson_spikes(p, steps, rng, t_ref=3):
+    """`poisson_process`: spike with probability p per step, then silent for t_ref steps (default Tref = 3)."""
+    spikes, last = [], -np.inf
+    for t in range(steps):
+        if t - last > t_ref and rng.random() < p:
+            spikes.append(t)
+            last = t
+    return np.array(spikes)
+
+
+def latency_spike(x, x_max, t_max):
+    """`spikes_from_array_latency_code`: t = t_max (x_max - x) / x_max, one spike per input.
+    Rounded down to a whole timestep (how the chip rounds is still to be checked)."""
+    return int(t_max * (x_max - x) / x_max)
+
+
+def fig_coding():
+    values = np.array([1.0, 0.75, 0.5, 0.25, 0.1])
+    steps, p_max, t_max, t_ref = 60, 0.25, 50, 3
+    rng = np.random.default_rng(2)
+    rows = np.arange(len(values))[::-1]
+    fig, axes = plt.subplots(2, 3, figsize=(10.5, 5.6), gridspec_kw={"width_ratios": [0.8, 2.2, 0.9]})
+    spikes = {"rate": [poisson_spikes(p_max * x, steps, rng, t_ref=t_ref) for x in values],
+              "latency": [np.array([latency_spike(x, 1.0, t_max)]) for x in values]}
+    # decoding: invert the encoders
+    r = np.array([len(sp) / steps for sp in spikes["rate"]])  # measured rate per step
+    decoded = {"rate": r / (1 - t_ref * r) / p_max,  # rate with refractory period: r = p / (1 + t_ref p)
+               "latency": np.array([1 - sp[0] / t_max for sp in spikes["latency"]])}
+    for row_axes, name, color, how, rule in [
+            (axes[0], "rate", BLUE, f"spike with probability p = {p_max} · x per step", "count spikes"),
+            (axes[1], "latency", ORANGE, f"one spike at t = t_max (1 − x), t_max = {t_max}", "x = 1 − t / t_max")]:
+        ax_in, ax_sp, ax_out = row_axes
+        ax_in.barh(rows, values, color=GREY, height=0.6)
+        ax_in.set_yticks(rows, [f"neuron {k + 1}" for k in range(len(values))])
+        ax_in.set_xlim(0, 1.25)
+        ax_in.set_xlabel("input value x\n(dimensionless)")
+        for sp, row in zip(spikes[name], rows):
+            ax_sp.vlines(sp, row - 0.3, row + 0.3, color=color, lw=1.8)
+        n = sum(len(sp) for sp in spikes[name])
+        ax_sp.set_yticks(rows, [])
+        ax_sp.set_ylim(rows.min() - 0.6, rows.max() + 0.6)
+        ax_sp.set_xlim(-1, steps)
+        ax_sp.set_xlabel(f"timestep t ({how})")
+        ax_sp.set_title(f"{name} coding: {n} spikes in total", loc="left", fontsize=10, color=color)
+        ax_out.barh(rows, decoded[name], color=color, height=0.6, alpha=0.8, label="decoded")
+        ax_out.plot(values, rows, "|", color="k", ms=16, mew=2, label="true input")
+        ax_out.set_yticks(rows, [])
+        ax_out.set_xlim(0, 1.25)
+        ax_out.set_xlabel(f"decoded value (dimensionless)\n{rule}")
+        ax_out.legend(frameon=False, fontsize=7, loc="lower right")
+    for ax, title in zip(axes[0], ["① input", "② encoded as spikes", "③ read back from the spikes"]):
+        ax.annotate(title, (0, 1.22), xycoords="axes fraction", fontsize=11, fontweight="bold")
+    fig.tight_layout(h_pad=2.5)
+    for row in (0, 1):  # arrows between the columns
+        for a, b in [(0, 1), (1, 2)]:
+            x0 = axes[row][a].get_position().x1
+            x1 = axes[row][b].get_position().x0
+            y = axes[row][a].get_position().y0 + axes[row][a].get_position().height / 2
+            fig.patches.append(plt.matplotlib.patches.FancyArrowPatch((x0 + 0.005, y), (x1 - 0.005, y),
+                               transform=fig.transFigure, arrowstyle="-|>", mutation_scale=15, color="0.4"))
+    fig.savefig(OUT / "06_rate_vs_latency.png")
+
+
+def fig_rate_precision():
+    rng = np.random.default_rng(4)
+    windows = np.array([10, 20, 50, 100, 200, 500, 1000, 2000])
+    p_true, reps = 0.1, 300
+    errs = []
+    for n in windows:
+        counts = np.array([len(poisson_spikes(p_true, n, rng, t_ref=0)) for _ in range(reps)])
+        errs.append(100 * counts.std() / counts.mean())
+    fig, ax = plt.subplots(figsize=(6.8, 4))
+    n_fine = np.logspace(1, np.log10(2000), 200)
+    ax.plot(n_fine, 100 * np.sqrt((1 - p_true) / (p_true * n_fine)), color=GREY, ls="--", lw=1,
+            label="theory: √((1 − p) / (p · N))")
+    ax.plot(windows, errs, "o", color=BLUE, ms=6, label=f"simulation ({reps} repetitions per N)")
+    for n, dy in [(100, 1.15), (1000, 1.15)]:
+        e = 100 * np.sqrt((1 - p_true) / (p_true * n))
+        ax.plot([n, n], [3, e], color=ORANGE, lw=0.8, ls=":")
+        ax.plot([8, n], [e, e], color=ORANGE, lw=0.8, ls=":")
+        ax.text(n * 1.08, e * dy, f"N = {n}: ≈ {e:.0f} % error", fontsize=8, color=ORANGE)
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ticks = [5, 10, 20, 50, 100]
+    ax.set_yticks(ticks, [f"{t} %" for t in ticks])
+    ax.set_xticks([10, 100, 1000], ["10", "100", "1000"])
+    ax.set_xlim(8, 2500)
+    ax.set_ylim(3, 130)
+    ax.set_xlabel("counting window N (timesteps)")
+    ax.set_ylabel("relative error of the value\nread from the spike count")
+    ax.set_title(f"How precisely can a rate-coded value be read? (spike probability p = {p_true} per step)",
+                 loc="left", fontsize=9)
+    top = ax.secondary_xaxis("top", functions=(lambda n: p_true * n, lambda k: k / p_true))
+    top.set_xlabel("expected number of spikes (p · N)", fontsize=8)
+    top.set_xticks([1, 10, 100], ["1", "10", "100"])
+    ax.legend(frameon=False, fontsize=8, loc="upper right")
+    fig.tight_layout()
+    fig.savefig(OUT / "06_rate_precision.png")
+
+
+def mnist_digit():
+    """First image of the MNIST test set (a 7), 28 x 28 pixels with values 0-255.
+    MNIST: Y. LeCun, C. Cortes, C. J. C. Burges, http://yann.lecun.com/exdb/mnist/ (CC BY-SA 3.0)."""
+    return np.load(OUT / "06_mnist_test0_digit7.npy")
+
+
+def mnist_to_spike_list(img, t_max=50):
+    """Latency coding on the host: one spike per non-zero pixel, brighter = earlier. Neuron index = 28 * row + column."""
+    return {i: [latency_spike(v, 255, t_max)] for i, v in enumerate(img.flatten().astype(float)) if v > 0}
+
+
+def fig_mnist():
+    img = mnist_digit()
+    t_max, steps, p_max = 50, 50, 0.25
+    lat = mnist_to_spike_list(img, t_max)
+    rng = np.random.default_rng(5)
+    rate = {i: poisson_spikes(p_max * v / 255, steps, rng) for i, v in enumerate(img.flatten().astype(float)) if v > 0}
+    # example pixel: the active pixel whose spike time is closest to the middle of the window
+    ex = min(lat, key=lambda i: abs(lat[i][0] - t_max / 2))
+    ex_r, ex_c = divmod(ex, 28)
+    RED = "#d62728"
+    fig = plt.figure(figsize=(10.5, 7.5))
+    gs = fig.add_gridspec(2, 2, height_ratios=[1, 1.15])
+    ax_img, ax_t, ax_l, ax_r = (fig.add_subplot(gs[k]) for k in [(0, 0), (0, 1), (1, 0), (1, 1)])
+    im = ax_img.imshow(img, cmap="gray", vmin=0, vmax=255)  # MNIST convention: 0 = black background, 255 = white stroke
+    ax_img.set_title("A: MNIST digit, 28 × 28 pixels", loc="left", fontsize=10)
+    fig.colorbar(im, ax=ax_img, label="pixel value (0–255)", shrink=0.85)
+    t_map = np.full(img.shape, np.nan)
+    for i, (t,) in lat.items():
+        t_map.flat[i] = t
+    ax_t.set_facecolor("0.8")  # pixels without a spike
+    im2 = ax_t.imshow(t_map, cmap="viridis", vmin=0, vmax=t_max)
+    ax_t.set_title("B: latency coding, spike time of each pixel", loc="left", fontsize=10)
+    fig.colorbar(im2, ax=ax_t, label="spike time (timestep)\ngrey = no spike (pixel value 0)", shrink=0.85)
+    for ax in (ax_img, ax_t):
+        ax.add_patch(plt.Rectangle((ex_c - 0.5, ex_r - 0.5), 1, 1, fill=False, ec=RED, lw=2))
+        ax.set_xlabel("pixel column")
+        ax.set_ylabel("pixel row")
+    box = {"boxstyle": "round,pad=0.2", "fc": "white", "ec": "none", "alpha": 0.9}
+    ax_img.annotate(f"example pixel\nrow {ex_r}, column {ex_c}\nvalue {img[ex_r, ex_c]}", (ex_c + 0.6, ex_r),
+                    (17.5, 24), fontsize=8, color=RED, bbox=box, arrowprops={"arrowstyle": "->", "color": RED})
+    ax_l.plot([t for (t,) in lat.values()], list(lat.keys()), "|", color=ORANGE, ms=6, mew=1.5)
+    ax_l.plot(lat[ex], [ex], "o", mfc="none", mec=RED, ms=10, mew=2)
+    ax_l.annotate(f"neuron 28 · {ex_r} + {ex_c} = {ex}\nspikes at t = {lat[ex][0]}", (lat[ex][0], ex), (lat[ex][0] + 4, ex + 190),
+                  fontsize=8, color=RED, bbox=box, arrowprops={"arrowstyle": "->", "color": RED})
+    ax_l.set_title(f"C: latency coding, {len(lat)} spikes", loc="left", fontsize=10)
+    # zoom on the image row of the example pixel: all 28 neurons of that row, most of them silent
+    lo, hi = 28 * ex_r, 28 * ex_r + 27
+    ins = ax_l.inset_axes([0.46, 0.77, 0.51, 0.12])  # fits into the silent region (neurons 0-190)
+    for i in range(lo, hi + 1):
+        ins.axhline(i, color="0.9", lw=0.6, zorder=0)
+    row_sp = {i: t for i, t in lat.items() if lo <= i <= hi}
+    ins.plot([t for (t,) in row_sp.values()], list(row_sp.keys()), "|", color=ORANGE, ms=7, mew=2)
+    ins.plot(lat[ex], [ex], "o", mfc="none", mec=RED, ms=8, mew=1.5)
+    ins.set_xlim(-1, steps + 1)
+    ins.set_ylim(hi + 0.5, lo - 0.5)
+    ins.set_yticks([lo, ex, hi], [f"{lo} (col 0)", f"{ex} (col {ex_c})", f"{hi} (col 27)"], fontsize=6)
+    ins.tick_params(axis="x", labelsize=6, top=True, labeltop=True, bottom=False, labelbottom=False)
+    ins.set_xlabel(f"zoom on image row {ex_r}: timestep t, only {len(row_sp)} of its 28 neurons fire", fontsize=6.5)
+    ins.xaxis.set_label_position("top")
+    ins.set_ylabel("neuron", fontsize=6)
+    ax_l.indicate_inset_zoom(ins, edgecolor="0.3")
+    n_rate = 0
+    for i, sp in rate.items():
+        ax_r.plot(sp, np.full(len(sp), i), "|", color=BLUE, ms=6, mew=1.2)
+        n_rate += len(sp)
+    ax_r.plot(rate[ex], np.full(len(rate[ex]), ex), "|", color=RED, ms=9, mew=2.5, zorder=5)
+    ax_r.set_title(f"D: rate coding (p = {p_max} · x / 255), {n_rate} spikes", loc="left", fontsize=10)
+    ax_r.annotate(f"neuron {ex}: {len(rate[ex])} spikes", (rate[ex][-1], ex), (rate[ex][-1] - 22, ex + 190), fontsize=8,
+                  color=RED, bbox=box, arrowprops={"arrowstyle": "->", "color": RED})
+    for ax in (ax_l, ax_r):
+        ax.set_xlim(-1, steps + 1)
+        ax.set_ylim(783, 0)  # neuron 0 = top-left pixel at the top, like the image
+        ax.set_xlabel("timestep t")
+        ax.set_ylabel("input neuron i\n(i = 28 · row + column)")
+        rows = ax.secondary_yaxis("right", functions=(lambda i: i / 28, lambda r: r * 28))
+        rows.set_ylabel("pixel row")
+        rows.set_yticks([0, 5, 10, 15, 20, 25])
+    fig.tight_layout()
+    fig.savefig(OUT / "06_mnist_encoding.png")
+
+
 def check():
     """Simulated LIF rates match the analytic formula used in the primer."""
     for ri in [1.2, 2.0, 3.0]:
@@ -688,6 +870,13 @@ def check():
     n, edges = maxcut_graph()
     best = max(cut_size([(k >> i) & 1 for i in range(n)], edges) for k in range(2**n))
     assert qubo_dynamics(n, edges)[1][-1] == best
+    # Poisson source without refractory period fires with rate p, latency code maps x_max to t = 0
+    rng = np.random.default_rng(0)
+    assert abs(len(poisson_spikes(0.2, 50_000, rng, t_ref=0)) / 50_000 - 0.2) < 0.01
+    assert latency_spike(1.0, 1.0, 50) == 0 and latency_spike(0.5, 1.0, 50) == 25
+    # MNIST example: one latency spike per non-zero pixel, brightest pixels at t = 0
+    lat = mnist_to_spike_list(mnist_digit())
+    assert len(lat) == (mnist_digit() > 0).sum() == 116 and min(t for (t,) in lat.values()) == 0
     assert list(quantize(np.array([0.9, -0.9, 1.7, -1.7, 20, -20]), 1.0)) == [0, 0, 1, -1, 15, -15]
 
 
@@ -709,3 +898,6 @@ if __name__ == "__main__":
     fig_izhikevich()
     fig_lif_prob()
     fig_qubo()
+    fig_coding()
+    fig_rate_precision()
+    fig_mnist()

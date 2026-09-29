@@ -546,14 +546,106 @@ The underlying idea, computing by relaxing into an energy minimum, is the same a
 
 ## 6. Getting data in and out
 
-The network speaks spikes, so data needs to be encoded:
+Inside the network, all information is carried by spikes. Data from outside (images, sensor values, audio) therefore has to be *encoded* into spikes, and the network's output *decoded* back into numbers.
 
-- **Rate coding** ([neural coding](https://en.wikipedia.org/wiki/Neural_coding)): a value becomes a firing rate. On the chip, the `poisson_process` model ([Poisson process](https://en.wikipedia.org/wiki/Poisson_point_process)) spikes with probability `p` per step. Robust, but needs many steps and spikes, so it costs time and energy.
-- **Latency coding:** a larger value means an earlier spike, $t = t_\text{max}(x_\text{max} - x)/x_\text{max}$ (`spikes_from_array_latency_code`). One spike per input, so very sparse.
-- **Explicit spike times:** `spike_list` with `{neuron_id: [t1, t2, ...]}`. Used in the tutorials.
-- **[Event cameras](https://en.wikipedia.org/wiki/Event_camera) (DVS)** produce spikes natively, which is why datasets like NMNIST and DVS Gesture are the standard neuromorphic benchmarks.
+<details>
+<summary><b>What is neural coding?</b> how information can be written into spikes</summary>
 
-Decoding the output: count spikes per output neuron (rate), take the first neuron to spike, or read the membrane potential of non-spiking output neurons (`record=["v_last"]`).
+<br>
+
+A spike is always the same all-or-nothing event, so a single spike carries almost no information on its own. The information lies in the *pattern* of spikes. The main ways of reading it ([neural coding](https://en.wikipedia.org/wiki/Neural_coding)):
+
+- **Rate coding:** how many spikes a neuron fires in a time window. Example: a bright pixel makes its input neuron fire often.
+- **Temporal coding:** *when* a neuron fires. This is an umbrella term: the information can lie in the time of the first spike, the intervals between spikes, or precise spike patterns. **Latency coding** is the simplest case: only the time of the first spike counts, e.g. a bright pixel makes its neuron fire early.
+- **Population coding:** *which* neurons are active together. A value is represented by the pattern across many neurons, e.g. each neuron responds best to a different direction of motion.
+
+The brain uses all of these, depending on the brain area and the task. On a chip, the choice is a design decision with a clear trade-off: rate codes are robust against noise but need many spikes (time and energy), temporal codes are sparse and fast but sensitive to precise timing.
+
+</details>
+
+<br>
+
+Encoders available on the chip, with the brightness $x \in [0, 1]$ of an image pixel as example input:
+
+- **Rate coding** (`poisson_process`): the brighter, the more often the neuron fires. In each step it fires with probability `p`, e.g. $p = 0.25\,x$ ([Poisson process](https://en.wikipedia.org/wiki/Poisson_point_process)). Robust, but reading the value back needs many steps and spikes (Figure 18).
+- **Latency coding** (`spikes_from_array_latency_code`): the brighter, the earlier the neuron fires, exactly once: $t = t_\text{max}(x_\text{max} - x)/x_\text{max}$, with $t_\text{max}$ the latest spike time and $x_\text{max}$ the largest input value. Very sparse, but sensitive to timing errors.
+- **Explicit spike times** (`spike_list`): the spike times are given directly, e.g. `{0: [1, 2, 3], 5: [20, 30]}` lets neuron 0 fire at steps 1–3 and neuron 5 at steps 20 and 30. Used in the tutorials and for data that already exists as spikes.
+- **[Event cameras](https://en.wikipedia.org/wiki/Event_camera) (DVS)** produce spike-like events themselves, so no encoding is needed. Datasets recorded with them, such as NMNIST and DVS Gesture, are the standard neuromorphic benchmarks.
+
+<details>
+<summary><b>Event cameras and neuromorphic datasets:</b> DVS, NMNIST and DVS Gesture</summary>
+
+<br>
+
+**Event cameras.** A conventional camera sends complete frames at a fixed rate, even if nothing in the image changes. An event camera, or dynamic vision sensor (DVS), works like a retina: each pixel works independently and reports only when its brightness *changes*. A change produces an *event* with the pixel position, a timestamp with microsecond resolution, and a polarity (brighter = ON, darker = OFF). A static scene produces almost no data, a moving edge produces a stream of events. This output is already a spike train, so it can be fed into an SNN without encoding: each pixel and polarity becomes one input neuron, and the events are collected into the chip's timesteps.
+
+**Standard datasets:**
+
+- **NMNIST** (Orchard et al. 2015): the MNIST handwritten digits, recorded with a DVS that moves in small saccades in front of a screen showing the digits. 34 × 34 pixels, 10 classes. The "hello world" of neuromorphic vision, and the dataset of the pre-trained NIR example in py-spinnaker2.
+- **DVS Gesture** (Amir et al. 2017, IBM): 11 hand and arm gestures (e.g. clapping, waving) of 29 people, recorded with a 128 × 128 DVS. Harder than NMNIST, because the information lies in the motion over time.
+
+</details>
+
+<br>
+
+
+![Rate coding vs. latency coding](figures/01_primer_snn_basics/06_rate_vs_latency.png)
+
+***Figure 17.** The full path from values to spikes and back, for rate coding (top) and latency coding (bottom). ① Five input neurons, each with a value to encode. ② The spikes each neuron produces, one tick per spike. Rate coding (`poisson_process`, $p = 0.25\,x$, 3 steps refractory period): larger values give more spikes on average, at random times. Latency coding (`spikes_from_array_latency_code`): one spike per neuron, and the larger the value, the earlier. ③ The values read back from the spikes (bars) compared with the true inputs (black lines). Rate coding recovers them only roughly after 60 steps: neuron 3 happened to fire more often than neuron 1, and its value is overestimated (Figure 18 shows how the error shrinks with longer windows). Latency coding recovers them almost exactly, with 5 spikes instead of 29. The price is that the network has to react to precise spike times.*
+
+<details>
+<summary><b>The cost of rate coding:</b> how many timesteps a precise value needs</summary>
+
+<br>
+
+A rate-coded value is read out by counting spikes in a window of $N$ timesteps. The count is random, so the decoded value has an error that shrinks only with the square root of the window length. A value that is 10 times more precise needs a 100 times longer window, and therefore 100 times more spikes and time.
+
+![Precision of rate coding](figures/01_primer_snn_basics/06_rate_precision.png)
+
+***Figure 18.** How precisely a value can be read from a rate-coded spike train. A `poisson_process` source fires with probability $p = 0.1$ per step, and the spikes are counted over a window of $N$ steps. Because the spikes are random, the count fluctuates from run to run. The plot shows the size of these fluctuations relative to the mean, i.e. the typical error of the value read from the count (dots: 300 simulated runs per window, dashed: theory). The error falls only with $1/\sqrt{N}$: 100 steps (about 10 spikes) give about 30 %, 1000 steps (about 100 spikes) about 9 %. A 10 times longer window, and 10 times more spikes, reduces the error only by a factor of about 3. The top axis shows the expected number of spikes: the error is roughly $1/\sqrt{\text{number of spikes}}$.*
+
+</details>
+
+<br>
+
+**Worked example: an MNIST digit.** An image of the [MNIST](https://en.wikipedia.org/wiki/MNIST_database) dataset has 28 × 28 = 784 pixels with values from 0 to 255. Each pixel becomes one input neuron, numbered row by row (neuron index = 28 · row + column). With latency coding computed on the host, the image turns into a `spike_list` population in a few lines:
+
+```python
+import numpy as np
+from spinnaker2 import snn
+
+img = ...                      # one MNIST image, shape (28, 28), values 0-255
+x = img.flatten()              # 784 values, neuron i = pixel i
+t_max = 50
+
+# one spike per non-zero pixel, brighter = earlier; black pixels (0) don't spike
+spike_times = {i: [int(t_max * (255 - v) / 255)] for i, v in enumerate(x) if v > 0}
+
+stim = snn.Population(size=784, neuron_model="spike_list", params=spike_times)
+```
+
+The built-in encoder does the same on the chip: `snn.Population(size=784, neuron_model="spikes_from_array_latency_code", params={"data": x.astype(np.uint16), "x_max": 255, "t_max": 50})`. The exact parameter format and how it treats pixels with value 0 are still to be checked.
+
+![Encoding an MNIST digit](figures/01_primer_snn_basics/06_mnist_encoding.png)
+
+***Figure 19.** An MNIST digit as spike input. A: the image, the first digit of the MNIST test set. B: latency coding assigns each pixel one spike time. The saturated core of the stroke (31 pixels with values of 251–255, about a quarter) spikes at step 0, the softer edges later. Black background pixels don't spike at all, so only 116 of the 784 input neurons are active. C: the same spikes as a raster, one row per input neuron, 116 spikes in total. The neurons are numbered row by row, so every 28 neurons form one image row (right axis), and the active band between neurons 200 and 750 is the part of the image covered by the digit. The 31 simultaneous spikes at step 0 merge into one vertical line. Neuron 0 is at the top, like pixel row 0 in the image, so the raster shows the digit the right way up. Inside the band, most neurons are silent too, but at this resolution neighbouring neurons are less than a screen pixel apart and the spike markers cover the gaps. The inset zooms in on image row 17 (neurons 476–503): only 3 of its 28 neurons fire, the others are black pixels. D: rate coding of the same image over 50 steps: 619 spikes, more than five times as many, and the value of each pixel can only be estimated roughly (Figure 18). Red: one example pixel followed through all panels (row 17, column 15, value 126 → neuron 28 · 17 + 15 = 491, one spike at step 25 with latency coding, 6 spikes with rate coding). In both codes, most input neurons stay silent because most of the image is background. This sparsity is exactly what event-driven hardware profits from.*
+
+**Decoding the output.** For a classification with one output neuron per class, three readouts are common: the neuron with the most spikes, the neuron that fires first, or the highest membrane potential of output neurons that don't spike at all (`record=["v_last"]`).
+<details>
+<summary><b>The three readouts in detail:</b> spike count, first spike, membrane potential</summary>
+
+<br>
+
+- **Spike count (rate decoding).** Count the spikes of each output neuron over the whole run, and the neuron with the most spikes wins. Robust and simple, but needs enough timesteps for the counts to differ clearly (Figure 18).
+- **First spike (time-to-first-spike).** The neuron that fires first wins, and the network can stop there. Very fast and sparse, since a decision can come after a few steps, but sensitive to noise. It pairs naturally with latency-coded inputs.
+- **Membrane potential.** The output neurons get a threshold so high that they never fire. Their $v$ then simply integrates the weighted input over time, like a leaky sum of evidence, and the largest $v$ at the end wins. This avoids the coarse steps of spike counts and is common for SNNs trained with surrogate gradients (section 8): $v$ is a smooth value that a loss function can use directly. In py-spinnaker2, `record=["v_last"]` records only the final value, which saves memory compared with `record=["v"]` for all steps.
+
+</details>
+
+<br>
+
+Besides these one-off runs, py-spinnaker2 can also stream spikes to and from the chip while it runs, e.g. for sensors or closed-loop control ([data streaming](https://spinnaker2.gitlab.io/py-spinnaker2/user_guide/data-streaming.html), tutorial 07).
+
 
 **Workshop:** 3 min. The rate vs latency trade-off ties directly into the energy story.
 
@@ -635,6 +727,7 @@ The saving depends on **sparsity**. With dense activity or many timesteps (rate 
 - [ ] Does the chip use fixed-point or floating-point for $v$ and `alpha_decay` (the ARM M4F has a floating-point unit)?
 - [ ] Which of these models does the Brian2 backend support?
 - [ ] `lif_prob`: what happens to $v$ when the neuron is above threshold but doesn't fire? And which step size does the chip's `izhikevich` model use?
+- [ ] `spikes_from_array_latency_code` and `poisson_process`: exact parameter format (can `p` be an array with one value per neuron?), rounding of spike times, and what happens for input value 0.
 - [ ] How does `s2_nir` map NIR neuron types (`LIF`, `CubaLIF`, `IF`) onto py-spinnaker2 models?
 - [ ] The docs list `*_no_delay_1024` as "5 bit, [-31, 31]", but 5 signed bits only cover [-16, 15]. Check the actual range.
 - [ ] **Validate the figures against the chip.** The chip-model figures are simulated with NumPy reimplementations of the documented update rules (`figures/01_primer_snn_basics/make_figures.py`), not with py-spinnaker2. Run the same inputs on the chip, record `v` and spikes, and compare:
@@ -647,5 +740,7 @@ The saving depends on **sparsity**. With dense activity or many timesteps (rate 
   - [ ] Figure 14 (`izhikevich`): firing patterns with the chip's step size
   - [ ] Figure 15 (`lif_prob`): behaviour of $v$ above threshold when the neuron doesn't fire
   - [ ] Figure 16 (`qubo_neuron`): compare with the QUBO Max-Cut example of py-spinnaker2, which uses the real spike-based coupling
+  - [ ] Figure 17 (`poisson_process`, `spikes_from_array_latency_code`): refractory period, mapping of values to spike times and rounding
+  - [ ] Figure 19 (MNIST): run the `spike_list` snippet and the built-in encoder on the same image and compare the spike times
 
   Mark each figure as verified in its caption once it matches, or fix the script.
