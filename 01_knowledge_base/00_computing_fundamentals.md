@@ -10,7 +10,9 @@ Each section ends with a line **Workshop:** saying what of it is taught in the w
 
 - [1. Computing basics](#1-computing-basics)
 - [2. The von Neumann architecture](#2-the-von-neumann-architecture)
+  - [The von Neumann bottleneck](#the-von-neumann-bottleneck)
 - [3. Memory hierarchy](#3-memory-hierarchy)
+  - [How caches fight the bottleneck](#how-caches-fight-the-bottleneck)
 - [4. Buses and communication](#4-buses-and-communication)
 - [5. CPU architectures: x86 and ARM](#5-cpu-architectures-x86-and-arm)
 - [6. Compilers and bare-metal programming](#6-compilers-and-bare-metal-programming)
