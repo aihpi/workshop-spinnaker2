@@ -6,6 +6,7 @@ Planning repository for a 3-hour hands-on SpiNNaker2 workshop (AISC, planned for
 
 - `01_knowledge_base/`: notes, sources and figures. The notes build on each other: `00_computing_fundamentals.md` (general computing), `01_primer_snn_basics.md` (neural computing), `02_hardware_energy.md` (SpiNNaker2 hardware and energy). Each topic lives in exactly one note; the others link to it. Tracked in git. Downloaded papers or other copyrighted raw material don't belong here, only links in `sources.md`.
 - `02_workshop_design/`: brief, outline, demo plans. Tracked in git.
+- `_local/`: gitignored working notes, e.g. dated handover plans for the next conversation (`_local/2026-09-30_plan_next_steps.md`). Read the newest plan there when starting a new session.
 - `01_knowledge_base/figures/<markdown file name>/` holds the figures of one markdown file together with the script that generates them (e.g. `figures/01_primer_snn_basics/make_figures.py`). Figure file names start with the section number. The scripts also check the numbers the figures show. Run with `uv run --with numpy --with matplotlib --with schemdraw make_figures.py` (no global installs). Regenerate figures through the script, never edit PNGs by hand.
 
 ## Writing conventions for markdown notes
