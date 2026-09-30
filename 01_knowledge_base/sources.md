@@ -24,8 +24,8 @@ The main software for the workshop. Python interface for running experiments on 
 | [Simulation options](https://spinnaker2.gitlab.io/py-spinnaker2/user_guide/snn-advanced.html) | Run configuration | todo |
 | [Logging](https://spinnaker2.gitlab.io/py-spinnaker2/user_guide/logging.html) | | todo |
 | [Diagnostic folder](https://spinnaker2.gitlab.io/py-spinnaker2/user_guide/diagnostic_folder.html) | | todo |
-| [Performance profiling](https://spinnaker2.gitlab.io/py-spinnaker2/user_guide/profiling.html) | Timing per core, useful for workshop demos | todo |
-| [Power measurement](https://spinnaker2.gitlab.io/py-spinnaker2/user_guide/power_measurement.html) | Energy numbers, likely a workshop highlight | todo |
+| [Performance profiling](https://spinnaker2.gitlab.io/py-spinnaker2/user_guide/profiling.html) | Timing per core, useful for workshop demos | read |
+| [Power measurement](https://spinnaker2.gitlab.io/py-spinnaker2/user_guide/power_measurement.html) | Energy numbers, likely a workshop highlight | read |
 | [Brian2 backend](https://spinnaker2.gitlab.io/py-spinnaker2/user_guide/brian2.html) | Simulator without chips, fallback for the workshop: check which features it supports | todo |
 | [Data streaming](https://spinnaker2.gitlab.io/py-spinnaker2/user_guide/data-streaming.html) | Real-time I/O | todo |
 | [NIR](https://spinnaker2.gitlab.io/py-spinnaker2/user_guide/qs-nir.html) | Import models trained elsewhere | todo |
@@ -38,9 +38,9 @@ The main software for the workshop. Python interface for running experiments on 
 | [01 Core concepts](https://spinnaker2.gitlab.io/py-spinnaker2/tutorials/deep_dive/01_core_concepts.html) | | todo |
 | [02 Connectivity](https://spinnaker2.gitlab.io/py-spinnaker2/tutorials/deep_dive/02_connectivity.html) | | todo |
 | [03 Convolutional layers](https://spinnaker2.gitlab.io/py-spinnaker2/tutorials/deep_dive/03_lif_conv2d.html) | | todo |
-| [04 Hardware allocation](https://spinnaker2.gitlab.io/py-spinnaker2/tutorials/deep_dive/04_hardware_allocation.html) | | todo |
+| [04 Hardware allocation](https://spinnaker2.gitlab.io/py-spinnaker2/tutorials/deep_dive/04_hardware_allocation.html) | | skim |
 | [05 Debugging and output](https://spinnaker2.gitlab.io/py-spinnaker2/tutorials/deep_dive/05_debugging.html) | | todo |
-| [06 Hardware architecture](https://spinnaker2.gitlab.io/py-spinnaker2/tutorials/deep_dive/06_hardware_architecture.html) | | todo |
+| [06 Hardware architecture](https://spinnaker2.gitlab.io/py-spinnaker2/tutorials/deep_dive/06_hardware_architecture.html) | | read |
 | [07 Real-time spike streaming](https://spinnaker2.gitlab.io/py-spinnaker2/tutorials/deep_dive/07_streaming.html) | | todo |
 | [08 NIR workflow](https://spinnaker2.gitlab.io/py-spinnaker2/tutorials/deep_dive/08_nir.html) | | todo |
 | [09 Custom neuron models](https://spinnaker2.gitlab.io/py-spinnaker2/tutorials/deep_dive/09_custom-neuron-models_basics.html) | | todo |
@@ -61,7 +61,7 @@ The main software for the workshop. Python interface for running experiments on 
 |---|---|---|
 | [Hardware allocation](https://spinnaker2.gitlab.io/py-spinnaker2/advanced_topic/hardware-allocation.html) | Mapping networks to cores | todo |
 | [Execution workflow](https://spinnaker2.gitlab.io/py-spinnaker2/advanced_topic/execution_workflow/index.html): [setup](https://spinnaker2.gitlab.io/py-spinnaker2/advanced_topic/execution_workflow/run-walkthrough-1.html), [chip-side](https://spinnaker2.gitlab.io/py-spinnaker2/advanced_topic/execution_workflow/run-walkthrough-2.html), [results](https://spinnaker2.gitlab.io/py-spinnaker2/advanced_topic/execution_workflow/run-walkthrough-3.html) | What happens during `run()` | todo |
-| [Memory](https://spinnaker2.gitlab.io/py-spinnaker2/advanced_topic/memory/index.html): [structure](https://spinnaker2.gitlab.io/py-spinnaker2/advanced_topic/memory/memory-structure.html), [allocation](https://spinnaker2.gitlab.io/py-spinnaker2/advanced_topic/memory/memory-allocation.html), [visualisation](https://spinnaker2.gitlab.io/py-spinnaker2/advanced_topic/memory/memory-visualization.html) | Memory limits per core | todo |
+| [Memory](https://spinnaker2.gitlab.io/py-spinnaker2/advanced_topic/memory/index.html): [structure](https://spinnaker2.gitlab.io/py-spinnaker2/advanced_topic/memory/memory-structure.html), [allocation](https://spinnaker2.gitlab.io/py-spinnaker2/advanced_topic/memory/memory-allocation.html), [visualisation](https://spinnaker2.gitlab.io/py-spinnaker2/advanced_topic/memory/memory-visualization.html) | Memory limits per core | skim |
 | [Custom neuron models](https://spinnaker2.gitlab.io/py-spinnaker2/advanced_topic/custom_model/index.html): [backend (C)](https://spinnaker2.gitlab.io/py-spinnaker2/advanced_topic/custom_model/custom-model-guide-hw.html), [frontend (Python)](https://spinnaker2.gitlab.io/py-spinnaker2/advanced_topic/custom_model/custom-model-guide-py.html), [state variables](https://spinnaker2.gitlab.io/py-spinnaker2/advanced_topic/custom_model/monitoring-state-variables.html), [32-bit synapses](https://spinnaker2.gitlab.io/py-spinnaker2/advanced_topic/custom_model/custom-model-guide-syn.html), [registration](https://spinnaker2.gitlab.io/py-spinnaker2/advanced_topic/custom_model/custom-model-registration.html) | Writing own models | todo |
 | [Experiment runner](https://spinnaker2.gitlab.io/py-spinnaker2/advanced_topic/experiment-runner.html) | Host-chip communication layer | todo |
 | [LIF Conv2d allocation rules](https://spinnaker2.gitlab.io/py-spinnaker2/advanced_topic/lifconv2d.html) | | todo |
@@ -93,7 +93,7 @@ The main software for the workshop. Python interface for running experiments on 
 
 | Source | What | Status |
 |---|---|---|
-| [Scholze et al. 2026, The SpiNNaker2 chip: a many-core platform for flexible and scalable brain-inspired computing](https://arxiv.org/abs/2607.24396) | Newest and most complete chip paper (152 PEs, ARM M4F, accelerators) | todo |
+| [Scholze et al. 2026, The SpiNNaker2 chip: a many-core platform for flexible and scalable brain-inspired computing](https://arxiv.org/abs/2607.24396) | Newest and most complete chip paper (152 PEs, ARM M4F, accelerators) | read (via summary, verify numbers) |
 | [Gonzalez et al. 2024, SpiNNaker2: A Large-Scale Neuromorphic System for Event-Based and Asynchronous Machine Learning](https://arxiv.org/abs/2401.04491) | System view, ML focus | todo |
 | [Höppner et al. 2021, The SpiNNaker 2 Processing Element Architecture for Hybrid Digital Neuromorphic Computing](https://arxiv.org/abs/2103.08392) | Processing element in detail (22nm FDSOI, DVFS, accelerators) | todo |
 | [Mayr, Höppner, Furber 2019, SpiNNaker 2: A 10 Million Core Processor System for Brain Simulation and Machine Learning](https://arxiv.org/abs/1911.02385) | Roadmap SpiNNaker1 to SpiNNaker2 | todo |

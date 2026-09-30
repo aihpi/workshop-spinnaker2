@@ -520,7 +520,9 @@ Weights trained as floating-point numbers therefore have to be mapped onto these
 
 $$E(x) = \sum_{i,j} Q_{ij}\, x_i x_j \tag{16}$$
 
-Many hard combinatorial problems can be written in this form: Max-Cut, graph colouring, scheduling, portfolio selection and, with penalty terms, the travelling salesman problem. Most are [NP-hard](https://en.wikipedia.org/wiki/NP-hardness), so in practice the goal is a good solution, not a guaranteed optimum. 
+**Reading the matrix $Q$.** Because $x_i^2 = x_i$ for binary variables, the diagonal entries $Q_{ii}$ act as a linear cost for switching $x_i$ on, and each off-diagonal entry $Q_{ij}$ is a cost that only arises when both $x_i$ and $x_j$ are 1. Positive entries penalise, negative entries reward. The off-diagonal part has the structure of a graph's adjacency matrix: variables are nodes, non-zero $Q_{ij}$ are edges.
+
+Many hard combinatorial problems can be written in this form: Max-Cut, graph colouring, scheduling, portfolio selection and, with penalty terms, the travelling salesman problem. For **Max-Cut**, the edge between nodes $i$ and $j$ is cut exactly when $x_i \neq x_j$, i.e. when $x_i + x_j - 2x_i x_j = 1$. Maximising the number of cut edges, $\sum_{(i,j)} (x_i + x_j - 2x_i x_j)$, is the same as minimising its negative, which has the form of Eq. (16). Max-Cut appears in chip layout (partitioning circuits), community detection in networks, image segmentation and, in physics, as the ground state of spin glasses, and it is a standard benchmark for comparing classical, quantum and neuromorphic solvers. Most are [NP-hard](https://en.wikipedia.org/wiki/NP-hardness), so in practice the goal is a good solution, not a guaranteed optimum. 
 
 **Connection to physics.** In physics, binary variables are usually written as spins $s_i \in \{-1, +1\}$ (spin down or up) instead of $x_i \in \{0, 1\}$. The substitution $x_i = (s_i + 1)/2$ maps $x_i = 0$ to $s_i = -1$ and $x_i = 1$ to $s_i = +1$. Inserted into Eq. (16), it turns $E$ into the energy of the [Ising model](https://en.wikipedia.org/wiki/Ising_model), $E = \sum_{i,j} J_{ij}\, s_i s_j + \sum_i h_i\, s_i + \text{const}$, with couplings $J_{ij} = Q_{ij}/4$ and local fields $h_i$ given by sums over $Q$. Minimising $E$ therefore means finding the lowest-energy spin configuration (the ground state) of a [spin glass](https://en.wikipedia.org/wiki/Spin_glass), and methods from statistical physics such as annealing apply directly.
 
@@ -717,10 +719,25 @@ The result is **competition**. A cluster that becomes active excites itself, and
 
 The bridge for an ML audience:
 
+<details>
+<summary><b>Terms:</b> ANN, DNN, SNN</summary>
+
+<br>
+
+- **ANN (artificial neural network):** the umbrella term for any network of artificial neurons with weighted connections.
+- **DNN (deep neural network):** an ANN with several hidden layers, continuous-valued activations, trained with backpropagation. The basis of modern deep learning: CNNs, Transformers, language models.
+- **SNN (spiking neural network):** an ANN whose neurons communicate with discrete, timed spikes instead of continuous values.
+
+DNNs and SNNs are two branches of the same family, distinguished by how neurons communicate. There is no strict threshold for "deep"; in practice it means a few hidden layers or more.
+
+</details>
+
+<br>
+
 - **An LIF neuron is a recurrent cell.** $v[t] = \alpha v[t-1] + W x[t]$ with a binary output $s[t] = \Theta(v[t] - \text{th})$ is a leaky RNN with a step-function activation. A [spiking neural network](https://en.wikipedia.org/wiki/Spiking_neural_network) is an [RNN](https://en.wikipedia.org/wiki/Recurrent_neural_network) with binary, sparse communication.
-- **Training problem:** the step function $\Theta$ has zero derivative almost everywhere. **Surrogate gradients** solve this: use $\Theta$ in the forward pass and a smooth function (e.g. a fast sigmoid) in the backward pass, then train with [backpropagation through time](https://en.wikipedia.org/wiki/Backpropagation_through_time). Libraries: snnTorch, Norse, and others, all on top of PyTorch.
+- **Training problem:** the step function $\Theta$ has zero derivative almost everywhere. **Surrogate gradients** solve this: use $\Theta$ in the forward pass and a smooth function (e.g. a fast sigmoid) in the backward pass, then train with [backpropagation through time](https://en.wikipedia.org/wiki/Backpropagation_through_time). Libraries: snnTorch, Norse, SpikingJelly and others, all on top of PyTorch.
 - **ANN-to-SNN conversion:** the firing rate of an IF neuron with reset by subtraction approximates ReLU. So a trained ANN can be converted by replacing ReLUs with spiking neurons, at the cost of many timesteps (details in section 2.5, "Why the ReLU shape matters").
-- **Deployment:** the trained model is exported to **NIR** and imported with py-spinnaker2's `s2_nir`. Weights are quantised to the chip's integer ranges (section 4), and quantisation-aware training helps (see the DVS gesture paper in `00_sources.md`).
+- **Deployment:** the trained model is exported to **NIR** and imported with py-spinnaker2's `s2_nir`. Weights are quantised to the chip's integer ranges (section 4), and quantisation-aware training helps (see the DVS gesture paper in `sources.md`).
 
 ![An LIF neuron unrolled in time](figures/01_primer_snn_basics/08_lif_unrolled.png)
 
@@ -756,7 +773,7 @@ The bridge for an ML audience:
 
 ***Figure 25.** Energy of basic operations in a 45 nm chip process, a widely used reference. Newer processes need less energy per operation, but the ratios are similar. Two things matter for neuromorphic hardware: an addition, which is what a spike costs at a synapse, is several times cheaper than a multiply-accumulate (MAC), the basic operation of an ANN layer. And reading data from off-chip DRAM costs about 100 times more than reading it from on-chip SRAM, and more than 1000 times more than a 32-bit addition. Keeping the weights in local SRAM next to each core (as on SpiNNaker2) avoids the most expensive item on the list. **Source:** Reported data: [Horowitz (ISSCC 2014)](https://doi.org/10.1109/ISSCC.2014.6757323), 45 nm process.*
 
-The saving depends on **sparsity**. With dense activity or many timesteps (rate coding), the advantage shrinks or disappears. Claims like "18× more efficient than GPUs" are workload-dependent, and an ML audience will ask how they were measured. The workshop should therefore show its own measurement (power measurement in py-spinnaker2) rather than quote marketing numbers. Details go into the hardware notes.
+The saving depends on **sparsity**. With dense activity or many timesteps (rate coding), the advantage shrinks or disappears. Claims like "18× more efficient than GPUs" are workload-dependent, and an ML audience will ask how they were measured. The workshop should therefore show its own measurement (power measurement in py-spinnaker2) rather than quote marketing numbers. The reported numbers, including where the "18×" comes from, are in `02_hardware_energy.md`, section 8.
 
 ![When an SNN saves energy](figures/01_primer_snn_basics/09_energy_breakeven.png)
 

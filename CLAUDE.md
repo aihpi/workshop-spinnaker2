@@ -4,7 +4,7 @@ Planning repository for a 3-hour hands-on SpiNNaker2 workshop (AISC, planned for
 
 ## Structure
 
-- `01_knowledge_base/`: notes, sources and figures. Tracked in git. Downloaded papers or other copyrighted raw material don't belong here, only links in `00_sources.md`.
+- `01_knowledge_base/`: notes, sources and figures. The notes build on each other: `00_computing_fundamentals.md` (general computing), `01_primer_snn_basics.md` (neural computing), `02_hardware_energy.md` (SpiNNaker2 hardware and energy). Each topic lives in exactly one note; the others link to it. Tracked in git. Downloaded papers or other copyrighted raw material don't belong here, only links in `sources.md`.
 - `02_workshop_design/`: brief, outline, demo plans. Tracked in git.
 - `01_knowledge_base/figures/<markdown file name>/` holds the figures of one markdown file together with the script that generates them (e.g. `figures/01_primer_snn_basics/make_figures.py`). Figure file names start with the section number. The scripts also check the numbers the figures show. Run with `uv run --with numpy --with matplotlib --with schemdraw make_figures.py` (no global installs). Regenerate figures through the script, never edit PNGs by hand.
 
@@ -12,7 +12,7 @@ Planning repository for a 3-hour hands-on SpiNNaker2 workshop (AISC, planned for
 
 The notes serve three purposes: learning material, preparation for workshop slides, and a wiki inside the repo.
 
-- **File names** start with a two-digit number (`01_`, `02_`, …) or a date (`2026-09-28_`). `README.md`, `CHANGELOG.md` and `CLAUDE.md` are exempt.
+- **File names** start with a two-digit number (`01_`, `02_`, …) or a date (`2026-09-28_`). `README.md`, `CHANGELOG.md`, `CLAUDE.md` and `01_knowledge_base/sources.md` are exempt.
 - **Neutral tone.** Don't address the reader or a specific person ("you", "we should", "your background").
 - **Collapsible blocks** (`<details><summary>…</summary>`) for derivations, side topics and worked examples, so the main text stays lean. Leave a blank line after `</summary>` so markdown renders inside. Put `<br>` after every `</details>` (on its own line, after a blank line), otherwise the layout is too cramped.
 - **Equation numbers** on every display equation, numbered sequentially per file with `\tag{n}` inside `$$…$$`. Refer to them as "Eq. (n)". Renumber when inserting a new equation.
