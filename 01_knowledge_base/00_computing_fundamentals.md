@@ -1,6 +1,6 @@
 # Computing Fundamentals
 
-General computing concepts that the other notes build on: bits and cores, the von Neumann architecture and its bottleneck, the memory hierarchy, buses, CPU architectures, compilers and bare-metal programming, and a few practical shell basics. Background for readers without a computer engineering background. The neural computing basics are in `01_primer_snn_basics.md`, the SpiNNaker2 hardware in `02_hardware_energy.md`.
+General computing concepts that the other notes build on: bits and cores, the von Neumann architecture and its bottleneck, the memory hierarchy, buses, CPU architectures, and compilers and bare-metal programming. Background for readers without a computer engineering background. The neural computing basics are in `01_primer_snn_basics.md`, the SpiNNaker2 hardware in `02_hardware_energy.md`.
 
 Sources: standard computer architecture knowledge, written up from a learning conversation. Where terms relate to SpiNNaker2, they follow the chip paper (Scholze et al. 2026) and the [py-spinnaker2 documentation](https://spinnaker2.gitlab.io/py-spinnaker2/).
 
@@ -14,7 +14,6 @@ Each section ends with a line **Workshop:** saying what of it is taught in the w
 - [4. Buses and communication](#4-buses-and-communication)
 - [5. CPU architectures: x86 and ARM](#5-cpu-architectures-x86-and-arm)
 - [6. Compilers and bare-metal programming](#6-compilers-and-bare-metal-programming)
-- [7. Practical basics: shell scripts and connectivity checks](#7-practical-basics-shell-scripts-and-connectivity-checks)
 
 ## 1. Computing basics
 
@@ -25,6 +24,12 @@ The **CPU** (central processing unit) executes instructions. A **core** is one i
 A **chip** (integrated circuit) is a piece of silicon with etched circuits. A **microcontroller** is a small, self-contained chip that combines a CPU, memory and input/output, designed for embedded devices. The ARM Cortex-M4F cores of SpiNNaker2 are microcontroller-class processors.
 
 The **clock** is a timing signal, measured in hertz (Hz): a 3 GHz CPU performs three billion clock cycles per second. SpiNNaker2 cores run at a modest 150 or 300 MHz, trading the speed of a single core for parallelism and energy efficiency.
+
+**Example:** a MacBook Air with Apple M4 (2025) has a CPU with 10 cores: 4 performance cores (up to about 4.4 GHz) and 6 slower, more power-efficient efficiency cores. Next to it on the same chip sit a GPU with 8 or 10 cores and a Neural Engine with 16 cores for ML inference. A SpiNNaker2 chip has about 15 times as many cores (152), each running 15 to 30 times slower (150–300 MHz): many slow cores instead of a few fast ones.
+
+![What a core is](figures/00_computing_fundamentals/01_what_is_a_core.png)
+
+***Figure 1.** How cores relate to the von Neumann model of Figure 2A. A: a core is one independent processing engine. Its control unit, ALU and registers (dashed frame) are exactly what the von Neumann model calls the CPU. The L1 cache is a later addition that works around the von Neumann bottleneck (section 3). B: a laptop chip places several such cores on one chip. They share a cache and, over a bus, one main memory outside the chip: the von Neumann structure of Figure 2A, with several CPUs instead of one. The GPU and the Neural Engine are further processors with their own cores. C: a SpiNNaker2 chip instead has 152 small, slow cores, each with its own local memory, so the network doesn't run through a shared bus to a main memory: the distributed design of Figure 2B. **Source:** Diagram. Core counts from the manufacturers' specifications, sizes and positions schematic, not to scale.*
 
 **Workshop:** not taught, assumed background.
 
@@ -39,6 +44,10 @@ Instructions and data share one memory and one connection to the CPU, so only on
 The main alternative is the **Harvard architecture**, with separate memories and paths for instructions and data. Most modern CPUs use a "modified Harvard" design internally (separate caches for instructions and data) while presenting a single von Neumann memory to software.
 
 Neuromorphic chips like SpiNNaker2 attack the bottleneck differently: each core has its own local memory next to it, and there is no single shared memory for all cores (`02_hardware_energy.md`, section 3).
+
+![Von Neumann computer vs. distributed memory](figures/00_computing_fundamentals/02_von_neumann_vs_distributed.png)
+
+***Figure 2.** A: in a von Neumann computer, the CPU, the memory, input and output all share one bus. Instructions and data travel over it one transfer at a time, and further requests have to wait, so the speed of this single path limits the whole computer. B: in a distributed design like SpiNNaker2, every core has its own local memory right next to it (thick blue links), so most memory accesses stay local and don't compete with each other. Cores only exchange small messages through a router (thin green lines). **Source:** Diagram.*
 
 **Workshop:** 2 min in the motivation block, as the problem that neuromorphic hardware addresses.
 
@@ -63,9 +72,35 @@ Computers combine several kinds of memory, trading speed against capacity and co
 
 ### How caches fight the bottleneck
 
-Caches hide the von Neumann bottleneck, without removing it, by exploiting **locality**: programs reuse the same data (temporal locality) and access neighbouring addresses together (spatial locality). If 95 % of accesses hit the cache, the average access time is close to that of the cache rather than that of DRAM. Prefetchers watch the access pattern and load data before it is requested.
+A cache doesn't make main memory any faster. It keeps copies of recently used data close to the core, so that most requests never have to go to DRAM. Caches therefore *hide* the von Neumann bottleneck rather than remove it, and they only work as long as the core's next requests are predictable.
 
-This fails for workloads with poor locality, such as sparse graphs or large, sparsely connected neural networks, which access memory in unpredictable patterns. This is one reason why architectures like SpiNNaker2 distribute memory directly among the cores instead.
+**Locality.** Most programs make predictable requests in two ways:
+
+- **Temporal locality:** data that was just used is likely to be used again soon. Example: a loop counter, or the weights of a layer that are applied to many inputs in a row.
+- **Spatial locality:** data next to what was just used is likely to be needed next. Example: going through an array element by element. The cache therefore always loads a small block of neighbouring data at once (typically 64 bytes, a *cache line*), not just the single value that was asked for.
+
+On top of that, a **prefetcher** watches the pattern of requests. If the program reads element 1, 2, 3 of an array, it fetches 4, 5, 6 before they are requested.
+
+<details>
+<summary><b>Worked example:</b> why a 95 % hit rate is almost as good as 100 %</summary>
+
+<br>
+
+With an access time of 1 ns for the cache and 75 ns for DRAM (Figure 3): if 95 % of the requests find their data in the cache (a *hit*) and 5 % have to go to DRAM (a *miss*), the average access takes
+
+$$0.95 \times 1\ \text{ns} + 0.05 \times 75\ \text{ns} \approx 4.7\ \text{ns} \tag{1}$$
+
+That is 16 times faster than going to DRAM every time. But it also shows how sensitive this is: at an 80 % hit rate, the average rises to about 16 ns, and at 50 % to about 38 ns. A few misses already dominate the average.
+
+</details>
+
+<br>
+
+**When the trick fails.** Caches only help if the program's next request is predictable. Some workloads jump around in memory: a search through a large, sparse graph, or a large neural network in which each neuron is connected to a few, scattered other neurons. When a spike arrives, the weights needed for it can lie anywhere in memory. Neither locality nor the prefetcher helps, most requests miss the cache, and the CPU spends most of its time waiting for DRAM. This is one reason why SpiNNaker2 takes a different approach: instead of predicting which data to keep in a cache, each core has all the data for its own neurons permanently in its local memory (Figure 2B).
+
+![The memory hierarchy](figures/00_computing_fundamentals/03_memory_hierarchy.png)
+
+***Figure 3.** The levels of the table above, with capacity against access time. Each step down the hierarchy gives about 10 to 1000 times more capacity, at the price of slower access. Note the jump between the caches on the chip and DRAM off the chip. **Source:** Typical orders of magnitude from the table above, not measurements of a specific computer.*
 
 **Workshop:** not taught separately. The energy cost of memory access is in the primer (Figure 25).
 
@@ -75,7 +110,72 @@ A **bus** is a shared communication path, a bundle of wires plus a protocol, tha
 
 The **memory bus** connects the CPU with main memory. It is the physical form of the von Neumann bottleneck. Two properties matter: **bandwidth** (bytes per second) and **latency** (time per transfer). Buses are relieved by making them wider or faster, by giving CPUs several memory channels, and by caches, which reduce how often the bus is needed.
 
-Other buses in a computer are **PCIe** (CPU to GPUs, SSDs, network cards) and USB (external devices). Inside large chips, a **network-on-chip** replaces simple buses: a small packet-switched network in which many transfers can happen at the same time. SpiNNaker2 uses one (`02_hardware_energy.md`, section 4).
+Other buses in a computer are **PCIe** (CPU to GPUs, SSDs, network cards) and USB (external devices). Inside large chips, a **network-on-chip** (NoC) replaces the shared on-chip bus. Instead of one set of wires that all blocks take turns on, the blocks (cores, memory interfaces, router) are connected by many short links with small routers in between, so many transfers can happen at the same time (Figure 4B). SpiNNaker2 uses one (`02_hardware_energy.md`, section 4).
+
+<details>
+<summary><b>Network-on-chip vs. PCIe:</b> two networks at different scales</summary>
+
+<br>
+
+A NoC is not an improvement over PCIe, it solves the same problem at a different scale. Both send data as packets over point-to-point links, and both consist of physical wires, but of very different kinds:
+
+| | Network-on-chip | PCIe |
+|---|---|---|
+| Connects | blocks on the same piece of silicon (cores, memory interfaces, router) | separate chips (CPU, GPU, SSD, network card) |
+| Wires | metal wires in the chip's own wiring layers | copper traces on the circuit board, connectors |
+| Distance | millimetres | centimetres |
+| Improves on | a shared bus inside the chip | the older shared PCI bus between chips |
+
+The main advantage of staying on the chip is cost: short on-chip wires need much less energy and time per bit than a trip to another chip, which has to drive long board traces and pass through the chip's input/output circuits. This is the same reason why on-chip SRAM is cheaper to access than off-chip DRAM (primer, Figure 25), and why SpiNNaker2 keeps as much communication as possible on the chip: spikes between cores on the same chip only travel through the NoC, and only spikes to other chips use the slower chip-to-chip links.
+
+</details>
+
+<br>
+
+<details>
+<summary><b>PCIe:</b> how GPUs, SSDs and network cards are connected</summary>
+
+<br>
+
+[PCI Express](https://en.wikipedia.org/wiki/PCI_Express) (PCIe) connects the CPU with expansion devices such as GPUs, SSDs and network cards. Despite the name, it isn't a shared bus any more: every device has its own **point-to-point link** to the CPU (or to a switch), so devices don't compete for the same wires.
+
+- **Lanes.** A link consists of 1, 4, 8 or 16 *lanes* (written x1, x4, x8, x16). Each lane has one wire pair per direction, so data can flow both ways at the same time. A GPU typically uses x16, an SSD x4.
+- **Serial transmission.** Each lane sends bits one after another at very high speed instead of many bits in parallel, for the same reason as the chip-to-chip links of SpiNNaker2: many parallel wires are hard to keep synchronised over longer distances (SerDes, `02_hardware_energy.md`, section 4).
+- **Packets.** Data travels in packets with an address and a checksum, much like in a small network.
+- **Generations.** Each generation roughly doubles the speed per lane: about 1 GB/s per lane and direction for PCIe 3.0, 2 GB/s for 4.0, 4 GB/s for 5.0 and 8 GB/s for 6.0. A PCIe 4.0 x16 link to a GPU therefore carries about 32 GB/s in each direction.
+
+**Why this matters for ML:** a GPU's own memory (HBM) delivers several TB/s, about 100 times more than the PCIe link through which data reaches the GPU. Moving data between CPU and GPU is therefore slow compared with computing on it, which is why training frameworks keep models and batches in GPU memory as much as possible. SpiNNaker2 boards are not connected via PCIe but via Ethernet (1 Gbit/s), which is enough because only the network description, the input spikes and the results have to be transferred.
+
+</details>
+
+<br>
+
+<details>
+<summary><b>Ethernet:</b> how separate computers are connected, compared with PCIe</summary>
+
+<br>
+
+[Ethernet](https://en.wikipedia.org/wiki/Ethernet) is the standard technology for connecting separate computers into a network. Data travels in *frames* that carry the address of the sender and the receiver (MAC addresses) and are forwarded by switches. Protocols such as IP, TCP and [UDP](https://en.wikipedia.org/wiki/User_Datagram_Protocol) run on top of it. Cables are copper (up to about 100 m) or optical fibre (kilometres). Typical speeds are 1 Gbit/s in offices and 10–400 Gbit/s in data centres.
+
+| | PCIe | Ethernet |
+|---|---|---|
+| Connects | chips inside one computer (CPU, GPU, SSD) | separate computers and devices |
+| Distance | centimetres, on the circuit board | metres to kilometres |
+| Speed | about 32 GB/s (PCIe 4.0 x16) | 1 Gbit/s ≈ 0.125 GB/s (office), up to 400 Gbit/s (data centre) |
+| Latency | below 1 µs | several µs to milliseconds, depending on the network |
+| Addressing | directly in the CPU's address space: the CPU reads and writes device memory almost like its own | network messages with IP addresses, handled by the network stack of the operating system |
+
+PCIe is much faster and more direct, but only works within one computer. Ethernet is slower, but works across distances and between many devices.
+
+**SpiNNaker2 boards** are connected to the host computer via 1 Gbit Ethernet, using UDP. A board is therefore a separate network device with its own IP address, which can be checked with ping or a UDP probe. The bandwidth is low compared with PCIe, but sufficient, because only the network description, the input spikes and the results travel between host and chip, while the computation happens on the chip. It becomes a limit when large amounts of data are streamed live between host and chip.
+
+</details>
+
+<br>
+
+![Shared bus vs. network-on-chip](figures/00_computing_fundamentals/04_bus_vs_noc.png)
+
+***Figure 4.** A: on a shared bus, all components are connected to the same wires, so only one transfer can take place at a time and the others have to wait. B: in a network-on-chip, blocks are connected by many short links, and several packets can travel between different blocks at the same time. **Source:** Diagram.*
 
 **Workshop:** not taught.
 
@@ -96,50 +196,14 @@ An **instruction set architecture** (ISA) is the vocabulary of instructions a CP
 
 A **compiler** translates source code (C, C++, Rust, …) into machine code for a specific CPU. The main phases are lexical analysis, parsing, semantic analysis, optimisation and code generation. Machine code is specific to an instruction set: a program compiled for x86 doesn't run on ARM without recompiling it or emulating the other architecture (as Apple's Rosetta 2 does).
 
-**Cross-compilation** means compiling on one architecture for another. It is essential for embedded systems: code is compiled on a laptop or server and runs on ARM Cortex-M4F cores. The chip software of SpiNNaker2 is written in C and compiled with a GCC toolchain for ARM (chip paper). py-spinnaker2 does this automatically for the neuron models, and the option `make_clean=True` of `hw.run` forces a rebuild.
+**Cross-compilation** means compiling on one architecture for another. It is essential for embedded systems: code is compiled on a laptop or server and runs on ARM Cortex-M4F cores. The chip software of SpiNNaker2 is written in C and compiled with a GCC toolchain for ARM (chip paper). Users of py-spinnaker2 don't write or compile this code themselves: they describe the network in Python, and py-spinnaker2 compiles the C code of the selected neuron models automatically (`make_clean=True` in `hw.run` forces a rebuild). C only has to be written for custom neuron models.
 
 **CMake** is a meta build tool: one `CMakeLists.txt` describes the project, and CMake generates the platform-specific build files (Makefiles, Ninja files, Visual Studio projects). It is widely used for C and C++ projects.
 
 **Bare-metal** programming means running code directly on the hardware, without an operating system in between: no file system, no scheduler, no drivers, but full control over the hardware and predictable timing. Each SpiNNaker2 core runs its neuron model as bare-metal C code. There is no Linux on the cores and no automatic memory management, which is why the memory of each core is laid out explicitly by py-spinnaker2 (`02_hardware_energy.md`, section 3).
 
+![Bare-metal and cross-compilation](figures/00_computing_fundamentals/06_bare_metal_cross_compilation.png)
+
+***Figure 5.** How a network gets onto the SpiNNaker2 cores. ① The user describes the network in Python with py-spinnaker2 and only selects the neuron model by name (here `lif`). The C code of the neuron models is part of py-spinnaker2, written once by its developers. Own C code is only needed for custom neuron models. ② On the host, py-spinnaker2 turns the Python description into network data (parameters, weights, routing tables), and a cross-compiler translates the C code of the model into machine code for the ARM cores. ③ py-spinnaker2 sends both to the board via Ethernet. ④ On the chip, each core runs the machine code directly on its hardware, without an operating system in between: a timer interrupt wakes it once per timestep, it updates its neurons and sends spikes, and then sleeps until the next interrupt. The software stacks show the difference: three layers on the host, two on a core. **Source:** Diagram. The code snippets are simplified and the machine code bytes are illustrative.*
+
 **Workshop:** not taught. Relevant for custom neuron models in C, which are an advanced topic.
-
-## 7. Practical basics: shell scripts and connectivity checks
-
-### Writing an executable script
-
-```bash
-cat > /path/to/script.sh <<'EOF'
-#!/bin/bash
-set -euo pipefail
-# ... contents ...
-EOF
-chmod +x /path/to/script.sh
-```
-
-- `cat > file <<'EOF' … EOF` is a **heredoc**: everything up to `EOF` is written into `file`. The quotes around `'EOF'` disable variable expansion, so the content is written literally.
-- `set -euo pipefail` is a strict mode: `-e` stops at the first error, `-u` treats undefined variables as errors, `-o pipefail` makes a pipeline fail if any of its commands fails.
-- `chmod +x` makes the file executable. Without it, `./script.sh` fails with "Permission denied", because files on Linux aren't executable by default. `bash script.sh` works without it.
-
-### A container setup for SpiNNaker2 development
-
-A setup script for a fresh environment typically:
-
-1. updates the package lists and installs basic tools (`curl`, `ca-certificates`, `git`, `build-essential`),
-2. runs SpiNNcloud's `libs_install.sh`, which installs SpiNNaker2-specific dependencies (presumably including the ARM cross-compiler and the Digilent Adept drivers),
-3. installs `cmake` and `pkg-config`,
-4. installs `uv`, a fast Python package and environment manager,
-5. checks each tool with `--version`.
-
-### Checking whether the boards are reachable
-
-- **Ping:** checks whether a board answers on the network at all (`ping -c 1 -W 2 <ip>` for each board address). Only works if the network doesn't block ICMP.
-- **UDP probe:** sends a small UDP packet to the port used by the board software (port 1800 in the setup scripts used so far) and waits for an answer. This checks that the board's software is actually running, not only that the network interface is up. A diagnostic variant reports the reason for a failure (send failed, timeout, receive failed).
-
-Ping answers "is the board on the network?", the UDP probe "is the board's service running?". Both together give the clearest picture.
-
-**Workshop:** not taught, but useful for preparing the cluster access.
-
-## To check on the cluster
-
-- [ ] Which port and protocol the SpiNNaker2 boards on the HPI cluster use for the UDP probe, and what `libs_install.sh` installs exactly.
