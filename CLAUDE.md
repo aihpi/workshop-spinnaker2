@@ -28,4 +28,5 @@ The notes serve three purposes: learning material, preparation for workshop slid
 
 - Chip-specific details (neuron models, parameter names, weight ranges) must match the py-spinnaker2 v0.8 docs: https://spinnaker2.gitlab.io/py-spinnaker2/
 - Anything not yet verified on the hardware goes into the "To check on the cluster" list of the relevant note.
+- In the text, claims that the sources read so far don't confirm are marked *(assumption, to check)* and listed in the note's "To check on the cluster" list. Sourced claims name their source in brackets, e.g. (py-spinnaker2, profiling) or (chip paper).
 - Every figure and number says where it comes from: measured on the chip, reported in a source (with citation), or estimated / simulated here. Estimates and illustrations are labelled as such in the figure itself and in its caption, together with their assumptions.

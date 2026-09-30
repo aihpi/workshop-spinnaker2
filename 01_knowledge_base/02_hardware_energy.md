@@ -14,7 +14,7 @@ Each section ends with a line **Workshop:** saying what of it is taught in the w
 - [4. Communication: spikes as packets](#4-communication-spikes-as-packets)
 - [5. From one chip to a supercomputer](#5-from-one-chip-to-a-supercomputer)
 - [6. Power management](#6-power-management)
-- [7. How large a network fits](#7-how-large-a-network-fits)
+- [7. Limits in practice: when a network doesn't fit](#7-limits-in-practice-when-a-network-doesnt-fit)
 - [8. Reported energy numbers](#8-reported-energy-numbers)
 - [9. Measuring on the chip](#9-measuring-on-the-chip)
 - [To check on the cluster](#to-check-on-the-cluster)
@@ -87,7 +87,9 @@ The ARM cores provide programmability (any neuron model, written in C), the spec
 
 ![How a PE spends its timesteps](figures/02_hardware_energy/02_pe_timestep.png)
 
-***Figure 4.** What a PE does over ten timesteps of 1 ms. A timer interrupt starts every step. The PE first processes the spikes that arrived (orange), then updates its neurons and sends their spikes (blue), and sleeps for the rest of the step (grey). The more spikes arrive, the longer the orange part. In a sparse network, the PE sleeps most of the time, which is where the energy saving of event-driven hardware comes from (section 6). If too many spikes arrive in one step (step 6), the work doesn't fit into the step and the next step starts late, a violated real-time deadline (section 7). **Source:** Illustration, spike counts and durations made up. From the sources: timer-driven timesteps and the measurement of the work per timestep and of deadline misses, where work that overruns extends into the following timesteps (py-spinnaker2 profiling). Assumed here: that the work per timestep grows with the number of incoming spikes, the split into spike processing and neuron update, and sleeping for the rest of the step. Not measured on the chip.*
+***Figure 4.** What a PE does over ten timesteps, here of 1 ms each, a common choice (the length of a timestep is configurable). A timer interrupt starts every step. The PE first processes the spikes that arrived (orange), then updates its neurons and sends their spikes (blue), and sleeps for the rest of the step (grey). The more spikes arrive, the longer the orange part. In a sparse network, the PE sleeps most of the time, which is where the energy saving of event-driven hardware comes from (section 6). If too many spikes arrive in one step (step 6), the work doesn't fit into the step and the next step starts late, a violated real-time deadline (section 7). **Source:** Illustration, spike counts and durations made up. From the sources: timer-driven timesteps and the measurement of the work per timestep and of deadline misses, where work that overruns extends into the following timesteps (py-spinnaker2 profiling). Assumed here: that the work per timestep grows with the number of incoming spikes, the split into spike processing and neuron update, and sleeping for the rest of the step. Not measured on the chip.*
+
+**Is a PE a neuron?** No. Each PE simulates many neurons, hundreds to about a thousand, in software. A closer analogy: a PE corresponds to a small local population of neurons, the router and links play the role of the long-range axons, and synapses are not hardware at all but entries in weight tables in the SRAM.
 
 **Workshop:** 1 min. The ARM core and SRAM matter for the hands-on parts; the accelerators only as an outlook.
 
@@ -100,11 +102,13 @@ The ARM cores provide programmability (any neuron model, written in C), the spec
 
 Keeping weights in the local SRAM of each PE is central to the energy argument: reading from on-chip SRAM costs about 100 times less energy than reading from external DRAM (primer, Figure 25). Each PE on its own is a small conventional computer, but there is no shared memory or bus for all PEs, so the system as a whole avoids the von Neumann bottleneck of conventional computers (`00_computing_fundamentals.md`, section 2). The price is capacity: 96 KB of data per PE is small, and memory, not compute, is usually what limits how many neurons and synapses fit on a PE (section 7).
 
-The chip paper specifies up to 4 GB per LPDDR4 interface, while tutorial 06 lists 2 GB for the boards used with py-spinnaker2. This is the difference between what the chip supports and what is installed on a board.
+The chip paper specifies up to 4 GB per LPDDR4 interface, while tutorial 06 lists 2 GB for the boards used with py-spinnaker2. The likely explanation is the difference between what the chip supports and what is installed on a board, but this is not confirmed (see the list at the end).
+
+Figure 5 makes this concrete with two example networks from the primer. The first is the **MNIST network** of primer sections 6 and 8 (Figures 19 and 24), which classifies handwritten digits: 784 input neurons (one per pixel of a 28 × 28 image), 128 hidden neurons and 10 output neurons (one per digit). Its *layer 1* is the set of connections from the inputs to the hidden neurons: with every input connected to every hidden neuron, that is 784 × 128 = 100,352 synapses. Its *layer 2* connects the hidden neurons to the outputs, 128 × 10 = 1,280 synapses. The second is the **clustered network** of primer section 7 (Figure 21), with 250 neurons and about 12,000 synapses.
 
 ![Memory of a PE and the trade-off between SRAM and DRAM](figures/02_hardware_energy/03_memory.png)
 
-***Figure 5.** A: the 128 KB of SRAM of one PE: about 32 KB for the code of the neuron model and about 96 KB for data, of which 4 KB are heap and stack. How the data part is divided between routing tables, synapses, neuron states and recordings depends on the network. B: the two memories of a chip. The local SRAM is about 15,000 times smaller than the DRAM next to the chip, but reading from it needs about 100 times less energy. **Source:** Sizes from the py-spinnaker2 documentation (memory structure, tutorial 06). Energy per read from Horowitz 2014 (45 nm, 8 KB SRAM and DRAM), as an order of magnitude, not measured on SpiNNaker2.*
+***Figure 5.** Why SpiNNaker2 keeps the data local, and what that costs. A: reading all weights of the first MNIST layer (primer Figure 24) once takes about 0.5 µJ from the local SRAM, but about 65 µJ from the DRAM next to the chip, 130 times more. Synapses are read whenever a spike arrives, so over many timesteps this difference adds up. B: the price is capacity. Each box is the data memory of one PE (about 92 KB after heap and stack). The first MNIST layer, with about 100,000 synapses, fills 5 PEs at 4 bytes per synapse, and still 2 PEs at 1 byte per synapse (dashed line). The clustered network (about 12,000 synapses) and the second MNIST layer each fit into one PE. Larger networks therefore have to be split across several PEs; how py-spinnaker2 does this is still to be checked (section 7). **Source:** Estimate computed here. Synapse counts from the example networks (for the clustered network, the expected number from its connection probabilities). The memory per synapse is assumed (1 to 4 bytes, 4 bytes in A), as the synapse format of py-spinnaker2 is not confirmed yet. Energy per 64-bit read from Horowitz 2014 (45 nm, 8 KB SRAM and DRAM), as an order of magnitude, not measured on SpiNNaker2. Memory sizes from the py-spinnaker2 documentation (memory structure, tutorial 06). Routing tables and recordings, which also need memory, are ignored.*
 
 <details>
 <summary><b>Memory layout of a PE:</b> what lives where in the 128 KB</summary>
@@ -134,7 +138,7 @@ A spike leaves its PE as a small **multicast packet**: it carries a 32-bit routi
 
 ![Multicast routing](figures/02_hardware_energy/04_multicast.png)
 
-***Figure 6.** A: when a neuron fires, its PE sends one packet with the neuron's key. The router looks up the key in its table and sends one copy to every PE and link that has target neurons for this sender. Each PE then delivers the spike to its own target neurons. B: without multicast, one spike to 1,000 target neurons would need 1,000 packets. With multicast, the firing PE sends a single packet, and the router makes one copy per target PE, here 10 if each PE holds 100 of the targets. **Source:** Diagram and computed illustration. Keys, table entries and the number of targets per PE are made up; the principle follows the chip paper (multicast packets with 32-bit keys, routing table with 16 K entries).*
+***Figure 6.** How one spike reaches many neurons. A: when a neuron fires, its PE sends a single packet with the neuron's key. The router looks up the key in its table and sends one copy to every PE and link that has target neurons for this sender, here 3 PEs and one link to a neighbouring chip. Inside each target PE, the packet is handed to its own target neurons through the synapse table (step ③ in Figure 3), without any further packets. In total, this spike costs 1 packet plus 4 copies, however many target neurons the 3 PEs hold (red box). The neighbouring chip may copy the packet further to its own PEs. B: the same count for two examples. A spike of an MNIST input neuron has 128 targets in the hidden layer. If layer 1 is split across 5 PEs as in Figure 5, multicast needs 1 packet plus 5 copies instead of 128 packets, about 21 times fewer. For a cortex-like neuron with 1,000 targets on 10 PEs, it is about 91 times fewer. Fewer packets mean less traffic in the network-on-chip and less energy per spike. **Source:** Diagram and computed illustration. Keys, table entries and the distribution of target neurons across PEs are made up or assumed; the principle follows the chip paper (multicast packets with 32-bit keys, routing table with 16 K entries).*
 
 In py-spinnaker2, every PE has an address such as `Chip_1_0_QPE_4_5_2`: chip coordinates (1, 0), QPE coordinates (4, 5), PE 2 within the quad.
 
@@ -163,6 +167,10 @@ In py-spinnaker2, every PE has an address such as `Chip_1_0_QPE_4_5_2`: chip coo
 | 48-node board | 48 | 7,296 (7,104 for applications) | `hardware.SpiNNcloud48NodeBoard()` |
 | SpiNNcloud system at TU Dresden | about 35,000 | about 5 million | eight racks |
 | Design limit | | 10 million | hexagonal chip grid |
+
+![Scale of SpiNNaker2 systems](figures/02_hardware_energy/05_scale.png)
+
+***Figure 7.** A: the number of processing elements, from one chip to the largest systems. One run on the HPI installation uses one 48-node board, 7,296 PEs. B: how many neurons that corresponds to, at about 150,000 neurons per chip, compared with the brains of a mouse and a human. Even the Dresden system reaches only a few percent of the neurons of a human brain, and far fewer of its synapses. **Source:** PE and chip counts reported (chip paper, py-spinnaker2 tutorial 06, section 5 for the HPI installation, whose board type is not confirmed). Neuron capacities estimated here from the paper's figure of about 150,000 neurons per chip (with a 1 ms timestep), which depends strongly on connectivity. Brain sizes: common estimates of about 70 million (mouse) and 86 billion (human) neurons.*
 
 **The HPI setup** (as of end of September 2026, from the vendor and from the boot log of a run):
 
@@ -196,37 +204,57 @@ The chip adapts its power to the load with **dynamic voltage and frequency scali
 
 ![Power per operating state](figures/02_hardware_energy/02_power_states.png)
 
-***Figure 7.** A: power of the 152 PEs of one chip, grouped by supply voltage. Voltage matters more than activity: all PEs sleeping at 0.8 V draw more power than all PEs working at 0.5 V, and working at 0.8 V and 300 MHz costs three times as much as at 0.5 V and 150 MHz, for twice the speed. Even sleeping PEs draw a considerable baseline, which has to be subtracted in energy measurements (section 9). B: energy per inference of an SNN that classifies DVS gestures (1 s of input), at a fixed low or high performance level (PL) and with automatic switching. Switching to the high level only when many spikes arrive saves 28 % compared with always running at the high level. That the fixed low level needs the most energy is reported but not yet explained here (see the list at the end). **Source:** Reported data, Scholze et al. 2026 (baseline power characterisation, CoreMark benchmark, DVS gesture experiment).*
+***Figure 8.** Why SpiNNaker2 adapts its performance level to the load. A: the power of the 152 PEs of one chip against the work they do per second, at the two performance levels. Each level combines a supply voltage with a clock frequency. At full load, the low level (150 MHz) does only half as much work as the high level (300 MHz), so its line ends in the middle. For the same work, the low level needs much less power: at half the maximum work, about 404 mW instead of about 885 mW. The cheapest strategy (green) is therefore to stay at the low level as long as it can keep up, and to switch to the high level only when more work is needed. Only the endpoints are measured (all PEs sleeping, all PEs at full load); the dotted lines assume that power grows linearly with the work. Even the sleeping chip draws a considerable baseline, which energy measurements have to subtract (section 9). B: this strategy in practice, for an SNN that classifies DVS gestures (1 s of input): automatic switching needs 28 % less energy than running at the high level all the time. That running at the low level all the time needs the most energy is reported, but not explained in the sources read so far (see section 6 and the list at the end). **Source:** Reported (Scholze et al. 2026, extracted from the paper text): the power of all PEs switched off, sleeping and at full load (CoreMark benchmark) at 0.5 V / 150 MHz and 0.8 V / 300 MHz; the DVS gesture energies per inference; the 28 % saving; that the automatic mode switches to the high level above a spike threshold. Computed or assumed here: the work axis (work per second assumed proportional to the clock frequency, since no benchmark scores are given), that sleeping means no work, the linear interpolation between the measured endpoints (including the 885 mW at half the maximum work), and the cheapest path (green), which is a conclusion from these assumptions, not a description of how the automatic mode in the paper is implemented.*
 
-In SNNs, the load changes with the spike rate. In the DVS gesture experiment of the paper, each PE switches to the high performance level only when it has received more spikes than a threshold, and otherwise stays at the low level. This saved 28 % energy compared with always running at the high level, while still processing in real time (Figure 7B).
+In SNNs, the load changes with the spike rate. In the DVS gesture experiment of the paper, each PE switches to the high performance level only when it has received more spikes than a threshold, and otherwise stays at the low level. This saved 28 % energy compared with always running at the high level, while still processing in real time (Figure 8B). Running at the low level all the time needed the most energy in this experiment, even though it needs the least power for a given amount of work (Figure 8A). The sources read so far don't explain this. One possible reason, not confirmed, is that at 150 MHz the chip can't keep up with the input in real time, so the run takes longer overall.
 
 **Workshop:** 2 min. Energy saving on this chip is not only "fewer spikes", but also "slow down when there is little to do".
 
-## 7. How large a network fits
+## 7. Limits in practice: when a network doesn't fit
 
-- **Per chip:** more than 150,000 neurons with a 1 ms timestep, according to the paper. The number depends strongly on connectivity, weight precision, recording and timestep, so it is an order of magnitude, not a guarantee.
-- **Per PE:** up to 12 million synaptic events per second in a sparse network with 1024 neurons (paper), i.e. 12,000 synaptic events per 1 ms timestep.
-- **Limits:** memory (all neuron parameters, states and weights must fit into the 96 KB of data SRAM) and time (all work of a timestep must be done before the next one starts).
+A network runs on the chip only if, on every PE, its data fits into the **memory** (about 92 KB after heap and stack, section 3 and Figure 5) and its work fits into one **timestep** (section 2 and Figure 4). If either budget is exceeded, the network has to be spread over more PEs. Claims marked *(assumption, to check)* are not confirmed by the sources read so far and are listed at the end.
 
-The **real-time constraint** is specific to neuromorphic hardware: the chip runs in lockstep with a timer, typically one timestep per millisecond. If a PE needs longer than one timestep for its neurons and incoming spikes, it misses the deadline. py-spinnaker2's profiling records this per timestep (section 9). A network that is too large or too active for its PEs therefore doesn't just run slower, it violates the timing. Spreading a population over more PEs reduces the work per PE.
+**Which budget is tight?** For the workshop networks, memory: the first MNIST layer already needs several PEs (Figure 5). The time budget is generous in comparison. The chip paper reports up to 12 million synaptic events per second per PE (about 12,000 per 1 ms timestep), while an MNIST image with latency coding causes only about 15,000 synaptic events in total, spread over 50 timesteps and several PEs (my estimate). The time budget matters for large, brain-like networks with thousands of synapses per neuron.
 
-**Is a PE a neuron?** No. Each PE simulates many neurons, hundreds to about a thousand, in software. A closer analogy: a PE corresponds to a small local population of neurons, the router and links play the role of the long-range axons, and synapses are not hardware at all but entries in weight tables in the SRAM.
+**How to notice that a budget is exceeded:**
 
-How many neurons py-spinnaker2 places on one PE by default for each neuron model isn't stated in the pages read so far (only the `*_1024` variants state 1024 neurons per core). To check.
+- **Time:** the profiling reports a deadline miss (`deadline_flag` > 0), and the work extends into the following timesteps (py-spinnaker2, profiling). Whether py-spinnaker2 also warns or stops the run is *(assumption, to check)*.
+- **Memory:** presumably py-spinnaker2 fails with an error when it maps the network onto the PEs, before the run starts *(assumption, to check)*.
 
-**Workshop:** 1 min, and relevant for hands-on 1 when participants scale up a network.
+**What helps:**
+
+- **Fewer neurons per PE:** less data and less work per PE, at the cost of more PEs. Whether and how the number of neurons per PE can be set is *(assumption, to check)* (tutorial 04, advanced topic "hardware allocation").
+- **Recording less:** only the final membrane potential (`record=["v_last"]`) instead of every timestep, or recording to DRAM with `record_on_dram=True` (py-spinnaker2, SNNs on SpiNNaker2).
+
+**Orders of magnitude.** The chip paper gives more than 150,000 neurons per chip at a 1 ms timestep, roughly 1000 neurons on each of the 152 PEs (my calculation). The `*_1024` variants of the neuron models are documented for 1024 neurons per PE (py-spinnaker2, neuron models); the default for the other models is *(assumption, to check)*. These numbers depend strongly on connectivity, weight precision, recording and activity, so they are orders of magnitude, not guarantees.
+
+**Workshop:** 2 min in hands-on 1, as a troubleshooting guide when participants make a network larger.
 
 ## 8. Reported energy numbers
 
 ![Reported energy comparisons](figures/02_hardware_energy/03_reported_energy.png)
 
-***Figure 8.** How much less energy SpiNNaker2 needs than other hardware, for the workloads the chip paper compares. For dense DNN layers (matrix operations), SpiNNaker2 at 150 MHz (2.77 TOPS/W) is about as efficient as an Nvidia Jetson Orin Nano and 1.4 times as efficient as a Coral Edge TPU. For an event-based language model (EGRU), which only computes when its units are active, SpiNNaker2 needs 65 mJ per inference and an Nvidia A100 GPU 1.19 J, a factor of 18. The workloads, the comparison devices and the measurement set-ups differ, so the bars only show the trend: the sparser the computation, the larger the advantage. **Source:** Reported data, Scholze et al. 2026, extracted from the paper text. Ratios computed here from the reported TOPS/W and energies.*
+***Figure 9.** How many times less energy SpiNNaker2 needs than other hardware, for the workloads the chip paper compares (dashed line: same energy). For dense DNN layers (matrix operations), SpiNNaker2 at 150 MHz (2.77 TOPS/W) is about as efficient as an Nvidia Jetson Orin Nano (1.0 ×) and 1.4 times as efficient as a Google Coral Edge TPU. For an event-based language model (EGRU), which only computes when its units are active, SpiNNaker2 needs 65 mJ per inference and an Nvidia A100 GPU 1.19 J, 18 times more. The workloads, the comparison devices and the measurement set-ups differ, so the bars only show the trend: the sparser the computation, the larger the advantage. **Source:** Reported data, Scholze et al. 2026, extracted from the paper text. Ratios computed here from the reported TOPS/W and energies.*
+
+<details>
+<summary><b>Dense vs. sparse workloads:</b> what the two groups in Figure 9 mean</summary>
+
+<br>
+
+- **Dense:** every weight takes part in every computation. In a fully connected or convolutional DNN layer, each output is the sum over *all* inputs multiplied by their weights, whether an input is large, small or zero. The hardware has to do all these multiply-accumulates, so there is no work to skip. GPUs and edge accelerators are built for exactly this, and a neuromorphic chip has no inherent advantage.
+- **Sparse, event-based:** only a small fraction of the units is active at any moment, and work is only done for the active ones. In an SNN, a synapse is only processed when a spike arrives; in the event-based language model of Figure 9 (EGRU, an event-based variant of the GRU recurrent network), a unit only sends an update when its state has changed enough. If only 10 % of the units are active, about 90 % of the work disappears. For example, only 116 of the 784 input neurons of an MNIST digit spike with latency coding (primer, Figure 19).
+
+"Sparse" here means sparse *activity* (few events per timestep). It is different from sparse *connectivity* (few synapses per neuron), which reduces memory rather than work. The energy advantage of event-driven hardware comes mainly from sparse activity (primer, section 9 and Figure 26).
+
+</details>
+
+<br>
 
 What the numbers say, and what they don't:
 
 - **Dense DNNs:** SpiNNaker2 is in the same range as dedicated edge accelerators (about 2–2.8 TOPS/W), not far ahead of them. For dense workloads there is no neuromorphic advantage, because every operation has to be computed anyway. The paper also notes that the limited DRAM bandwidth reduces practical utilisation.
 - **The "18 ×" claim:** SpiNNcloud advertises "18× higher energy efficiency than GPUs". The chip paper reports exactly this factor for one workload: an event-based language model that needs 65 mJ per inference on SpiNNaker2 and 1.19 J on an A100, a factor of 18.3. The advertised number therefore appears to come from this benchmark. It is a real measurement, but for one sparse, event-driven model, not a general property of the chip.
-- **SNN on the chip:** the DVS gesture network (5 layers, 7,859 neurons on 57 PEs, 92 % accuracy) needs 0.74–2.0 J per second of input, depending on the performance level (Figure 7B). The paper gives no GPU comparison for this workload.
+- **SNN on the chip:** the DVS gesture network (5 layers, 7,859 neurons on 57 PEs, 92 % accuracy) needs 0.74–2.0 J per second of input, depending on the performance level (Figure 8B). The paper gives no GPU comparison for this workload.
 - **No energy per synaptic event:** the paper reports energy per inference or per layer, but no pJ per synaptic operation. Comparisons at the level of single operations, as in primer Figure 26, therefore rest on estimates.
 
 The general lesson, which matches primer section 9: the advantage is large where activity is sparse and event-driven, and small or absent for dense computation. This is the message to show with an own measurement rather than with a marketing number.
@@ -245,7 +273,7 @@ hw.run(net, timesteps, record_power=True, live_power=True)   # additionally show
 - **What is measured:** power samples per measurement channel in watts, plus their sum (`total`). Which rails the channels correspond to isn't stated in the documentation.
 - **Sampling:** every 0.1 s on the single-chip board, every 0.2 s on the 48-node board.
 - **Output:** `power.parquet` (time, channels, total, markers for phases such as the start and end of the simulation) and `power.png`, in `spinnaker2_diagnostics/volatile_diagnostics/`. The console prints energy, duration and average power, e.g. `Power measurement (sim_start -> sim_end): 30.782 J over 0.513 s, average 60.000 W`.
-- **Limitation:** runs shorter than the sampling interval produce one or no sample. Runs should last several sampling intervals, i.e. at least a few seconds, which means thousands of timesteps at 1 ms.
+- **Limitation:** runs shorter than the sampling interval produce one or no sample. Runs should last several sampling intervals, i.e. at least a few seconds, which means thousands of timesteps at a timestep of 1 ms.
 
 The **profiling** of py-spinnaker2 complements this with timing ([profiling](https://spinnaker2.gitlab.io/py-spinnaker2/user_guide/profiling.html)): with `profile=True` on a population, each PE records per timestep how long its work took (`duration_us`) and whether it missed the deadline (`deadline_flag` > 0), in `profiling.parquet`.
 
@@ -254,7 +282,7 @@ The **profiling** of py-spinnaker2 complements this with timing ([profiling](htt
 
 <br>
 
-A single power reading says little, because the board draws power even when nothing happens (Figure 7). A meaningful comparison needs:
+A single power reading says little, because the board draws power even when nothing happens (Figure 8). A meaningful comparison needs:
 
 1. **Baseline:** the power of the board while idle or running an empty network, to subtract.
 2. **Long enough runs:** several seconds per measurement (thousands of timesteps), because of the 0.1–0.2 s sampling interval.
@@ -271,6 +299,7 @@ A GPU comparison is optional and needs care: the same model, the same accuracy, 
 
 ## To check on the cluster
 
+- [ ] **Once the cluster is available:** check how much DRAM each chip of the HPI boards has (2 GB as in tutorial 06, or up to 2 × 4 GB as the chip supports), e.g. from the board information or by allocating DRAM in a test run.
 - [ ] Confirm that the 6 boards of the HPI setup are 48-node boards, and whether one board can be shared by several users at the same time (e.g. on different chips). This decides how many participants can run on the chips in parallel.
 - [ ] How the Ethernet port of a board is connected to its chips: only to one chip (as on SpiNNaker1 boards), to several, or to all (every SpiNNaker2 chip has its own Ethernet interface). Figure 1C assumes a single entry chip. Ask the admins or the vendor.
 - [ ] Power measurement on the HPI setup: which channels are reported, the idle baseline, and the energy of a simple network at different spike rates (measurement plan in section 9).
@@ -278,6 +307,10 @@ A GPU comparison is optional and needs care: the same model, the same accuracy, 
 - [ ] Whether the chip runs at a fixed performance level in py-spinnaker2 or switches automatically, and whether this can be set.
 - [ ] Verify the numbers taken from the chip paper against its tables (extracted from the text with a summarisation tool).
 - [ ] Whether the accelerators (MLA, exp/log unit, random number generators) belong to each PE or are shared by the 4 PEs of a QPE. The chip paper lists them per PE; an earlier note claimed they are shared per QPE.
+- [ ] **Once the cluster is available:** how many bytes py-spinnaker2 uses per synapse (weight, target, delay), e.g. with its memory visualisation tool. Figure 5A assumes 1 to 4 bytes.
+- [ ] **Once the cluster is available:** where the length of a timestep is set in py-spinnaker2 and what its default is (the chip paper uses 1 ms), section 7. Also on the primer's list.
+- [ ] What happens when a network exceeds the memory budget of a PE (error during mapping?) or the time budget (only `deadline_flag`, or also a warning or abort?), section 7.
+- [ ] Whether and how the number of neurons per PE can be set by the user (tutorial 04, advanced topic "hardware allocation"), section 7.
 - [ ] How py-spinnaker2 processes an incoming spike in detail: interrupt or polling, whether DMA is involved, how the synapse tables are laid out (Figure 3 shows only the principle).
 - [ ] Whether Höppner et al. 2021 (PE architecture paper) contains a layout image or chip photo of a PE, and link it from section 2.
-- [ ] Why the low performance level needs more energy than the high level in the DVS gesture experiment (Figure 7B), according to the paper.
+- [ ] Why the low performance level needs more energy than the high level in the DVS gesture experiment (Figure 8B), according to the paper.

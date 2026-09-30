@@ -268,17 +268,17 @@ def fig_pe_function():
     ax.add_patch(FancyArrowPatch((5.6, 3.2 + y0), (7.6, 3.2 + y0), color=BLUE, lw=2.5, **arrow))
     ax.text(6.6, 2.8 + y0, "⑤ spikes out", fontsize=8.5, fontweight="bold", color=BLUE, ha="center")
     # timeline strip: one timestep
-    t_scale = 8.8  # 1 ms drawn over the width of the PE
+    t_scale = 8.8  # one timestep drawn over the width of the PE
     segs = [(0.0, 0.03, "k", "①"), (0.03, 0.35, ORANGE, "② ③"), (0.35, 0.55, BLUE, "④ ⑤"), (0.55, 1.0, "0.9", "sleep")]
     for a, b, c, t in segs:
         ax.add_patch(plt.Rectangle((a * t_scale, 0.35), (b - a) * t_scale, 0.5, fc=c, ec="none"))
         ax.text((a + b) / 2 * t_scale, 0.6, t if t != "①" else "", ha="center", va="center", fontsize=8.5,
                 color="white" if c != "0.9" else "0.3", fontweight="bold")
     ax.text(0.0, 1.05, "① timer", fontsize=7.5)
-    for x, lab in [(0, "0 ms"), (t_scale, "1 ms: next timestep")]:
+    for x, lab in [(0, "start of the timestep"), (t_scale, "next timestep")]:
         ax.plot([x, x], [0.25, 0.95], color="k", lw=1)
         ax.text(x, 0.05, lab, fontsize=7.5, ha="center" if x == 0 else "right")
-    ax.text(t_scale + 0.3, 0.6, "one timestep (durations schematic,\nsee Figure 4 for several steps)", fontsize=7.5,
+    ax.text(t_scale + 0.3, 0.6, "one timestep, e.g. 1 ms (length\nconfigurable, durations schematic;\nsee Figure 4 for several steps)", fontsize=7.5,
             color="0.35", va="center")
     ax.set_xlim(-0.2, 11.4)
     ax.set_ylim(-0.2, 7.8)
@@ -321,7 +321,7 @@ def fig_pe_timestep():
     ax_t.set_ylabel("one PE")
     ax_s.bar(np.arange(steps) * period + 0.5, spikes, width=0.6, color=ORANGE)
     ax_s.set_ylabel("incoming spikes\nper timestep")
-    ax_s.set_xlabel("time (ms), one timestep = 1 ms")
+    ax_s.set_xlabel("time (ms), assuming a timestep of 1 ms (common choice, configurable)")
     ax_s.set_xlim(0, steps * period)
     fig.suptitle("How a PE spends its timesteps (illustration, durations made up)", x=0.02, ha="left", fontsize=10)
     fig.tight_layout()
@@ -329,61 +329,74 @@ def fig_pe_timestep():
     plt.close(fig)
 
 
+def clustered_synapses():
+    """Expected number of synapses of the clustered network in primer section 7 (connection table of the example)."""
+    ee_in = 10 * 20 * 19 * 0.5
+    ee_out = 200 * 180 * 0.05
+    return ee_in + ee_out + 50 * 200 * 0.3 + 200 * 50 * 0.4 + 50 * 49 * 0.5
+
+
 def fig_memory():
-    fig, (ax_l, ax_t) = plt.subplots(1, 2, figsize=(11, 3.8), gridspec_kw={"width_ratios": [1.1, 1]})
-    # A: layout of the 128 KB SRAM of one PE (known sizes only)
-    parts = [("ITCM: code of the neuron model", 32, BLUE), ("DTCM: data regions (routing and synapse tables,\n"
-             "neuron data, recordings; sizes depend on the network)", 92, ORANGE), ("heap and stack", 4, GREY)]
-    left = 0
-    for name, size, c in parts:
-        ax_l.barh(0, size, left=left, color=c, height=0.5, ec="white")
-        if size > 10:
-            ax_l.text(left + size / 2, 0, f"{size} KB", ha="center", va="center", fontsize=9, color="white", fontweight="bold")
-        left += size
-    ax_l.annotate("4 KB heap and stack", (126, 0.25), (100, 0.6), fontsize=8, arrowprops={"arrowstyle": "->"})
-    ax_l.text(16, -0.45, "code (ITCM, ≈ 32 KB)", ha="center", fontsize=8, color=BLUE)
-    ax_l.text(78, -0.45, "data (DTCM, ≈ 96 KB): neuron states, weights,\nrouting tables, recordings", ha="center",
-              fontsize=8, color="#b35900", va="top")
-    ax_l.set_xlim(0, 128)
-    ax_l.set_ylim(-1.1, 0.9)
-    ax_l.set_yticks([])
-    ax_l.set_xticks([0, 32, 64, 96, 128])
-    ax_l.set_xlabel("address range of the PE's SRAM (KB)")
-    ax_l.set_title("A: the 128 KB SRAM of one PE", loc="left", fontsize=10)
-    # B: capacity vs energy per access
-    names = ["PE SRAM\n(on the chip)", "DRAM\n(next to the chip)"]
-    cap = [128e3, 2e9]
-    energy = [10, 1300]  # pJ per 64-bit read, Horowitz 2014 (8 KB SRAM, DRAM)
-    x = np.arange(2)
-    ax_t.bar(x - 0.2, cap, width=0.38, color=[MEM, "#f4cccc"], ec="k", label="capacity (bytes)")
-    ax2 = ax_t.twinx()
-    ax2.bar(x + 0.2, energy, width=0.38, color="white", ec="k", hatch="//", label="energy per read (pJ)")
-    ax_t.set_yscale("log")
-    ax2.set_yscale("log")
-    ax_t.set_ylim(1e4, 1e10)
-    ax2.set_ylim(1, 1e4)
-    ax_t.set_xticks(x, names, fontsize=8.5)
-    ax_t.set_ylabel("capacity (bytes, log scale)")
-    ax2.set_ylabel("energy per 64-bit read (pJ, log scale)")
-    ax2.spines["right"].set_visible(True)
-    for xi, c, e in zip(x, cap, energy):
-        ax_t.text(xi - 0.2, c * 1.5, "128 KB" if c < 1e6 else "2 GB", ha="center", fontsize=8)
-        ax2.text(xi + 0.2, e * 1.5, f"{e} pJ", ha="center", fontsize=8)
-    h1, l1 = ax_t.get_legend_handles_labels()
-    h2, l2 = ax2.get_legend_handles_labels()
-    ax_t.legend(h1 + h2, l1 + l2, frameon=False, fontsize=7.5, loc="upper left")
-    ax_t.set_title("B: small and cheap vs. large and expensive", loc="left", fontsize=10)
-    fig.tight_layout()
+    """A: energy of reading MNIST layer 1 from SRAM vs DRAM. B: how many PEs the example networks fill."""
+    budget_kb = 92  # 96 KB data memory minus 4 KB heap and stack; routing tables and recordings reduce it further
+    n_l1 = 784 * 128
+    reads = n_l1 * 4 / 8  # 64-bit reads for all weights at 4 bytes per synapse
+    e_sram, e_dram = reads * 10e-6, reads * 1300e-6  # µJ, Horowitz 2014 (pJ per 64-bit read)
+    fig, (ax_a, ax_b) = plt.subplots(1, 2, figsize=(13, 4.4), gridspec_kw={"width_ratios": [1, 1.45]})
+    # A: why keep the weights local
+    for yy, (name, e, c) in enumerate([("DRAM\n(next to the chip)", e_dram, "#f4cccc"), ("SRAM of the PEs\n(on the chip)", e_sram, MEM)]):
+        ax_a.barh(yy, e, color=c, ec="k", height=0.55)
+        ax_a.text(e * 1.2, yy, f"{e:.1f} µJ", va="center", fontsize=9, fontweight="bold")
+    ax_a.set_yticks([0, 1], ["DRAM\n(next to the chip)", "SRAM of the PEs\n(on the chip)"], fontsize=8.5)
+    ax_a.set_xscale("log")
+    ax_a.set_xlim(0.1, 2000)
+    ax_a.set_ylim(-0.6, 1.9)
+    ax_a.annotate("", (e_dram, 1.45), (e_sram, 1.45), arrowprops={"arrowstyle": "-|>", "color": RED, "lw": 1.3})
+    ax_a.text(np.sqrt(e_sram * e_dram), 1.55, f"× {e_dram / e_sram:.0f} more energy", ha="center", fontsize=8.5, color=RED)
+    ax_a.set_xlabel("energy to read all 100,352 weights of MNIST layer 1 once (µJ, log scale)")
+    ax_a.set_title("A: why keep the weights in local SRAM", loc="left", fontsize=10)
+    # B: the price: networks fill PE memories and have to be split
+    nets = [("MNIST layer 1\n784 inputs → 128 hidden", n_l1), ("clustered network\n(primer Figure 21)", clustered_synapses()),
+            ("MNIST layer 2\n128 hidden → 10 outputs", 128 * 10)]
+    gap = 0.12
+    for row, (name, n_syn) in enumerate(nets):
+        yy = 2 - row
+        kb1, kb4 = n_syn / 1024, 4 * n_syn / 1024
+        n_boxes = int(np.ceil(kb4 / budget_kb))
+        for b in range(n_boxes):
+            x = b * (1 + gap)
+            fill = min(1.0, kb4 / budget_kb - b)
+            ax_b.add_patch(plt.Rectangle((x, yy - 0.3), 1, 0.6, fc="white", ec="k", lw=1))
+            ax_b.add_patch(plt.Rectangle((x, yy - 0.3), fill, 0.6, fc=ORANGE, ec="none"))
+        pos1 = kb1 / budget_kb
+        x1 = int(pos1) * (1 + gap) + (pos1 - int(pos1))
+        ax_b.plot([x1, x1], [yy - 0.38, yy + 0.38], color="k", ls="--", lw=1.2)
+        need = f"{n_boxes} PE" + ("s" if n_boxes > 1 else "") + " at 4 bytes"
+        need1 = int(np.ceil(pos1))
+        ax_b.text(5 * (1 + gap) + 0.1, yy, f"{need},\n{need1} PE{'s' if need1 > 1 else ''} at 1 byte", va="center", fontsize=8)
+        ax_b.text(-0.15, yy, name, ha="right", va="center", fontsize=8.5)
+    handles = [plt.matplotlib.patches.Patch(fc="white", ec="k", label="data memory of one PE (≈ 92 KB)"),
+               plt.matplotlib.patches.Patch(color=ORANGE, label="filled by the synapses at 4 bytes each"),
+               plt.Line2D([], [], color="k", ls="--", lw=1.2, label="end of the synapses at 1 byte each")]
+    ax_b.legend(handles=handles, frameon=False, fontsize=7.5, loc="lower left", bbox_to_anchor=(0.2, 0.86), ncol=2)
+    ax_b.set_xlim(-3.0, 7.3)
+    ax_b.set_ylim(-0.6, 3.1)
+    ax_b.axis("off")
+    ax_b.set_title("B: the price: local memory is small, networks are split across PEs", loc="left", fontsize=10)
+    fig.text(0.5, 0.97, "keep the data local (A)  →  but local memory is small  →  split the network across PEs (B)",
+             ha="center", fontsize=10, fontweight="bold")
+    fig.tight_layout(rect=(0, 0, 1, 0.93))
     fig.savefig(OUT / "03_memory.png")
     plt.close(fig)
 
 
 def fig_multicast():
-    fig, (ax_d, ax_p) = plt.subplots(1, 2, figsize=(11.5, 4), gridspec_kw={"width_ratios": [1.2, 1]})
-    # A: routing table lookup
+    """A: one packet, copied by the router, fanned out inside the target PE. B: packets per spike for two examples."""
+    fig, (ax_d, ax_p) = plt.subplots(1, 2, figsize=(13.5, 4.6), gridspec_kw={"width_ratios": [1.45, 1]})
+    # A: routing table lookup and fan-out inside a target PE
     box(ax_d, 0, 1.6, 1.4, 0.7, "PE 12\nneuron 57 fires", CORE, fs=7.5)
     ax_d.annotate("", (2.2, 1.95), (1.4, 1.95), arrowprops={"arrowstyle": "-|>", "color": RED, "lw": 1.8})
-    ax_d.text(1.8, 2.4, "packet\nkey 0x2A39", ha="center", fontsize=7, color=RED)
+    ax_d.text(1.75, 2.1, "1 packet\nkey 0x2A39", ha="center", va="bottom", fontsize=6.5, color=RED)
     ax_d.add_patch(plt.Rectangle((2.2, 0.4), 3.3, 3.1, fc=NET, ec=GREEN, lw=1.2))
     ax_d.text(3.85, 3.25, "router: routing table", ha="center", fontsize=8.5)
     rows = [("key", "send copies to"), ("0x2A39", "PE 3, PE 17, PE 40, link E"), ("0x2A3A", "PE 5"), ("…", "…")]
@@ -392,28 +405,47 @@ def fig_multicast():
         w = "bold" if k == 1 else "normal"
         ax_d.text(2.35, y, a, fontsize=7.5, family="monospace", fontweight=w)
         ax_d.text(3.2, y, b, fontsize=7, fontweight=w, color=RED if k == 1 else "k")
-    for k, t in enumerate(["PE 3", "PE 17", "PE 40", "link E →\nneighbour chip"]):
-        y = 3.0 - 0.75 * k
+    targets = [("PE 3", 3.0), ("PE 17", 2.25), ("PE 40", 1.5), ("link E →\nneighbour chip", 0.75)]
+    for k, (t, y) in enumerate(targets):
         box(ax_d, 6.3, y - 0.28, 1.4, 0.56, t, CORE if k < 3 else NET, fs=7)
         ax_d.annotate("", (6.3, y), (5.5, 2.3), arrowprops={"arrowstyle": "-|>", "color": RED, "lw": 1.2})
-    ax_d.text(3.85, 0.0, "one packet in, one copy per target PE or link out:\nthe PE then delivers it to its own target neurons",
-              ha="center", fontsize=7.5, color="0.3", va="top")
-    ax_d.set_xlim(-0.2, 7.9)
-    ax_d.set_ylim(-0.8, 3.8)
+    ax_d.text(5.9, 3.55, "3 copies + 1 link", fontsize=7, color=RED, ha="center")
+    # zoom into PE 3: synapse table, then the target neurons
+    ax_d.add_patch(plt.Rectangle((8.4, 1.4), 2.9, 2.4, fc="0.97", ec="k", lw=1))
+    ax_d.text(8.5, 3.6, "inside PE 3", fontsize=7.5, fontweight="bold")
+    box(ax_d, 8.55, 2.35, 1.1, 0.8, "synapse\ntable", MEM, fs=7)
+    ax_d.annotate("", (8.55, 2.75), (7.7, 3.0), arrowprops={"arrowstyle": "-|>", "color": RED, "lw": 1.2})
+    for n in range(7):
+        ny = 1.6 + n * 0.3
+        ax_d.plot(10.9, ny, "o", color=BLUE, ms=6, mec="k", mew=0.5)
+        ax_d.plot([9.65, 10.83], [2.75, ny], color=ORANGE, lw=1)
+    ax_d.text(11.2, 3.6, "target neurons", fontsize=6.5, ha="right", color="0.3")
+    ax_d.text(9.85, 0.85, "packets for this spike:\n1 sent + 4 copies = 5,\nhowever many target\nneurons the 3 PEs hold",
+              ha="center", va="center", fontsize=7.5, color=RED,
+              bbox={"boxstyle": "round,pad=0.3", "fc": "white", "ec": RED, "lw": 1})
+    ax_d.plot([7.7, 8.4], [3.28, 3.8], color="0.6", lw=0.7)
+    ax_d.plot([7.7, 8.4], [2.72, 1.4], color="0.6", lw=0.7)
+    ax_d.text(5.6, 0.0, "1 packet out → the router copies it once per target PE or link → each PE hands it to its own\n"
+              "target neurons through its synapse table (Figure 3, step ③)", ha="center", fontsize=7.5, color="0.3", va="top")
+    ax_d.set_xlim(-0.2, 11.6)
+    ax_d.set_ylim(-0.9, 3.9)
     ax_d.set_aspect("equal")
     ax_d.axis("off")
-    ax_d.set_title("A: multicast routing (keys and targets made up)", loc="left", fontsize=10)
-    # B: packets per spike vs number of target neurons
-    targets = np.logspace(0, 4, 200)
-    per_pe = 100  # target neurons per PE, assumed for the illustration
-    ax_p.plot(targets, targets, color=GREY, lw=2, label="without multicast: one packet per target neuron")
-    ax_p.plot(targets, np.ceil(targets / per_pe), color=GREEN, lw=2,
-              label=f"multicast: one copy per target PE\n(assuming {per_pe} target neurons per PE)")
-    ax_p.plot(targets, np.ones_like(targets), color=RED, lw=1.5, ls="--", label="sent by the firing PE: always 1")
-    ax_p.set_xscale("log")
+    ax_d.set_title("A: multicast: one packet, copied only where needed (keys and targets made up)", loc="left", fontsize=10)
+    # B: packets per spike for two examples
+    examples = [("one input spike of the\nMNIST network: 128 targets\non 5 PEs (Figure 5)", 128, 5),
+                ("cortex-like neuron:\n1,000 targets on 10 PEs", 1000, 10)]
+    x = np.arange(len(examples))
+    for k, (name, n_targets, n_pes) in enumerate(examples):
+        ax_p.bar(k - 0.2, n_targets, width=0.36, color=GREY, label="without multicast: one packet per target neuron" if k == 0 else None)
+        ax_p.bar(k + 0.2, 1 + n_pes, width=0.36, color=RED, label="with multicast: 1 packet sent + 1 copy per target PE" if k == 0 else None)
+        ax_p.text(k - 0.2, n_targets * 1.15, f"{n_targets:,}", ha="center", fontsize=8.5)
+        ax_p.text(k + 0.2, (1 + n_pes) * 1.15, f"1 + {n_pes}", ha="center", fontsize=8.5)
+        ax_p.text(k, n_targets * 2.6, f"≈ {n_targets / (1 + n_pes):.0f} × fewer", ha="center", fontsize=9, fontweight="bold")
+    ax_p.set_xticks(x, [e[0] for e in examples], fontsize=8)
     ax_p.set_yscale("log")
-    ax_p.set_xlabel("number of target neurons of one spike")
-    ax_p.set_ylabel("packets per spike (log scale)")
+    ax_p.set_ylim(1, 1e4)
+    ax_p.set_ylabel("packets for one spike (log scale)")
     ax_p.legend(frameon=False, fontsize=7.5, loc="upper left")
     ax_p.set_title("B: packets needed for one spike", loc="left", fontsize=10)
     fig.tight_layout()
@@ -421,39 +453,89 @@ def fig_multicast():
     plt.close(fig)
 
 
+def fig_scale():
+    """PEs per system (reported) and an estimate of neuron capacity at ~150,000 neurons per chip."""
+    systems = [("single-chip board", 1, 152), ("48-node board\n(one HPI run)", 48, 7_296),
+               ("HPI installation\n(6 boards, if 48-node)", 288, 43_776), ("SpiNNcloud system,\nTU Dresden", 35_000, 5e6),
+               ("design limit", None, 10e6)]
+    fig, (ax_p, ax_n) = plt.subplots(1, 2, figsize=(12, 4.3), gridspec_kw={"width_ratios": [1.1, 1]})
+    y = np.arange(len(systems))[::-1]
+    colors = [GREY, ORANGE, ORANGE, BLUE, "0.75"]
+    for yy, (name, chips, pes), c in zip(y, systems, colors):
+        ax_p.barh(yy, pes, color=c, height=0.6)
+        ax_p.text(pes * 1.3, yy, f"{pes:,.0f} PEs" + (f" ({chips:,} chip{'s' if chips > 1 else ''})" if chips else ""), va="center", fontsize=8)
+    ax_p.set_yticks(y, [s_[0] for s_ in systems], fontsize=8)
+    ax_p.set_xscale("log")
+    ax_p.set_xlim(50, 3e9)
+    ax_p.set_xlabel("processing elements (log scale)")
+    ax_p.set_title("A: the same chips, from one board to a supercomputer", loc="left", fontsize=10)
+    per_chip = 150_000
+    items = [("one chip", per_chip, BLUE), ("48-node board (one HPI run)", 48 * per_chip, ORANGE), ("HPI installation", 288 * per_chip, ORANGE),
+             ("SpiNNcloud, Dresden", 35_000 * per_chip, BLUE), ("mouse brain", 7e7, GREY), ("human brain", 8.6e10, GREY)]
+    y2 = np.arange(len(items))[::-1]
+    for yy, (name, n, c) in zip(y2, items):
+        ax_n.barh(yy, n, color=c, height=0.6)
+        label = f"{n / 1e9:.1f} billion" if n >= 1e9 else (f"{n / 1e6:.0f} million" if n >= 1e6 else f"{n / 1e3:.0f} thousand")
+        ax_n.text(n * 1.3, yy, label, va="center", fontsize=8)
+    ax_n.set_yticks(y2, [i[0] for i in items], fontsize=8)
+    ax_n.set_xscale("log")
+    ax_n.set_xlim(1e4, 5e12)
+    ax_n.set_xlabel("neurons (log scale)")
+    ax_n.set_title("B: estimated capacity at ~150,000 neurons per chip", loc="left", fontsize=10)
+    fig.tight_layout()
+    fig.savefig(OUT / "05_scale.png")
+    plt.close(fig)
+
+
 def fig_power_states():
-    fig, (ax_a, ax_b) = plt.subplots(1, 2, figsize=(11, 4.2), gridspec_kw={"width_ratios": [1.4, 1]})
+    """A: power against work per second at the two performance levels, and the cheapest path (automatic switching).
+    B: DVS gesture energy per performance level."""
+    fig, (ax_a, ax_b) = plt.subplots(1, 2, figsize=(12.5, 4.8), gridspec_kw={"width_ratios": [1.2, 1]})
     off = POWER_STATES["PEs off"][0]
-    groups = [("0.5 V, 150 MHz", POWER_STATES["PEs sleep, 0.5 V"][0], POWER_STATES["all PEs busy (CoreMark),\n0.5 V, 150 MHz"][0]),
-              ("0.8 V, 300 MHz", POWER_STATES["PEs sleep, 0.8 V"][0], POWER_STATES["all PEs busy (CoreMark),\n0.8 V, 300 MHz"][0])]
-    for g, (name, sleep, busy) in enumerate(groups):
-        for k, (val, color, label) in enumerate([(sleep, BLUE, "all PEs sleeping"), (busy, ORANGE, "all PEs busy (CoreMark)")]):
-            x = g * 3 + k
-            ax_a.bar(x, val, color=color, width=0.8, label=label if g == 0 else None)
-            ax_a.text(x, val + 20, f"{val:.0f}", ha="center", fontsize=8)
-    ax_a.set_xticks([0.5, 3.5], [g[0] for g in groups])
+    lo0, lo1 = POWER_STATES["PEs sleep, 0.5 V"][0], POWER_STATES["all PEs busy (CoreMark),\n0.5 V, 150 MHz"][0]
+    hi0, hi1 = POWER_STATES["PEs sleep, 0.8 V"][0], POWER_STATES["all PEs busy (CoreMark),\n0.8 V, 300 MHz"][0]
+    # x = work per second relative to the maximum of the high level; the low level reaches at most half of it
+    ax_a.plot([0, 0.5], [lo0, lo1], ":", color=BLUE, lw=2)
+    ax_a.plot([0, 1], [hi0, hi1], ":", color=RED, lw=2)
+    ax_a.plot([0, 0.5], [lo0, lo1], "o", color=BLUE, ms=9)
+    ax_a.plot([0, 1], [hi0, hi1], "o", color=RED, ms=9)
+    hi_at_half = hi0 + 0.5 * (hi1 - hi0)
+    ax_a.plot([0, 0.5], [lo0, lo1], color=GREEN, lw=6, alpha=0.35, solid_capstyle="round", zorder=0)
+    ax_a.plot([0.5, 1], [hi_at_half, hi1], color=GREEN, lw=6, alpha=0.35, solid_capstyle="round", zorder=0)
+    ax_a.plot([0.5, 0.5], [lo1, hi_at_half], color=GREEN, lw=2, ls="--")
+    ax_a.text(0.52, (lo1 + hi_at_half) / 2, "switch: the low level\ncan't do more work", fontsize=7.5, color=GREEN,
+              va="center")
+    ax_a.text(0.02, lo0 - 70, f"{lo0:.0f}", fontsize=8, color=BLUE)
+    ax_a.text(0.02, hi0 + 40, f"{hi0:.0f}", fontsize=8, color=RED)
+    ax_a.text(0.5, lo1 - 70, f"{lo1:.0f}", fontsize=8, color=BLUE, ha="center")
+    ax_a.text(1.0, hi1 + 50, f"{hi1:.0f}", fontsize=8, color=RED, ha="center")
+    ax_a.text(0.12, 300, "low level: 0.5 V, 150 MHz", fontsize=8.5, color=BLUE, fontweight="bold", rotation=12)
+    ax_a.text(0.25, 780, "high level: 0.8 V, 300 MHz", fontsize=8.5, color=RED, fontweight="bold", rotation=24)
     ax_a.axhline(off, color="k", ls="--", lw=1)
-    ax_a.text(4.6, off + 20, f"PEs switched off: {off:.0f} mW", ha="right", fontsize=7.5)
-    ax_a.annotate("sleeping at 0.8 V costs more\nthan working at 0.5 V", (3, 544), (0.3, 900), fontsize=8,
-                  arrowprops={"arrowstyle": "->"})
-    ax_a.annotate("drawn even when idle:\nsubtract as baseline (section 9)", (0, 215), (-0.55, 620), fontsize=7.5, color="0.3",
-                  arrowprops={"arrowstyle": "->", "color": "0.3"})
-    ax_a.set_ylabel("power of all 152 PEs (mW)")
+    ax_a.text(0.75, off + 25, f"all PEs switched off: {off:.0f} mW", ha="center", fontsize=7.5)
+    ax_a.text(0.02, 1330, "green: automatic switching, the cheapest way to do a given amount of work\n"
+              "points: measured (sleeping and full load), dotted lines: interpolated", fontsize=7, color="0.3", va="top")
+    ax_a.set_xticks([0, 0.5, 1], ["0\n(sleeping)", "0.5\n(low level at full load)", "1\n(high level at full load)"],
+                    fontsize=8)
+    ax_a.set_xlim(-0.05, 1.12)
     ax_a.set_ylim(0, 1400)
-    ax_a.set_xlim(-0.7, 4.7)
-    ax_a.legend(frameon=False, fontsize=8, loc="upper left")
-    ax_a.set_title("A: power of one chip: voltage matters most", loc="left", fontsize=10)
+    ax_a.set_xlabel("work per second (relative to the maximum of the high level)")
+    ax_a.set_ylabel("power of all 152 PEs (mW)")
+    ax_a.set_title("A: stay at the low level as long as it can keep up", loc="left", fontsize=10)
     names = list(DVS_ENERGY)
     vals = list(DVS_ENERGY.values())
-    ax_b.bar(range(3), vals, color=[GREY, ORANGE, GREEN], width=0.7)
+    ax_b.bar(range(3), vals, color=[GREY, RED, GREEN], width=0.7)
     for i, v in enumerate(vals):
-        ax_b.text(i, v + 0.04, f"{v:.2f} J", ha="center", fontsize=8)
-    ax_b.annotate("−28 % compared\nwith high PL", (2, 0.85), (1.35, 1.6), fontsize=8, color=GREEN,
+        ax_b.text(i, v + 0.04, f"{v:.2f} J", ha="center", fontsize=8.5)
+    ax_b.annotate("−28 % compared\nwith always high", (2, 0.85), (1.4, 1.65), fontsize=8.5, color=GREEN, fontweight="bold",
                   arrowprops={"arrowstyle": "->", "color": GREEN})
-    ax_b.set_xticks(range(3), names, fontsize=7.5)
+    ax_b.text(0, 2.12, "highest energy despite\nlow voltage: reason not\ngiven, to check", ha="center", va="bottom",
+              fontsize=7, color="0.35")
+    ax_b.set_xticks(range(3), ["always low\n(0.5 V, 150 MHz)", "always high\n(0.8 V, 300 MHz)", "automatic\n(switches by load)"],
+                    fontsize=7.5)
     ax_b.set_ylabel("energy per inference (J)")
-    ax_b.set_ylim(0, 2.4)
-    ax_b.set_title("B: SNN (DVS gesture): switching the\nperformance level (PL) with the load", loc="left", fontsize=10)
+    ax_b.set_ylim(0, 2.7)
+    ax_b.set_title("B: SNN (DVS gesture): adapting the level to the load", loc="left", fontsize=10)
     fig.tight_layout()
     fig.savefig(OUT / "02_power_states.png")
     plt.close(fig)
@@ -461,28 +543,30 @@ def fig_power_states():
 
 def fig_reported_energy():
     eff_s2 = TOPS_W["SpiNNaker2\n150 MHz"][0] / TOPS_W["SpiNNaker2\n150 MHz"][1]
-    items = [("dense DNN layers (matrix operations)\nvs. Nvidia Jetson Orin Nano", eff_s2 / (67.0 / 25.0), GREY),
-             ("dense DNN layers (matrix operations)\nvs. Google Coral Edge TPU", eff_s2 / (4.0 / 2.0), GREY),
-             ("event-based language model (EGRU)\nvs. Nvidia A100 GPU", EGRU["Nvidia A100"] / EGRU["SpiNNaker2"], BLUE)]
-    fig, ax = plt.subplots(figsize=(9, 3.8))
-    y = np.arange(len(items))[::-1]
+    items = [("dense DNN layers\nvs. Nvidia Jetson Orin Nano", eff_s2 / (67.0 / 25.0), "0.55"),
+             ("dense DNN layers\nvs. Google Coral Edge TPU", eff_s2 / (4.0 / 2.0), "0.55"),
+             ("event-based language model\nvs. Nvidia A100 GPU", EGRU["Nvidia A100"] / EGRU["SpiNNaker2"], BLUE)]
+    fig, ax = plt.subplots(figsize=(9.5, 4.2))
+    y = np.array([2.3, 1.5, 0])
+    ax.axhspan(1.05, 2.75, color="0.93", zorder=0)
+    ax.axhspan(-0.45, 0.45, color="#dbe9f6", zorder=0)
+    ax.text(19.8, 2.62, "dense workloads", ha="right", va="top", fontsize=9, color="0.35", fontweight="bold")
+    ax.text(19.8, 0.38, "sparse, event-based", ha="right", va="top", fontsize=9, color=BLUE, fontweight="bold")
     for yy, (name, r, c) in zip(y, items):
-        ax.barh(yy, r, color=c, height=0.55, left=0)
-        ax.text(r * 1.08, yy, f"{r:.1f} ×", va="center", fontsize=9, fontweight="bold")
-    ax.set_yticks(y, [i[0] for i in items], fontsize=8)
-    ax.set_xscale("log")
-    ax.set_xlim(0.5, 60)
-    ax.set_xticks([0.5, 1, 2, 5, 10, 20, 50], ["0.5", "1", "2", "5", "10", "20", "50"])
+        ax.barh(yy, r, color=c, height=0.5)
+        ax.text(r + 0.3, yy, f"{r:.1f} ×" if r < 10 else f"{r:.0f} ×", va="center", fontsize=13, fontweight="bold",
+                color=c if c != "0.55" else "0.3")
     ax.axvline(1, color="k", ls="--", lw=1)
-    ax.text(1.05, 2.42, "same energy", fontsize=7.5, va="center")
-    ax.set_xlabel("energy advantage of SpiNNaker2: comparison hardware needs × more energy (log scale)")
-    ax.set_ylim(-0.5, 2.6)
-    ax.text(40, 1.5, "dense\nworkloads", fontsize=8.5, color="0.35", ha="center", va="center")
-    ax.text(40, 0, "sparse,\nevent-based", fontsize=8.5, color=BLUE, ha="center", va="center")
-    ax.plot([28, 28], [0.75, 2.25], color="0.6", lw=1)
-    ax.set_title("The advantage grows with sparsity (different workloads and set-ups, only roughly comparable)",
-                 loc="left", fontsize=9.5)
-    fig.tight_layout()
+    ax.text(1.15, -0.62, "1 × = same energy", fontsize=8, va="top")
+    ax.set_yticks(y, [i[0] for i in items], fontsize=9)
+    ax.set_xlim(0, 20)
+    ax.set_ylim(-0.95, 2.75)
+    ax.set_xticks([0, 1, 5, 10, 15, 20], ["0", "1", "5", "10", "15", "20"])
+    ax.set_xlabel("how many times less energy SpiNNaker2 needs than the comparison hardware")
+    ax.set_title("SpiNNaker2's energy advantage grows with sparsity", loc="left", fontsize=11, fontweight="bold")
+    fig.text(0.01, 0.01, "Different workloads, devices and measurement set-ups: the bars show the trend, not an exact comparison.",
+             fontsize=7.5, color="0.4")
+    fig.tight_layout(rect=(0, 0.04, 1, 1))
     fig.savefig(OUT / "03_reported_energy.png")
     plt.close(fig)
 
@@ -490,7 +574,9 @@ def fig_reported_energy():
 def check():
     assert abs(EGRU["Nvidia A100"] / EGRU["SpiNNaker2"] - 18.3) < 0.1  # the "18x" figure
     assert abs((1 - DVS_ENERGY["automatic PL\n(switches by load)"] / DVS_ENERGY["high PL\n(0.8 V, 300 MHz)"]) - 0.28) < 0.01
+    assert 784 * 128 / 1024 > 92 and round(clustered_synapses()) == 11925  # MNIST layer 1 exceeds one PE at 1 byte
     assert 6 * 48 * 152 == 43776 and 48 * 152 == 7296  # HPI installation and one board, if 48-node boards
+    assert abs((1227.2 / 300) / (403.9 / 150) - 1.52) < 0.01  # energy per cycle at full load, high vs low level
     assert abs(TOPS_W["SpiNNaker2\n150 MHz"][0] / TOPS_W["SpiNNaker2\n150 MHz"][1] - 2.77) < 0.01
 
 
@@ -502,5 +588,6 @@ if __name__ == "__main__":
     fig_pe_timestep()
     fig_memory()
     fig_multicast()
+    fig_scale()
     fig_power_states()
     fig_reported_energy()
