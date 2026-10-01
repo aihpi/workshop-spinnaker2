@@ -18,10 +18,14 @@ Replace `00_aisc/img/screenshot_app.png` with a screenshot of your application. 
 | `00_aisc/` | AISC logos and images |
 | `01_knowledge_base/` | Notes, sources and figures |
 | `02_workshop_design/` | Brief, outline and demo plans |
+| `03_setup/` | Running py-spinnaker2 on the HPI cluster, troubleshooting |
+| `04_spinncloud_tutorials/` | SpiNNcloud's own tutorial notebooks, run on our chips. Reference, not workshop material |
 
 ## Setup
 
-TODO: running on the chips via the HPI cluster, and the Brian2 fallback.
+The workshop runs on the SpiNNaker2 frame attached to the HPI cluster node cx51. Installation, the pinned py-spinnaker2 version and the smoke test are described in [`03_setup/README.md`](03_setup/README.md); failure modes seen so far in [`03_setup/01_troubleshooting.md`](03_setup/01_troubleshooting.md).
+
+py-spinnaker2 itself is **not** tracked here. It is cloned as `py-spinnaker2/` next to the repository content and installed into a conda environment; the directory is gitignored.
 
 ## Workshop outline
 
