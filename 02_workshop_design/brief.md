@@ -1,6 +1,6 @@
 # Workshop Brief
 
-Draft, as of 2026-09-28.
+Draft, as of 2026-09-28, open questions updated on 2026-10-01 after the fact-check of the knowledge base.
 
 ## Audience
 
@@ -39,8 +39,8 @@ After the workshop, participants understand why neuromorphic hardware can save e
 ## Open questions
 
 - [ ] How do participants get cluster access, and how long does account creation take? 
-- [ ] How many participants can use the chips at the same time? The HPI setup has 6 boards (probably 48-node boards), runs use one board each, and boards are locked per user. If a board can't be shared, at most 6 participants can run in parallel: plan for turns, pairs, or the Brian2 fallback for the rest. Details in `01_knowledge_base/02_hardware_energy.md`, section 5.
-- [ ] Does power measurement work on our setup? The energy story depends on it.
-- [ ] Which py-spinnaker2 features does the Brian2 backend support? Every notebook needs to run on both paths.
+- [ ] How many participants can use the chips at the same time? The HPI setup has 6 boards (probably 48-node boards), runs use one board each, and the lock covers the whole board (SpiNNMan2 code), so at most 6 participants can run in parallel: plan for turns, pairs, or the Brian2 fallback for the rest. Still open: how many boards workshop accounts get. Details in `01_knowledge_base/02_hardware_energy.md`, section 5.
+- [ ] Does power measurement work on our setup? The energy story depends on it. On a 48-node board, py-spinnaker2 reports one power value for the whole board, so a small network may vanish in the baseline; first thing to test on the cluster (`02_hardware_energy.md`, section 9). Without a visible difference, hands-on 2 shows reported numbers and how to read them instead of an own measurement.
+- [ ] Which py-spinnaker2 features does the Brian2 backend support? Every notebook needs to run on both paths. From the code: `lif`, `lif_curr_exp`, `alif` (with their variants), `spike_list` and `poisson_process`; not `izhikevich`, `lif_prob`, `qubo_neuron` or the latency encoder; no power measurement or profiling. The clustered SNN example, the NMNIST NIR example and tutorial 08 run on Brian2, the QUBO and end-to-end NIR examples need a board. To be written up as plan task 1.
 - [ ] Is the workshop open to people outside HPI? If so, they are on the Brian2 fallback.
 - [ ] Date and room.
