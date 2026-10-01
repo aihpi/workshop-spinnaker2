@@ -641,9 +641,10 @@ def fig_qubo():
     best = max(cut_size([(k >> i) & 1 for i in range(n)], edges) for k in range(2**n))
     spikes, cuts = qubo_chip(n, edges)
     t_best = int(np.argmax(cuts))
-    fig = plt.figure(figsize=(11, 5.2))
-    gs = fig.add_gridspec(2, 2, width_ratios=[1.7, 1])
+    fig = plt.figure(figsize=(15, 5.2))
+    gs = fig.add_gridspec(2, 3, width_ratios=[1.7, 1, 1])
     ax_r, ax_c, ax_g = fig.add_subplot(gs[0, 0]), fig.add_subplot(gs[1, 0]), fig.add_subplot(gs[:, 1])
+    ax_u = fig.add_subplot(gs[:, 2])
     t = np.arange(len(cuts))
     for i in range(n):
         ts = t[spikes[:, i]]
@@ -683,8 +684,30 @@ def fig_qubo():
                    "dotted grey edges are not", loc="left", fontsize=10)
     ax_g.set_aspect("equal")
     ax_g.axis("off")
+    # D: effective potential of one neuron without input and noise, U(v) with v[t+1] - v[t] = -dU/dv
+    v = np.linspace(-1.4, 1.4, 400)
+    for alpha, color in [(1.0, "k"), (0.95, BLUE), (0.85, GREY), (0.75, ORANGE), (0.5, "#d62728")]:
+        ax_u.plot(v, qubo_potential(v, alpha), color=color, lw=1.8, label=f"{alpha}")
+        if alpha > 0.85:
+            vm = np.sqrt((alpha - 0.85) / 0.15)
+            ax_u.plot([-vm, vm], qubo_potential(np.array([-vm, vm]), alpha), "o", color=color, ms=5)
+    ax_u.axvline(0.15, color=GREEN, ls=":", lw=1.2)
+    ax_u.text(0.19, -0.05, "threshold of the run in A–C\n(0.15): above it the neuron\nspikes and is reset to 0",
+              fontsize=7.5, color=GREEN, va="top")
+    ax_u.set_ylim(-0.08, 0.11)
+    ax_u.set_xlim(-1.4, 1.4)
+    ax_u.set_xlabel("v (dimensionless)")
+    ax_u.set_ylabel("effective potential U(v) (dimensionless)")
+    ax_u.legend(frameon=False, fontsize=7.5, loc="upper left", bbox_to_anchor=(1.0, 1.0), title="alpha_decay",
+                title_fontsize=7.5)
+    ax_u.set_title("D: two stable states only for\nalpha_decay > 0.85 (dots: minima)", loc="left", fontsize=10)
     fig.tight_layout()
     fig.savefig(OUT / "05_qubo_maxcut.png")
+
+
+def qubo_potential(v, alpha):
+    """Drift of the qubo_neuron update without input and noise: v[t+1] - v[t] = (alpha - 0.85) v - 0.15 v^3 = -dU/dv."""
+    return -(alpha - 0.85) * v**2 / 2 + 0.15 * v**4 / 4
 
 
 def qubo_comparison(seed=5, n=50, p_edge=0.1, steps=300):
@@ -1272,6 +1295,10 @@ def check():
     n, edges = maxcut_graph()
     best = max(cut_size([(k >> i) & 1 for i in range(n)], edges) for k in range(2**n))
     assert qubo_chip(n, edges)[1].max() == best
+    # effective potential: minima at +-sqrt((alpha - 0.85) / 0.15) for alpha > 0.85, i.e. +-1 for alpha = 1
+    vv = np.linspace(-2, 2, 40001)
+    assert abs(abs(vv[np.argmin(qubo_potential(vv, 1.0))]) - 1) < 1e-3
+    assert abs(vv[np.argmin(qubo_potential(vv, 0.75))]) < 1e-3
     # on a random 50-node graph: coupling beats noise alone and random partitions, greedy local search beats all
     n_edges, coupled, noise_only, random_best, greedy = qubo_comparison()
     print(f"QUBO, random graph with {n_edges} edges: coupled {coupled}, noise only {noise_only}, "
