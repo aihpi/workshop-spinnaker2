@@ -6,6 +6,8 @@ Everything needed to get a working SpiNNaker2 session on the cluster. Problems d
 |---|---|
 | `enter_cx51.sh` | Opens an interactive shell on the node the SpiNNaker2 frame is attached to |
 | `smoke_test_lif_neuron.py` | Minimal single-neuron run, confirms the chips are reachable |
+| `compare_brian2_chip.py` | Runs the same small networks on the chip and on Brian2, for comparing the backends |
+| `brian2_edge_cases.py` | Edge cases and known errors of the Brian2 backend, no board needed |
 
 ## The machine
 
@@ -79,4 +81,4 @@ The script writes `lif_output.png`. `plt.show()` produces no visible output on t
 
 ## Fallback without hardware
 
-The Brian2 backend of py-spinnaker2 runs the same networks on the CPU and needs none of the above. It is the fallback for workshop participants if the frame is unavailable.
+The Brian2 backend of py-spinnaker2 runs the same networks on the CPU and needs none of the above. It is the fallback for workshop participants if the frame is unavailable. What it supports and where it differs from the chip: [`01_knowledge_base/03_brian2_fallback.md`](../01_knowledge_base/03_brian2_fallback.md).

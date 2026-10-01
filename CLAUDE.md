@@ -4,7 +4,7 @@ Planning repository for a 3-hour hands-on SpiNNaker2 workshop (AISC, planned for
 
 ## Structure
 
-- `01_knowledge_base/`: notes, sources and figures. The notes build on each other: `00_computing_fundamentals.md` (general computing), `01_primer_snn_basics.md` (neural computing), `02_hardware_energy.md` (SpiNNaker2 hardware and energy). Each topic lives in exactly one note; the others link to it. Tracked in git. Downloaded papers or other copyrighted raw material don't belong here, only links in `sources.md`.
+- `01_knowledge_base/`: notes, sources and figures. The notes build on each other: `00_computing_fundamentals.md` (general computing), `01_primer_snn_basics.md` (neural computing), `02_hardware_energy.md` (SpiNNaker2 hardware and energy), `03_brian2_fallback.md` (the Brian2 backend compared with the chip). Each topic lives in exactly one note; the others link to it. Tracked in git. Downloaded papers or other copyrighted raw material don't belong here, only links in `sources.md`.
 - `02_workshop_design/`: brief, outline, demo plans. Tracked in git.
 - `03_setup/`: how to run on the cluster (`README.md`) and the failure modes seen so far (`01_troubleshooting.md`), plus `enter_cx51.sh` and the smoke test. Tracked in git.
 - `04_spinncloud_tutorials/`: SpiNNcloud's deep-dive tutorial notebooks, run on our chips so the outputs are real. Reference material for learning the API and for checking what works on the hardware — **not** the workshop's own hands-on material, which does not exist yet. Apache-2.0, see the folder README. Tracked in git.

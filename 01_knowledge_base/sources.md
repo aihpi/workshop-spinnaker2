@@ -26,7 +26,7 @@ The main software for the workshop. Python interface for running experiments on 
 | [Diagnostic folder](https://spinnaker2.gitlab.io/py-spinnaker2/user_guide/diagnostic_folder.html) | | read |
 | [Performance profiling](https://spinnaker2.gitlab.io/py-spinnaker2/user_guide/profiling.html) | Timing per core, useful for workshop demos | read |
 | [Power measurement](https://spinnaker2.gitlab.io/py-spinnaker2/user_guide/power_measurement.html) | Energy numbers, likely a workshop highlight | read |
-| [Brian2 backend](https://spinnaker2.gitlab.io/py-spinnaker2/user_guide/brian2.html) | Simulator without chips, fallback for the workshop: check which features it supports | read |
+| [Brian2 backend](https://spinnaker2.gitlab.io/py-spinnaker2/user_guide/brian2.html) | Simulator without chips, fallback for the workshop. Summary and comparison with the chip in `03_brian2_fallback.md` | read |
 | [Data streaming](https://spinnaker2.gitlab.io/py-spinnaker2/user_guide/data-streaming.html) | Real-time I/O | read |
 | [NIR](https://spinnaker2.gitlab.io/py-spinnaker2/user_guide/qs-nir.html) | Import models trained elsewhere | read |
 
