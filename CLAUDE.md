@@ -6,6 +6,9 @@ Planning repository for a 3-hour hands-on SpiNNaker2 workshop (AISC, planned for
 
 - `01_knowledge_base/`: notes, sources and figures. The notes build on each other: `00_computing_fundamentals.md` (general computing), `01_primer_snn_basics.md` (neural computing), `02_hardware_energy.md` (SpiNNaker2 hardware and energy). Each topic lives in exactly one note; the others link to it. Tracked in git. Downloaded papers or other copyrighted raw material don't belong here, only links in `sources.md`.
 - `02_workshop_design/`: brief, outline, demo plans. Tracked in git.
+- `03_setup/`: how to run on the cluster (`README.md`) and the failure modes seen so far (`01_troubleshooting.md`), plus `enter_cx51.sh` and the smoke test. Tracked in git.
+- `04_spinncloud_tutorials/`: SpiNNcloud's deep-dive tutorial notebooks, run on our chips so the outputs are real. Reference material for learning the API and for checking what works on the hardware — **not** the workshop's own hands-on material, which does not exist yet. Apache-2.0, see the folder README. Tracked in git.
+- `py-spinnaker2/`: clone of the vendor library (gitlab, pinned at commit `6c9084fc`), installed non-editable into the conda env `spinnaker2`. **Gitignored**, never commit it. Library source changes need `pip install .` again.
 - `_local/`: gitignored working notes, e.g. dated handover plans for the next conversation (`_local/2026-09-30_plan_next_steps.md`). Read the newest plan there when starting a new session.
 - `01_knowledge_base/figures/<markdown file name>/` holds the figures of one markdown file together with the script that generates them (e.g. `figures/01_primer_snn_basics/make_figures.py`). Figure file names start with the section number. The scripts also check the numbers the figures show. Run with `uv run --with numpy --with matplotlib --with schemdraw make_figures.py` (no global installs). Regenerate figures through the script, never edit PNGs by hand.
 
@@ -24,6 +27,12 @@ The notes serve three purposes: learning material, preparation for workshop slid
 - **Figure sources:** every caption ends with `**Source:**` saying whether the figure is a diagram, simulated or computed here (and whether it has been run on the chip), or reported data with citation.
 - **Workshop lines:** each primer section ends with `**Workshop:**` saying what is taught and for how long.
 - No hard line wraps in prose.
+
+## Cluster and hardware
+
+The 6-board SpiNNaker2 frame is attached to the cluster node cx51; boards are powered off while idle and powered up per run. Details, install steps and diagnostics are in `03_setup/`, which is the single source for them — don't duplicate them in this file.
+
+The repository is **public**. Internal infrastructure detail (board and controller addresses, MAC addresses, vendor correspondence) does not belong in tracked files; `03_setup/` is written without it and notebook outputs are redacted where they exposed an address. Raw diagnostic logs belong in `_local/`.
 
 ## Accuracy
 
