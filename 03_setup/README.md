@@ -48,7 +48,8 @@ conda install -c conda-forge cmake          # not covered by libs_install.sh
 
 git clone --recursive https://gitlab.com/spinnaker2/py-spinnaker2.git
 cd py-spinnaker2
-git checkout 6c9084fc                       # pinned, see below
+git checkout v0.8.2                         # pinned, see below
+git submodule update --init --recursive    # snn-core at the commit v0.8.2 points to
 pip install .
 ```
 
@@ -61,7 +62,9 @@ Notes on the install:
 
 ### Pinned version
 
-Commit `6c9084fc` on `main` is release `v0.8.0` plus the hotfix for a circular import. Without that hotfix, `from spinnaker2 import snn` as the first import of a session raises an `ImportError`; the workaround on affected versions is to import `spinnaker2.hardware` first. The pinned commit does not need the workaround.
+Release `v0.8.2` (2026-09-23), installed on 2026-10-01. Its `snn-core` submodule points to commit `ccd54d0`; `setup_libs.sh` names the commit before it (`0341893`), which differs only in how the random generators are seeded at start-up and in stricter compiler flags. `pip list` still reports `0.8.0`, because `pyproject.toml` was not bumped; the installed code is v0.8.2.
+
+Compared with the previous pin (`6c9084fc`, v0.8.0 plus the circular-import hotfix), v0.8.1 and v0.8.2 allow repeated `run()` calls on the same `Hardware` object and several networks with the same name (both checked on a board on 2026-10-01). Neuron models and synapse formats are unchanged. The edits to the vendor tutorials made under v0.8.0 are kept as a `git stash` in the clone; their copies are in `04_spinncloud_tutorials/`.
 
 ## Smoke test
 

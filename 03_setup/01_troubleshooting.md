@@ -38,13 +38,13 @@ After the cabling fix, allocation succeeded only sometimes. The boards became re
 
 ## 3. Import and library errors
 
-**`ImportError` on `from spinnaker2 import snn`.** A circular import in v0.8.0 when `snn` is the first import of a session. Reported to the vendor and fixed in the pinned commit. On an affected version, importing `spinnaker2.hardware` first is the workaround. This hits the first cell of the vendor tutorial notebooks.
+**`ImportError` on `from spinnaker2 import snn`.** A circular import in v0.8.0 when `snn` is the first import of a session. Reported to the vendor and fixed in v0.8.1. On an affected version, importing `spinnaker2.hardware` first is the workaround. This hits the first cell of the vendor tutorial notebooks.
 
 **Build fails on a fresh clone.** Two causes: `cmake` missing from the conda environment, or a clone without `--recursive`, which leaves the `snn-core` submodule empty. The submodule was private until August 2026 and is now public.
 
 ## 4. Mapping limits
 
-- A `Hardware` object runs **once**. A second `run()` on the same object fails; a new object is needed per run.
+- Up to v0.8.0, a `Hardware` object runs **once**: a second `run()` on the same object fails, and network names must be unique within a session (`snn.Network.clear_names()` as workaround). Fixed in v0.8.1; the pinned v0.8.2 allows both. The notebooks in `04_spinncloud_tutorials/` still contain the old workarounds, which are harmless.
 - In the synfire chain of tutorial 00 (`lif_curr_exp`, 60 inputs per neuron, `v` and spikes recorded) at most **100** neurons fit on one core, not the 125 that the memory budget suggests. The limit depends on connectivity and recording; it is not a general cap for the model (documented cap: 256).
 - `mapping_only=True` performs placement and routing without touching the hardware, which makes network sizes testable without an allocated board.
 

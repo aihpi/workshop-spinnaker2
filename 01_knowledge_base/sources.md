@@ -2,7 +2,7 @@
 
 Library of everything worth reading for the workshop. Status: `todo` = not read yet, `read` = read and notes taken, `skim` = looked at, not in depth.
 
-**Version used: py-spinnaker2 v0.8.** The HPI cluster runs v0.8.0 plus a hotfix (commit `6c9084fc`, see `03_setup/README.md`). For the fact-check of 2026-09-30, the docs, tutorials, examples and code were read in full from the repository at tag v0.8.2, together with the chip-side code (snn-core) it pins; v0.8.0 to v0.8.2 differ in no neuron model or synapse format. The online docs currently match it (latest migration guide is v0.8.0). Before relying on a docs page, check it hasn't moved on to a newer release.
+**Version used: py-spinnaker2 v0.8.** The HPI cluster runs v0.8.2 since 2026-10-01 (see `03_setup/README.md`). For the fact-check of 2026-09-30, the docs, tutorials, examples and code were read in full from the repository at tag v0.8.2, together with the chip-side code (snn-core) it pins; v0.8.0 to v0.8.2 differ in no neuron model or synapse format. The online docs currently match it (latest migration guide is v0.8.0). Before relying on a docs page, check it hasn't moved on to a newer release.
 
 ## Core: py-spinnaker2
 
@@ -83,7 +83,7 @@ The main software for the workshop. Python interface for running experiments on 
 | Source | What | Status |
 |---|---|---|
 | [SpiNNaker2 GitLab group](https://gitlab.com/spinnaker2) | All public repos | skim |
-| [snn-core](https://gitlab.com/spinnaker2/snn-core) | Chip-side C code of the neuron models, pinned by py-spinnaker2 (`setup_libs.sh`, commit `0341893` for v0.8.2). The ground truth for update rules, synapse format and spike handling | read |
+| [snn-core](https://gitlab.com/spinnaker2/snn-core) | Chip-side C code of the neuron models, pinned by py-spinnaker2 (`setup_libs.sh`, commit `0341893` named in `setup_libs.sh` of v0.8.2, read for the fact-check; the submodule itself points to the next commit `ccd54d0`, which only changes the start-up seeding of the random generators and compiler flags). The ground truth for update rules, synapse format and spike handling | read |
 | [SpiNNMan2](https://gitlab.com/spinnaker2/SpiNNMan2) (v0.2.4) | Host library used by py-spinnaker2: board locks, UDP communication, power measurement backends | read |
 | [SpiNNaker2 Developer Portal](https://spinnaker2.gitlab.io/) | General chip intro. Redirects to a GitLab login, so possibly restricted | todo |
 | [Software configuration guide](https://spinnaker2.gitlab.io/external/get_started/software_configuration) | Setup, on the portal (may need login) | todo |

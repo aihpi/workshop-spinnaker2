@@ -8,7 +8,7 @@ Planning repository for a 3-hour hands-on SpiNNaker2 workshop (AISC, planned for
 - `02_workshop_design/`: brief, outline, demo plans. Tracked in git.
 - `03_setup/`: how to run on the cluster (`README.md`) and the failure modes seen so far (`01_troubleshooting.md`), plus `enter_cx51.sh` and the smoke test. Tracked in git.
 - `04_spinncloud_tutorials/`: SpiNNcloud's deep-dive tutorial notebooks, run on our chips so the outputs are real. Reference material for learning the API and for checking what works on the hardware — **not** the workshop's own hands-on material, which does not exist yet. Apache-2.0, see the folder README. Tracked in git.
-- `py-spinnaker2/`: clone of the vendor library (gitlab, pinned at commit `6c9084fc`), installed non-editable into the conda env `spinnaker2`. **Gitignored**, never commit it. Library source changes need `pip install .` again.
+- `py-spinnaker2/`: clone of the vendor library (gitlab, pinned at release `v0.8.2`), installed non-editable into the conda env `spinnaker2`. **Gitignored**, never commit it. Library source changes need `pip install .` again.
 - `_local/`: gitignored working notes, e.g. dated handover plans for the next conversation (`_local/2026-09-30_plan_next_steps.md`). Read the newest plan there when starting a new session.
 - `01_knowledge_base/figures/<markdown file name>/` holds the figures of one markdown file together with the script that generates them (e.g. `figures/01_primer_snn_basics/make_figures.py`). Figure file names start with the section number. The scripts also check the numbers the figures show. Run with `uv run --with numpy --with matplotlib --with schemdraw make_figures.py` (no global installs). Regenerate figures through the script, never edit PNGs by hand.
 
