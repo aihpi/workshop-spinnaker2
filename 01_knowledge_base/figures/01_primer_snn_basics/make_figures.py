@@ -283,15 +283,17 @@ def fig_fhn_phase():
 
 
 def chip_lif(steps, alpha, threshold, i_offset=0.0, inputs=None, reset="subtract", v_reset=0.0):
-    """py-spinnaker2 `lif` update: v[t] = alpha*v[t-1] + I_syn[t] + i_offset, then threshold and reset."""
-    inputs = np.zeros(steps) if inputs is None else inputs
-    v, trace, spikes = 0.0, np.zeros(steps), []
+    """py-spinnaker2 `lif` update: v[t] = alpha*v[t-1] + I_syn[t] + i_offset, then threshold and reset.
+    In single precision like the chip (snn-core: typedef float REAL)."""
+    f32 = np.float32
+    inputs = np.zeros(steps, f32) if inputs is None else np.asarray(inputs, f32)
+    v, trace, spikes = f32(0.0), np.zeros(steps), []
     for t in range(steps):
-        v = alpha * v + inputs[t] + i_offset
-        trace[t] = v  # value before reset, so a crossing is visible
-        if v >= threshold:
+        v = f32(alpha) * v + inputs[t] + f32(i_offset)
+        trace[t] = v  # value before reset, so a crossing is visible (the chip records v after the reset)
+        if v >= f32(threshold):
             spikes.append(t)
-            v = v - threshold if reset == "subtract" else v_reset
+            v = v - f32(threshold) if reset == "subtract" else f32(v_reset)
     return trace, np.array(spikes)
 
 
@@ -519,19 +521,22 @@ def fig_alif():
     fig.savefig(OUT / "05_alif_adaptation.png")
 
 
-def izhikevich(a, b, c, d, i_amp=10.0, t_end=200, t_on=20, dt=0.25):
-    """dv/dt = 0.04 v^2 + 5 v + 140 - u + I, du/dt = a (b v - u); at v >= 30 mV: v <- c, u <- u + d. v in mV, t in ms."""
-    t = np.arange(0, t_end, dt)
+def izhikevich(a, b, c, d, i_amp=10.0, t_end=200, t_on=20):
+    """dv/dt = 0.04 v^2 + 5 v + 140 - u + I, du/dt = a (b v - u); at v >= 30 mV: v <- c, u <- u + d. v in mV, t in ms.
+    Integrated as on the chip (snn-core `izhikevich`) and in the network code of Izhikevich (2003): one step = 1 ms,
+    v in two half-steps of 0.5 ms, then u in one step of 1 ms."""
+    t = np.arange(0, t_end, 1.0)
     v, u = np.full_like(t, -70.0), np.zeros_like(t)  # start at rest
-    u[0] = b * v[0]
+    vk, uk = v[0], b * v[0]
     for k in range(1, len(t)):
         inp = i_amp if t[k] >= t_on else 0.0
-        vk = v[k - 1] + dt * (0.04 * v[k - 1] ** 2 + 5 * v[k - 1] + 140 - u[k - 1] + inp)
-        uk = u[k - 1] + dt * a * (b * v[k - 1] - u[k - 1])
+        for _ in range(2):
+            vk = vk + 0.5 * (0.04 * vk**2 + 5 * vk + 140 - uk + inp)
+        uk = uk + a * (b * vk - uk)
+        v[k] = vk
         if vk >= 30:
-            v[k - 1] = 30  # draw the spike peak
+            v[k] = 30  # draw the spike peak (the chip records v after the reset)
             vk, uk = c, uk + d
-        v[k], u[k] = vk, uk
     return t, v
 
 
@@ -550,8 +555,8 @@ def fig_izhikevich():
 
 
 def chip_lif_prob(steps, alpha, threshold, i_offset, p, rng):
-    """`lif_prob` as assumed here: above threshold the neuron fires with probability p (then reset to 0),
-    otherwise v keeps integrating. What the chip does without a spike is still to be checked."""
+    """`lif_prob` as in the chip code: above threshold the neuron fires with probability p (reset to 0 here,
+    the chip's default is reset by subtraction), otherwise v keeps integrating."""
     v, trace, spikes = 0.0, np.zeros(steps), []
     for t in range(steps):
         v = alpha * v + i_offset
@@ -604,67 +609,111 @@ def cut_size(x, edges):
     return sum(x[i] != x[j] for i, j in edges)
 
 
-def qubo_dynamics(n, edges, steps=400, alpha=1.0, seed=3):
-    """Principle of the `qubo_neuron`: v[t] = alpha v - 0.1 I_syn - 0.15 v (v^2 - 1) + noise.
-    Simplified: I_syn is the sum of the neighbours' v (continuous), the noise is annealed from strong to weak."""
-    rng = np.random.default_rng(seed)
-    adj = np.zeros((n, n))
+def maxcut_q(n, edges):
+    """Q matrix as in the py-spinnaker2 example (`get_Q_from_A`): +1 between neighbours, -degree on the diagonal."""
+    q = np.zeros((n, n))
     for i, j in edges:
-        adj[i, j] = adj[j, i] = 1
-    v = rng.normal(0, 0.05, n)
-    vs, cuts = np.zeros((steps, n)), np.zeros(steps)
+        q[i, j] = q[j, i] = 1
+    np.fill_diagonal(q, -q.sum(1))
+    return q
+
+
+def qubo_chip(n, edges, steps=300, alpha=0.5, threshold=0.15, seed=7, coupled=True):
+    """`qubo_neuron` as in snn-core: v = alpha v - 0.1 I - 0.15 v (v^2 - 1) + noise, noise ~ N(0.1 threshold, threshold),
+    constant over the run; spike if v >= threshold, then reset to v_reset = 0. I = sum of Q[pre, post] over the spikes of
+    the previous step (delay 0 = arrival one step later). Parameters of the example's 8-node run. Readout as in the
+    example: the spike vector of each step is a candidate partition, the best one over the run is kept."""
+    rng = np.random.default_rng(seed)
+    q = np.clip(maxcut_q(n, edges), -15, 15)  # 5-bit weight range
+    v, prev = np.zeros(n), np.zeros(n, bool)
+    spikes, cuts = np.zeros((steps, n), bool), np.zeros(steps, int)
     for t in range(steps):
-        sigma = 0.25 * (1 - t / steps) + 0.01
-        v = alpha * v - 0.1 * adj @ v - 0.15 * v * (v**2 - 1) + rng.normal(0, sigma, n)
-        vs[t], cuts[t] = v, cut_size(v > 0, edges)
-    return vs, cuts
+        i_syn = q.T @ prev if coupled else 0.0
+        v = alpha * v - 0.1 * i_syn - 0.15 * v * (v**2 - 1) + 0.1 * threshold + threshold * rng.standard_normal(n)
+        s = v >= threshold
+        v[s] = 0.0
+        spikes[t], cuts[t], prev = s, cut_size(s, edges), s
+    return spikes, cuts
 
 
 def fig_qubo():
     n, edges = maxcut_graph()
     best = max(cut_size([(k >> i) & 1 for i in range(n)], edges) for k in range(2**n))
-    vs, cuts = qubo_dynamics(n, edges)
-    fig = plt.figure(figsize=(9.5, 5.5))
-    gs = fig.add_gridspec(2, 2)
-    ax_w, ax_v, ax_c, ax_g = fig.add_subplot(gs[0, 0]), fig.add_subplot(gs[0, 1]), fig.add_subplot(gs[1, 0]), fig.add_subplot(gs[1, 1])
-    x = np.linspace(-1.6, 1.6, 200)
-    ax_w.plot(x, 0.15 * (x**4 / 4 - x**2 / 2), color="k")
-    ax_w.set_title("A: two stable states per neuron", loc="left", fontsize=10)
-    ax_w.set_xlabel("v (dimensionless)")
-    ax_w.set_ylabel("U(v), potential of the\nterm −0.15 v (v² − 1)")
-    ax_w.text(-1, 0.002, "group 0\n(orange)", ha="center", fontsize=8, color=ORANGE)
-    ax_w.text(1, 0.002, "group 1\n(blue)", ha="center", fontsize=8, color=BLUE)
+    spikes, cuts = qubo_chip(n, edges)
+    t_best = int(np.argmax(cuts))
+    fig = plt.figure(figsize=(11, 5.2))
+    gs = fig.add_gridspec(2, 2, width_ratios=[1.7, 1])
+    ax_r, ax_c, ax_g = fig.add_subplot(gs[0, 0]), fig.add_subplot(gs[1, 0]), fig.add_subplot(gs[:, 1])
     t = np.arange(len(cuts))
     for i in range(n):
-        ax_v.plot(t, vs[:, i], lw=0.8, color=BLUE if vs[-1, i] > 0 else ORANGE)
-    ax_v.set_title("B: each neuron settles into one well", loc="left", fontsize=10)
-    ax_v.set_xlabel("timestep t (colour = final group)")
-    ax_v.set_ylabel("v[t] (dimensionless)")
-    ax_c.plot(t, cuts, color="k", lw=1)
+        ts = t[spikes[:, i]]
+        ax_r.plot(ts, np.full(len(ts), i), "|", color="k", ms=6)
+    ax_r.axvspan(t_best - 0.8, t_best + 0.8, color=GREEN, alpha=0.3)
+    ax_r.set_yticks(range(n))
+    ax_r.set_ylim(n - 0.5, -0.5)
+    ax_r.set_ylabel("neuron = node")
+    ax_r.set_xlabel("timestep t (green: the step with the best partition)")
+    ax_r.set_xlim(-2, len(t))
+    ax_r.set_title("A: spikes of the 8 QUBO neurons: each step's spikes are a candidate partition", loc="left", fontsize=10)
+    running = np.maximum.accumulate(cuts)
+    ax_c.plot(t, cuts, ".", color=GREY, ms=3, label="spike pattern of this step")
+    ax_c.step(t, running, where="post", color=ORANGE, lw=1.8, label="best so far")
     ax_c.axhline(best, color=GREEN, ls="--", lw=1)
-    ax_c.text(len(t) - 1, best - 0.4, f"best possible cut: {best} of {len(edges)} edges", ha="right", va="top", fontsize=8,
-              color=GREEN)
-    ax_c.set_title("C: edges between the two groups (cut edges)", loc="left", fontsize=10)
+    ax_c.text(len(t) - 1, best + 0.3, f"best possible cut: {best} of {len(edges)} edges", ha="right", va="bottom",
+              fontsize=8, color=GREEN)
+    ax_c.annotate(f"first found at step {t_best}", (t_best, cuts[t_best]), (t_best + 25, 3.5), fontsize=8,
+                  arrowprops={"arrowstyle": "->", "color": "0.3"})
+    ax_c.set_title("B: cut edges of each step's partition", loc="left", fontsize=10)
     ax_c.set_ylabel("number of\ncut edges")
     ax_c.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
-    ax_c.set_xlabel("timestep t (noise decreases over time)")
-    ax_c.set_ylim(0, len(edges) + 1)
+    ax_c.set_xlabel("timestep t (constant noise, no annealing)")
+    ax_c.set_xlim(-2, len(t))
+    ax_c.set_ylim(0, len(edges) + 2)
+    ax_c.legend(frameon=False, fontsize=7.5, loc="lower right", ncol=2)
     ang = np.linspace(0, 2 * np.pi, n, endpoint=False)
     pos = np.c_[np.cos(ang), np.sin(ang)]
-    final = vs[-1] > 0
+    group = spikes[t_best]
     for i, j in edges:
-        cut = final[i] != final[j]
+        cut = group[i] != group[j]
         ax_g.plot(*pos[[i, j]].T, color=GREEN if cut else "0.75", lw=2 if cut else 1, ls="-" if cut else ":")
-    ax_g.scatter(*pos.T, s=180, c=[BLUE if f else ORANGE for f in final], edgecolors="k", zorder=3)
-    ax_g.set_title("D: final groups, green edges are cut,\ndotted grey edges are not", loc="left", fontsize=10)
+    ax_g.scatter(*pos.T, s=260, c=[BLUE if g else ORANGE for g in group], edgecolors="k", zorder=3)
+    for i in range(n):
+        ax_g.text(*pos[i], str(i), ha="center", va="center", fontsize=7.5, color="white", zorder=4)
+    ax_g.set_title(f"C: the partition of step {t_best}: spiked (blue)\nor not (orange); green edges are cut,\n"
+                   "dotted grey edges are not", loc="left", fontsize=10)
     ax_g.set_aspect("equal")
     ax_g.axis("off")
     fig.tight_layout()
     fig.savefig(OUT / "05_qubo_maxcut.png")
 
 
+def qubo_comparison(seed=5, n=50, p_edge=0.1, steps=300):
+    """Best cut on a random graph: QUBO neurons (coupled and noise only), random partitions, greedy local search."""
+    rng = np.random.default_rng(seed)
+    upper = np.triu(rng.random((n, n)) < p_edge, 1)
+    edges = [(int(i), int(j)) for i, j in zip(*np.nonzero(upper))]
+    coupled = max(qubo_chip(n, edges, steps=steps, seed=s)[1].max() for s in range(5))
+    noise_only = max(qubo_chip(n, edges, steps=steps, seed=s, coupled=False)[1].max() for s in range(5))
+    random_best = max(cut_size(rng.random(n) < 0.5, edges) for _ in range(5 * steps))
+
+    def local_search(x):
+        gain = True
+        while gain:
+            gain = False
+            for i in range(n):
+                y = x.copy()
+                y[i] = not y[i]
+                if cut_size(y, edges) > cut_size(x, edges):
+                    x, gain = y, True
+        return cut_size(x, edges)
+
+    greedy = max(local_search(rng.random(n) < 0.5) for _ in range(20))
+    return len(edges), coupled, noise_only, random_best, greedy
+
+
 def poisson_spikes(p, steps, rng, t_ref=3):
-    """`poisson_process`: spike with probability p per step, then silent for t_ref steps (default Tref = 3)."""
+    """`poisson_process`: spike with probability p per step, then silent for t_ref steps (`Tref`; the code default is
+    0, the documentation says 3, so it is set explicitly)."""
     spikes, last = [], -np.inf
     for t in range(steps):
         if t - last > t_ref and rng.random() < p:
@@ -675,7 +724,7 @@ def poisson_spikes(p, steps, rng, t_ref=3):
 
 def latency_spike(x, x_max, t_max):
     """`spikes_from_array_latency_code`: t = t_max (x_max - x) / x_max, one spike per input.
-    Rounded down to a whole timestep (how the chip rounds is still to be checked)."""
+    Rounded down to a whole timestep, as on the chip (float -> uint16 cast in snn-core)."""
     return int(t_max * (x_max - x) / x_max)
 
 
@@ -1059,7 +1108,8 @@ def fig_deployment():
     ax.set_ylim(-4, 3.8)
     # 3 py-spinnaker2 objects
     ax = axes[2]
-    pops = [("Population\nsize 784, spike_list", 2.4), ("Population\nsize 128, lif", 0), ("Population\nsize 10, lif", -2.4)]
+    pops = [("Population\nsize 784, spike_list", 2.4), ("Population\nsize 128, lif_no_delay", 0),
+            ("Population\nsize 10, lif_no_delay", -2.4)]
     for k, (name, y) in enumerate(pops):
         box(ax, (0, y), name, color="#cfe2f3", w=2.4, h=0.95, fs=7.5)
         if k < 2:
@@ -1070,16 +1120,17 @@ def fig_deployment():
     # 4 mapping onto the chip: cores and integer weights
     ax = axes[3]
     rows, cols = 8, 19  # 152 processing elements, drawn as a grid
-    use = {0: BLUE, 1: BLUE, 2: BLUE, 3: BLUE, 4: GREEN, 5: ORANGE}
+    # input: 784 / 500 neurons per core; hidden: about 26-28 per core fit the memory budget (02 section 3); output: 1
+    use = {0: BLUE, 1: BLUE, 2: GREEN, 3: GREEN, 4: GREEN, 5: GREEN, 6: GREEN, 7: ORANGE}
     for k in range(rows * cols):
         r, c = divmod(k, cols)
         ax.add_patch(plt.Rectangle((c * 0.16, 2.4 - r * 0.36), 0.13, 0.3, color=use.get(k, "0.85")))
-    ax.text(1.5, 3.0, "152 cores (schematic allocation)", ha="center", fontsize=7.5)
-    for k, (label, color) in enumerate([("input: 4 cores", BLUE), ("hidden: 1 core", GREEN), ("output: 1 core", ORANGE)]):
+    ax.text(1.5, 3.0, "152 cores, 148 for applications\n(schematic allocation)", ha="center", fontsize=7.5)
+    for k, (label, color) in enumerate([("input: 2 cores", BLUE), ("hidden: 5 cores", GREEN), ("output: 1 core", ORANGE)]):
         ax.add_patch(plt.Rectangle((0.05, -0.75 - 0.45 * k), 0.13, 0.3, color=color))
         ax.text(0.3, -0.6 - 0.45 * k, label, fontsize=7.5, va="center")
-    ax.text(1.5, -2.6, "weights → integers\n0.137 × scale → 4", ha="center", fontsize=8)
-    ax.text(1.5, -3.4, "(5 bit: −15 … 15, Figure 12)", ha="center", fontsize=7, color=GREY)
+    ax.text(1.5, -2.6, "weights → integers\n0.137 × 127 / max|w| → 17", ha="center", fontsize=8)
+    ax.text(1.5, -3.4, "(8 bit: −127 … 127, scale_weights=True)", ha="center", fontsize=7, color=GREY)
     ax.set_xlim(-0.1, 3.1)
     ax.set_ylim(-4, 3.8)
     # 5 run: spikes in, spikes out
@@ -1217,10 +1268,15 @@ def check():
     # ALIF: adaptation makes inter-spike intervals grow
     _, _, sp = chip_alif(120, 0.9, 1.0, 0.25, 0.4, 0.97)
     assert np.diff(sp)[-1] > np.diff(sp)[0]
-    # QUBO illustration reaches the optimal cut of the example graph
+    # QUBO neurons (chip update rule) find the optimal cut of the example graph within the run
     n, edges = maxcut_graph()
     best = max(cut_size([(k >> i) & 1 for i in range(n)], edges) for k in range(2**n))
-    assert qubo_dynamics(n, edges)[1][-1] == best
+    assert qubo_chip(n, edges)[1].max() == best
+    # on a random 50-node graph: coupling beats noise alone and random partitions, greedy local search beats all
+    n_edges, coupled, noise_only, random_best, greedy = qubo_comparison()
+    print(f"QUBO, random graph with {n_edges} edges: coupled {coupled}, noise only {noise_only}, "
+          f"random partitions {random_best}, greedy local search {greedy}")
+    assert noise_only < random_best < coupled < greedy
     # Poisson source without refractory period fires with rate p, latency code maps x_max to t = 0
     rng = np.random.default_rng(0)
     assert abs(len(poisson_spikes(0.2, 50_000, rng, t_ref=0)) / 50_000 - 0.2) < 0.01
