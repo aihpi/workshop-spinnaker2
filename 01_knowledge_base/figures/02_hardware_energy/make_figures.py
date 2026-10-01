@@ -253,8 +253,9 @@ def fig_pe_function():
     box(ax, 2.6, 2.9 + y0, 3.0, 1.2, "ARM Cortex-M4F core\nruns the neuron model", CORE, fs=9)
     ax.add_patch(plt.Rectangle((0.4, 0.3 + y0), 6.8, 2.0, fc=MEM, ec="k", lw=1))
     ax.text(0.5, 2.12 + y0, "128 KB SRAM", fontsize=8.5, fontweight="bold", va="center")
-    for x, w, t in [(0.5, 1.35, "code of the\nneuron model"), (1.95, 1.6, "synapse tables:\nweights, targets"),
-                    (3.65, 1.6, "neuron states\nand parameters"), (5.35, 1.7, "recordings\n(spikes, v)")]:
+    for x, w, t in [(0.5, 1.2, "code of the\nneuron model"), (1.8, 1.5, "synapse tables:\nweights, targets"),
+                    (3.4, 1.5, "neuron states\nand parameters"), (5.0, 1.1, "recordings\n(spikes, v)"),
+                    (6.2, 0.9, "spike\nbuffer")]:
         box(ax, x, 0.45 + y0, w, 1.45, t, "white", fs=7)
     box(ax, 7.5, 0.8 + y0, 1.0, 0.7, "DMA", "white", fs=8.5)
     box(ax, 7.6, 2.9 + y0, 0.95, 1.2, "NoC\ninter-\nface", NET, fs=8)
@@ -264,30 +265,33 @@ def fig_pe_function():
     both = dict(arrowstyle="<|-|>", mutation_scale=12)
     grey = dict(color="0.55", lw=1.2, ls="--")
     ax.add_patch(FancyArrowPatch((8.55, 3.5 + y0), (9.4, 3.5 + y0), color=GREEN, lw=2, **both))
-    ax.add_patch(FancyArrowPatch((7.2, 1.15 + y0), (7.5, 1.15 + y0), **grey, **both))
+    ax.add_patch(FancyArrowPatch((7.5, 1.15 + y0), (7.12, 1.15 + y0), color=ORANGE, lw=2.5, **arrow))
     ax.add_patch(FancyArrowPatch((8.5, 1.15 + y0), (9.4, 1.15 + y0), **grey, **arrow))
     ax.add_patch(FancyArrowPatch((4.1, 4.1 + y0), (4.1, 4.55 + y0), **grey, **both))
     ax.text(4.2, 4.3 + y0, "used by some models", fontsize=6.5, color="0.45", va="center")
-    ax.text(8.0, 0.55 + y0, "e.g. record_on_dram", fontsize=6.5, color="0.45", ha="center")
+    ax.text(10.25, 0.45 + y0, "used e.g. by record_on_dram", fontsize=6.5, color="0.45", ha="center", va="top")
     # the steps, coloured like the timestep figure: incoming spikes orange, neuron update blue
     ax.add_patch(FancyArrowPatch((1.2, 4.55 + y0), (2.6, 3.9 + y0), color="k", lw=2, **arrow))
     ax.text(0.45, 4.2 + y0, "① wake up", fontsize=8.5, fontweight="bold")
-    ax.add_patch(FancyArrowPatch((7.6, 3.8 + y0), (5.6, 3.8 + y0), color=ORANGE, lw=2.5, **arrow))
-    ax.text(6.6, 3.95 + y0, "② spikes in", fontsize=8.5, fontweight="bold", color="#c65f00", ha="center")
-    ax.add_patch(FancyArrowPatch((2.75, 1.9 + y0), (3.1, 2.9 + y0), color=ORANGE, lw=2.5, **arrow))
-    ax.text(1.35, 2.5 + y0, "③ read synapses\n(targets, weights)", fontsize=8, fontweight="bold", color="#c65f00")
+    ax.add_patch(FancyArrowPatch((7.8, 2.9 + y0), (7.8, 1.5 + y0), color=ORANGE, lw=2.5, **arrow))
+    ax.text(7.9, 2.2 + y0, "② spikes in:\nDMA →\nbuffer", fontsize=7.5, fontweight="bold", color="#c65f00",
+            va="center")
+    ax.add_patch(FancyArrowPatch((2.6, 1.9 + y0), (3.0, 2.9 + y0), color=ORANGE, lw=2.5, **arrow))
+    ax.add_patch(FancyArrowPatch((6.55, 1.9 + y0), (5.5, 2.95 + y0), color=ORANGE, lw=2.5, **arrow))
+    ax.text(0.45, 2.62 + y0, "③ read buffered spikes\nand their synapses", fontsize=8, fontweight="bold",
+            color="#c65f00", va="center")
     ax.add_patch(FancyArrowPatch((4.4, 2.9 + y0), (4.45, 1.9 + y0), color=BLUE, lw=2.5, **both))
     ax.text(4.6, 2.5 + y0, "④ add weights,\nupdate neurons", fontsize=8, fontweight="bold", color=BLUE)
     ax.add_patch(FancyArrowPatch((5.6, 3.2 + y0), (7.6, 3.2 + y0), color=BLUE, lw=2.5, **arrow))
     ax.text(6.6, 2.8 + y0, "⑤ spikes out", fontsize=8.5, fontweight="bold", color=BLUE, ha="center")
     # timeline strip: one timestep
     t_scale = 8.8  # one timestep drawn over the width of the PE
-    segs = [(0.0, 0.03, "k", "①"), (0.03, 0.35, ORANGE, "② ③"), (0.35, 0.55, BLUE, "④ ⑤"), (0.55, 1.0, "0.9", "sleep")]
+    segs = [(0.0, 0.03, "k", "①"), (0.03, 0.35, ORANGE, "③"), (0.35, 0.55, BLUE, "④ ⑤"), (0.55, 1.0, "0.9", "sleep")]
     for a, b, c, t in segs:
         ax.add_patch(plt.Rectangle((a * t_scale, 0.35), (b - a) * t_scale, 0.5, fc=c, ec="none"))
         ax.text((a + b) / 2 * t_scale, 0.6, t if t != "①" else "", ha="center", va="center", fontsize=8.5,
                 color="white" if c != "0.9" else "0.3", fontweight="bold")
-    ax.text(0.0, 1.05, "① timer", fontsize=7.5)
+    ax.text(0.0, 1.05, "① timer        ② arrives in the background, during the previous timestep", fontsize=7.5)
     for x, lab in [(0, "start of the timestep"), (t_scale, "next timestep")]:
         ax.plot([x, x], [0.25, 0.95], color="k", lw=1)
         ax.text(x, 0.05, lab, fontsize=7.5, ha="center" if x == 0 else "right")
@@ -349,50 +353,79 @@ def clustered_synapses():
     return ee_in + ee_out + 50 * 200 * 0.3 + 200 * 50 * 0.4 + 50 * 49 * 0.5
 
 
+# Memory of one PE in py-spinnaker2 v0.8 for `lif`, as reported by its own mapping (hw.run(..., mapping_only=True),
+# checked on 2026-10-01): network data from 0xE000 to 0x1F000; per presynaptic source a synapse row of a 12-byte header
+# plus 2 bytes per synapse, padded to a multiple of 16 bytes, plus a 12-byte entry in the master population table
+PE_DATA_BYTES = 0x1F000 - 0xE000  # 68 KiB
+ERROR_LOG_BYTES = 2304
+
+
+def row_bytes(n_synapses):
+    return -(-(12 + 2 * n_synapses) // 16) * 16
+
+
+def slice_bytes(n_sources, synapses_per_source):
+    return n_sources * (row_bytes(synapses_per_source) + 12) + ERROR_LOG_BYTES
+
+
+def clustered_pe_bytes():
+    """Approximate memory of the two populations of the clustered network, from the expected synapses per source:
+    E population: 200 E sources with 19 * 0.5 + 180 * 0.05 = 18.5 targets each, 50 I sources with 200 * 0.4 = 80;
+    I population: 200 E sources with 50 * 0.3 = 15 targets each, 50 I sources with 49 * 0.5 = 24.5."""
+    e_pop = 200 * (row_bytes(19) + 12) + 50 * (row_bytes(80) + 12) + ERROR_LOG_BYTES
+    i_pop = 200 * (row_bytes(15) + 12) + 50 * (row_bytes(25) + 12) + ERROR_LOG_BYTES
+    return [e_pop, i_pop]
+
+
+def max_neurons_per_pe(n_sources):
+    """Largest slice of an all-to-all layer that fits into one PE (small regions such as parameters ignored)."""
+    return max(n for n in range(1, 257) if slice_bytes(n_sources, n) <= PE_DATA_BYTES)
+
+
 def fig_memory():
     """A: energy of reading MNIST layer 1 from SRAM vs DRAM. B: how many PEs the example networks fill."""
-    budget_kb = 92  # 96 KB data memory minus 4 KB heap and stack; routing tables and recordings reduce it further
     n_l1 = 784 * 128
-    reads = n_l1 * 4 / 8  # 64-bit reads for all weights at 4 bytes per synapse
-    e_sram, e_dram = reads * 10e-6, reads * 1300e-6  # µJ, Horowitz 2014 (pJ per 64-bit read)
+    reads = n_l1 * 2 / 8  # 64-bit reads for all weights at 2 bytes per synapse
+    # pJ per 64-bit read, Horowitz 2014: 8 KB cache 10 pJ, DRAM 1.3 nJ; 128 KB interpolated log-log between 32 KB
+    # (20 pJ) and 1 MB (100 pJ)
+    e_128k = 20 * (128 / 32) ** (np.log(100 / 20) / np.log(1024 / 32))
+    bars = [("DRAM\n(next to the chip)", reads * 1300e-6, "#f4cccc"),
+            ("SRAM, 128 KB\n(interpolated)", reads * e_128k * 1e-6, MEM), ("SRAM, 8 KB", reads * 10e-6, MEM)]
     fig, (ax_a, ax_b) = plt.subplots(1, 2, figsize=(13, 4.4), gridspec_kw={"width_ratios": [1, 1.45]})
-    # A: why keep the weights local
-    for yy, (name, e, c) in enumerate([("DRAM\n(next to the chip)", e_dram, "#f4cccc"), ("SRAM of the PEs\n(on the chip)", e_sram, MEM)]):
+    for yy, (name, e, c) in enumerate(bars):
         ax_a.barh(yy, e, color=c, ec="k", height=0.55)
-        ax_a.text(e * 1.2, yy, f"{e:.1f} µJ", va="center", fontsize=9, fontweight="bold")
-    ax_a.set_yticks([0, 1], ["DRAM\n(next to the chip)", "SRAM of the PEs\n(on the chip)"], fontsize=8.5)
+        ax_a.text(e * 1.2, yy, f"{e:.2f} µJ" if e < 1 else f"{e:.0f} µJ", va="center", fontsize=9, fontweight="bold")
+    ax_a.set_yticks(range(len(bars)), [b[0] for b in bars], fontsize=8.5)
     ax_a.set_xscale("log")
-    ax_a.set_xlim(0.1, 2000)
-    ax_a.set_ylim(-0.6, 1.9)
-    ax_a.annotate("", (e_dram, 1.45), (e_sram, 1.45), arrowprops={"arrowstyle": "-|>", "color": RED, "lw": 1.3})
-    ax_a.text(np.sqrt(e_sram * e_dram), 1.55, f"× {e_dram / e_sram:.0f} more energy", ha="center", fontsize=8.5, color=RED)
+    ax_a.set_xlim(0.05, 2000)
+    ax_a.set_ylim(-0.6, 2.9)
+    e_dram, e_lo, e_hi = bars[0][1], bars[1][1], bars[2][1]
+    ax_a.annotate("", (e_dram, 2.45), (e_lo, 2.45), arrowprops={"arrowstyle": "-|>", "color": RED, "lw": 1.3})
+    ax_a.text(np.sqrt(e_lo * e_dram), 2.55, f"× {e_dram / e_lo:.0f} to {e_dram / e_hi:.0f} more energy", ha="center",
+              fontsize=8.5, color=RED)
     ax_a.set_xlabel("energy to read all 100,352 weights of MNIST layer 1 once (µJ, log scale)")
     ax_a.set_title("A: why keep the weights in local SRAM", loc="left", fontsize=10)
     # B: the price: networks fill PE memories and have to be split
-    nets = [("MNIST layer 1\n784 inputs → 128 hidden", n_l1), ("clustered network\n(primer Figure 21)", clustered_synapses()),
-            ("MNIST layer 2\n128 hidden → 10 outputs", 128 * 10)]
+    n_per_pe = max_neurons_per_pe(784)
+    l1 = [min(n_per_pe, 128 - k) for k in range(0, 128, n_per_pe)]
+    nets = [("MNIST layer 1\n784 inputs → 128 hidden", [slice_bytes(784, n) for n in l1],
+             f"{len(l1)} PEs: at most {n_per_pe}\nhidden neurons per PE"),
+            ("clustered network\n(primer Figure 21)", clustered_pe_bytes(),
+             "2 PEs: one per population\n(E: 200, I: 50 neurons)"),
+            ("MNIST layer 2\n128 hidden → 10 outputs", [slice_bytes(128, 10)], "1 PE")]
     gap = 0.12
-    for row, (name, n_syn) in enumerate(nets):
+    for row, (name, fills, note) in enumerate(nets):
         yy = 2 - row
-        kb1, kb4 = n_syn / 1024, 4 * n_syn / 1024
-        n_boxes = int(np.ceil(kb4 / budget_kb))
-        for b in range(n_boxes):
+        for b, used in enumerate(fills):
             x = b * (1 + gap)
-            fill = min(1.0, kb4 / budget_kb - b)
             ax_b.add_patch(plt.Rectangle((x, yy - 0.3), 1, 0.6, fc="white", ec="k", lw=1))
-            ax_b.add_patch(plt.Rectangle((x, yy - 0.3), fill, 0.6, fc=ORANGE, ec="none"))
-        pos1 = kb1 / budget_kb
-        x1 = int(pos1) * (1 + gap) + (pos1 - int(pos1))
-        ax_b.plot([x1, x1], [yy - 0.38, yy + 0.38], color="k", ls="--", lw=1.2)
-        need = f"{n_boxes} PE" + ("s" if n_boxes > 1 else "") + " at 4 bytes"
-        need1 = int(np.ceil(pos1))
-        ax_b.text(5 * (1 + gap) + 0.1, yy, f"{need},\n{need1} PE{'s' if need1 > 1 else ''} at 1 byte", va="center", fontsize=8)
+            ax_b.add_patch(plt.Rectangle((x, yy - 0.3), used / PE_DATA_BYTES, 0.6, fc=ORANGE, ec="none"))
+        ax_b.text(5 * (1 + gap) + 0.1, yy, note, va="center", fontsize=8)
         ax_b.text(-0.15, yy, name, ha="right", va="center", fontsize=8.5)
-    handles = [plt.matplotlib.patches.Patch(fc="white", ec="k", label="data memory of one PE (≈ 92 KB)"),
-               plt.matplotlib.patches.Patch(color=ORANGE, label="filled by the synapses at 4 bytes each"),
-               plt.Line2D([], [], color="k", ls="--", lw=1.2, label="end of the synapses at 1 byte each")]
-    ax_b.legend(handles=handles, frameon=False, fontsize=7.5, loc="lower left", bbox_to_anchor=(0.2, 0.86), ncol=2)
-    ax_b.set_xlim(-3.0, 7.3)
+    handles = [plt.matplotlib.patches.Patch(fc="white", ec="k", label="network data memory of one PE (≈ 68 KiB for lif)"),
+               plt.matplotlib.patches.Patch(color=ORANGE, label="synapse rows, routing entries and error log")]
+    ax_b.legend(handles=handles, frameon=False, fontsize=7.5, loc="lower left", bbox_to_anchor=(0.2, 0.86), ncol=1)
+    ax_b.set_xlim(-3.0, 7.6)
     ax_b.set_ylim(-0.6, 3.1)
     ax_b.axis("off")
     ax_b.set_title("B: the price: local memory is small, networks are split across PEs", loc="left", fontsize=10)
@@ -445,22 +478,23 @@ def fig_multicast():
     ax_d.set_aspect("equal")
     ax_d.axis("off")
     ax_d.set_title("A: multicast: one packet, copied only where needed (keys and targets made up)", loc="left", fontsize=10)
-    # B: packets per spike for two examples
+    # B: packets the sending PE emits for one spike, per routing mode
     examples = [("one input spike of the\nMNIST network: 128 targets\non 5 PEs (Figure 5)", 128, 5),
                 ("cortex-like neuron:\n1,000 targets on 10 PEs", 1000, 10)]
     x = np.arange(len(examples))
+    modes = [("one packet per target neuron (no routing tables)", GREY), ("core-to-core (py-spinnaker2 default):\n"
+             "one packet per target PE", ORANGE), ("multicast: one packet, copied by the router", RED)]
     for k, (name, n_targets, n_pes) in enumerate(examples):
-        ax_p.bar(k - 0.2, n_targets, width=0.36, color=GREY, label="without multicast: one packet per target neuron" if k == 0 else None)
-        ax_p.bar(k + 0.2, 1 + n_pes, width=0.36, color=RED, label="with multicast: 1 packet sent + 1 copy per target PE" if k == 0 else None)
-        ax_p.text(k - 0.2, n_targets * 1.15, f"{n_targets:,}", ha="center", fontsize=8.5)
-        ax_p.text(k + 0.2, (1 + n_pes) * 1.15, f"1 + {n_pes}", ha="center", fontsize=8.5)
-        ax_p.text(k, n_targets * 2.6, f"≈ {n_targets / (1 + n_pes):.0f} × fewer", ha="center", fontsize=9, fontweight="bold")
+        for m_, ((label, color), n) in enumerate(zip(modes, [n_targets, n_pes, 1])):
+            xx = k + (m_ - 1) * 0.27
+            ax_p.bar(xx, n, width=0.25, color=color, label=label if k == 0 else None)
+            ax_p.text(xx, n * 1.15, f"{n:,}", ha="center", fontsize=8.5)
     ax_p.set_xticks(x, [e[0] for e in examples], fontsize=8)
     ax_p.set_yscale("log")
-    ax_p.set_ylim(1, 1e4)
-    ax_p.set_ylabel("packets for one spike (log scale)")
+    ax_p.set_ylim(0.7, 3e4)
+    ax_p.set_ylabel("packets the sending PE emits\nfor one spike (log scale)")
     ax_p.legend(frameon=False, fontsize=7.5, loc="upper left")
-    ax_p.set_title("B: packets needed for one spike", loc="left", fontsize=10)
+    ax_p.set_title("B: packets sent for one spike", loc="left", fontsize=10)
     fig.tight_layout()
     fig.savefig(OUT / "04_multicast.png")
     plt.close(fig)
@@ -470,7 +504,7 @@ def fig_scale():
     """PEs per system (reported) and an estimate of neuron capacity at ~150,000 neurons per chip."""
     systems = [("single-chip board", 1, 152), ("48-node board\n(one HPI run)", 48, 7_296),
                ("HPI installation\n(6 boards, if 48-node)", 288, 43_776), ("SpiNNcloud system,\nTU Dresden", 35_000, 5e6),
-               ("design limit", None, 10e6)]
+               ("planned maximum\n(Mayr et al. 2019)", None, 10e6)]
     fig, (ax_p, ax_n) = plt.subplots(1, 2, figsize=(12, 4.3), gridspec_kw={"width_ratios": [1.1, 1]})
     y = np.arange(len(systems))[::-1]
     colors = [GREY, ORANGE, ORANGE, BLUE, "0.75"]
@@ -494,7 +528,7 @@ def fig_scale():
     ax_n.set_xscale("log")
     ax_n.set_xlim(1e4, 5e12)
     ax_n.set_xlabel("neurons (log scale)")
-    ax_n.set_title("B: estimated capacity at ~150,000 neurons per chip", loc="left", fontsize=10)
+    ax_n.set_title("B: upper bound at ~150,000 neurons per chip", loc="left", fontsize=10)
     fig.tight_layout()
     fig.savefig(OUT / "05_scale.png")
     plt.close(fig)
@@ -620,7 +654,11 @@ def check():
     assert abs((1 - DVS_ENERGY["automatic PL\n(switches by load)"] / DVS_ENERGY["high PL\n(0.8 V, 300 MHz)"]) - 0.28) < 0.01
     hi_at_lo_max = 544.0 + COREMARK_PER_S["0.5 V, 150 MHz"] / COREMARK_PER_S["0.8 V, 300 MHz"] * (1227.2 - 544.0)
     assert abs(hi_at_lo_max - 870) < 1  # Figure 8A: high level at the work the low level reaches at full load
-    assert 784 * 128 / 1024 > 92 and round(clustered_synapses()) == 11925  # MNIST layer 1 exceeds one PE at 1 byte
+    assert round(clustered_synapses()) == 11925
+    # synapse rows as reported by py-spinnaker2's mapping for MNIST layer 1: 208.2 KiB for all 128 hidden neurons,
+    # 49.0 KiB for 26 and 61.2 KiB for 27 neurons per PE, and at most 26 neurons per PE
+    assert [round(784 * row_bytes(n) / 1024, 1) for n in (128, 26, 27)] == [208.2, 49.0, 61.2]
+    assert max_neurons_per_pe(784) == 26
     assert 6 * 48 * 152 == 43776 and 48 * 152 == 7296  # HPI installation and one board, if 48-node boards
     assert abs((1227.2 / 300) / (403.9 / 150) - 1.52) < 0.01  # energy per cycle at full load, high vs low level
     assert abs(2.281 / 0.825 - TOPS_PER_W["SpiNNaker2, 150 MHz"]) < 0.01  # Table 3: TOPS / W at 150 MHz

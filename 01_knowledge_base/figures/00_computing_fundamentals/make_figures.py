@@ -9,7 +9,7 @@ BLUE, ORANGE, GREEN, GREY, RED = "#1f77b4", "#ff7f0e", "#2ca02c", "0.5", "#d6272
 plt.rcParams.update({"figure.dpi": 150, "axes.spines.top": False, "axes.spines.right": False, "font.size": 10})
 
 # typical orders of magnitude (see the table in section 3): size in bytes, access time in seconds
-HIERARCHY = [("registers", 1e2, 0.3e-9), ("L1 cache", 32e3, 1e-9), ("L2 cache", 256e3, 4e-9), ("L3 cache", 16e6, 15e-9),
+HIERARCHY = [("registers", 1e2, 0.3e-9), ("L1 cache", 32e3, 1e-9), ("L2 cache", 1e6, 4e-9), ("L3 cache", 16e6, 15e-9),
              ("main memory (DRAM)", 16e9, 75e-9), ("SSD", 1e12, 100e-6)]
 
 

@@ -21,13 +21,13 @@ Each section ends with a line **Workshop:** saying what of it is taught in the w
 
 ## 1. The chip at a glance
 
-SpiNNaker2 is a many-core chip: instead of a few powerful processors it has 152 small, independent ones, each with its own memory, connected by a network that is optimised for sending many small messages (spikes). The name comes from *Spiking Neural Network Architecture*. It was developed at TU Dresden with the University of Manchester, the successor of SpiNNaker1 (Manchester, 2011), and is produced by [SpiNNcloud Systems](https://spinncloud.com).
+SpiNNaker2 is a many-core chip: instead of a few powerful processors it has 152 small, independent ones, each with its own memory, connected by a network that is optimised for sending many small messages (spikes). The name comes from *Spiking Neural Network Architecture*. It was developed at TU Dresden with the University of Manchester, as the successor of SpiNNaker1 (University of Manchester, whose million-core machine was completed in 2018), and is produced by [SpiNNcloud Systems](https://spinncloud.com).
 
 Physically, the chips sit on boards, and the boards in a frame in a server rack of the computing centre. Figure 1 follows this hierarchy down to a single chip, with the numbers of the HPI installation (section 5):
 
 ![From the rack to the chip](figures/02_hardware_energy/01_installation_hierarchy.png)
 
-***Figure 1.** Where the chips physically are, and how data from py-spinnaker2 reaches them (purple). A: the SpiNNaker2 frame is mounted in a server rack of the computing centre. py-spinnaker2 runs on a cluster node, which talks to the frame via Ethernet. B: the frame, seen from the front, holds 6 boards side by side, each with its own Ethernet connection, and a management controller that switches the boards on and boots them. A run reserves one board (red). C: that board, seen from above: 48 chips (probably, as a 48-node board), each with its own DRAM (red), which consists of separate memory chips next to it on the board. The chips are connected to their neighbours by links on the board (green). Each chip has 6 links: on the square grid of the drawing, these are the 4 horizontal and vertical neighbours plus one diagonal direction, which together form the hexagonal grid of the chip paper. Data from the host enters at a chip and travels over these links to the chips that need it. D: one of these chips, about 1 cm × 1 cm, with its 152 processing elements and their local SRAM (orange), shown in detail in Figure 2. The DRAM itself is outside the chip; on the chip sits only its interface (red, at the edge). Colours as in Figure 2: orange for on-chip SRAM, red for off-chip DRAM and its interface. For users, the relevant size is one board, 7,296 PEs per run. **Source:** Diagram. Numbers from the HPI installation (boot log and vendor, see section 5) and the chip paper (die size 102 mm²). The number of chips per board, the arrangement of chips and links on the board, the position of the cluster node and the entry point of Ethernet traffic on the board are not confirmed yet, the layout is schematic.*
+***Figure 1.** Where the chips physically are, and how data from py-spinnaker2 reaches them (purple). A: the SpiNNaker2 frame is mounted in a server rack of the computing centre. py-spinnaker2 runs on a cluster node, which talks to the frame via Ethernet. B: the frame, seen from the front, holds 6 boards side by side, each with its own Ethernet connection, and a management controller that switches the boards on and boots them. A run reserves one board (red). C: that board, seen from above: 48 chips (probably, as a 48-node board), each with its own DRAM (red), which consists of separate memory chips next to it on the board. The chips are connected to their neighbours by links on the board (green). Each chip has 6 links: on the square grid of the drawing, these are the 4 horizontal and vertical neighbours plus one diagonal direction, which together form the hexagonal grid of the chip paper. Data from the host enters at a chip and travels over these links to the chips that need it. D: one of these chips, about 1 cm × 1 cm, with its 152 processing elements and their local SRAM (orange), shown in detail in Figure 2. The DRAM itself is outside the chip; on the chip sits only its interface (red, at the edge). Colours as in Figure 2: orange for on-chip SRAM, red for off-chip DRAM and its interface. For users, the relevant size is one board: 7,296 PEs, of which 7,104 are available to a run. **Source:** Diagram. Numbers from the HPI installation (boot log and vendor, see section 5) and the chip paper (die size 102 mm²). That the host talks to the board through one chip follows from the py-spinnaker2 code, which addresses the board through chip (0, 0). The number of chips per board, the arrangement of chips and links on the board and the position of the cluster node are not confirmed yet, the layout is schematic.*
 
 ![Schematic of the SpiNNaker2 chip](figures/02_hardware_energy/01_chip_schematic.png)
 
@@ -37,32 +37,34 @@ Physically, the chips sit on boards, and the boards in a frame in a server rack 
 |---|---|
 | Process | GlobalFoundries 22FDX (22 nm FD-SOI) |
 | Die size | 102 mm² |
-| Processing elements | 152 (38 QPEs × 4), 148 usable for applications in py-spinnaker2 |
+| Processing elements | 152 (38 QPEs × 4), 148 usable for applications in py-spinnaker2 (the 4 PEs of one QPE run the system software SCAMP2) |
 | Processor per PE | ARM Cortex-M4F, 150 MHz at 0.5 V or 300 MHz at 0.8 V |
 | Memory per PE | 128 KB SRAM |
 | On-chip SRAM in total | 158.6 Mbit (about 19.8 MB) |
-| External memory | 2 LPDDR4 interfaces, up to 4 GB each (2 GB on the py-spinnaker2 boards, see section 3) |
+| External memory | 2 LPDDR4 interfaces, up to 4 GB each (2 GB per chip on the 48-node boards, of which py-spinnaker2 v0.8 can address 1 GB, section 3) |
 | Chip-to-chip links | 6 |
-| Host connection | 1 Gbit Ethernet |
+| Host connection | 1 Gbit Ethernet (UDP) |
 
 **Workshop:** 3 min, the figure and the key idea "many small cores with local memory, connected by a spike network".
 
 ## 2. The processing element
 
-Each PE is a small computer of its own:
+Each PE is a small computer of its own (a photo of a test chip and the layout of one QPE are in Höppner et al. 2021, Fig. 12, the layout of the whole chip in Scholze et al. 2026, Fig. 2):
 
 - **ARM Cortex-M4F core.** A microcontroller-class processor with a single-precision floating-point unit, the kind found in embedded devices. It runs the neuron model code: in every timestep it updates the state of all its neurons and processes incoming spikes.
-- **128 KB SRAM.** Holds everything the PE needs: about 32 KB for the compiled neuron model code and about 96 KB for data, i.e. neuron states, parameters, synaptic weights and recorded results.
+- **128 KB SRAM.** Holds everything the PE needs: about 32 KB for the compiled neuron model code and about 96 KB for data, i.e. neuron states, parameters, synaptic weights and recorded results. Part of the data memory goes to the model's own variables, so for `lif` about 68 KiB remain for the network (section 3).
 - **Machine learning accelerator (MLA).** A 16 × 4 array of multiply-accumulate units for 8- and 16-bit integers, for dense matrix operations such as convolutions and DNN layers. Up to 4.56 TOPS (tera operations per second) for the whole chip at 300 MHz in matrix-matrix multiplication, and up to 34.3 times faster than the ARM core with its optimised library (CMSIS) for convolutional layers.
-- **Numerical accelerator** for exponentials and logarithms, useful for neuron models with exponential terms.
-- **Random number generators:** a pseudo-random generator per PE (32 bit per clock cycle), and one true random number generator for the chip. They drive, for example, `poisson_process` and `lif_prob`.
-- **DMA engines** (direct memory access), plus an interrupt controller and timers. DMA moves blocks of data, e.g. between SRAM and DRAM, while the core keeps computing.
+- **Numerical accelerator** for exponentials and logarithms, about 5 times faster than the software routines of the C library (3 to 3.5 times including the conversion from floating point), useful for neuron models with exponential terms.
+- **Random number generators:** a pseudo-random generator per PE (32 bit per clock cycle), and one true random number generator for the chip. In py-spinnaker2, `qubo_neuron` draws from the hardware generator; `poisson_process` and `lif_prob` use a generator seeded with their `seed` parameter (snn-core code).
+- **Rounding accelerator** for integer rounding and saturation, including stochastic rounding.
+- **Event handler:** filters incoming spike packets and stores them in a buffer in SRAM, without interrupting the core.
+- **DMA engines** (direct memory access), plus an interrupt controller and timers. DMA moves blocks of data, e.g. between SRAM and DRAM, while the core keeps computing, and writes every incoming spike packet into the spike buffer.
 
 ![How the parts of a PE work together](figures/02_hardware_energy/02_pe_function.png)
 
-***Figure 3.** How the parts of a PE work together in one timestep, with the same colours as Figure 4: processing incoming spikes in orange, updating neurons in blue. ① The timer wakes the core. ② Spike packets that arrived from other PEs are read from the network-on-chip interface. ③ For each spike, the core reads from the synapse tables in its SRAM which of its neurons are targets, and with which weights. ④ It adds the weights to these neurons and updates the states of all its neurons, also in SRAM. ⑤ Neurons that crossed their threshold send a spike packet into the network. The strip at the bottom shows where these steps fall within the timestep: after the work, the PE sleeps until the next timer tick. Everything the core needs sits in its own SRAM, so none of the steps has to wait for DRAM. The accelerators and the DMA engine (dashed) are only used by some models or for recording to DRAM. **Source:** Schematic of the principle, not the physical layout. From the sources: the parts of the PE (chip paper, py-spinnaker2 tutorial 06), the SRAM regions (py-spinnaker2 memory structure) and the timer-driven timesteps (py-spinnaker2 profiling). Assumed here, not confirmed for py-spinnaker2: the order of the steps and their timing, taken from how SNN simulators generally work and from SpiNNaker1, and that the PE sleeps after its work. In particular, incoming spikes may be processed as they arrive, spread over the timestep and triggered by interrupts as on SpiNNaker1, rather than in one block at the start as drawn in the strip. Which models use which accelerator is not known.*
+***Figure 3.** How the parts of a PE work together in one timestep, with the same colours as Figure 4: processing incoming spikes in orange, updating neurons in blue. ① The timer wakes the core. ② Spike packets that arrived from other PEs during the previous timestep have already been written into a spike buffer in the SRAM by the DMA, in the background and without interrupting the core. ③ The core reads the buffered spikes and, for each of them, the synapse tables that say which of its neurons are targets, and with which weights. ④ It adds the weights to these neurons and updates the states of all its neurons, also in SRAM. ⑤ Neurons that crossed their threshold send a spike packet into the network. The strip at the bottom shows where these steps fall within the timestep: after the work, the PE sleeps until the next timer tick. Everything the core needs sits in its own SRAM, so none of the steps has to wait for DRAM. The accelerators (dashed) are only used by some models, and the DRAM only for large data such as recordings with `record_on_dram`. **Source:** Schematic of the principle, not the physical layout. From the sources: the parts of the PE (chip paper, py-spinnaker2 tutorial 06), the SRAM regions (py-spinnaker2 memory structure), and the order of the steps, the spike buffer and the sleep (chip paper, section IV-D and supplement; py-spinnaker2 SNN intro; snn-core code). Durations in the strip are schematic. Which models use which accelerator is not known.*
 
-The combination is what the paper calls *hybrid*: the same chip can run event-driven SNNs on the ARM cores and dense DNN layers on the MAC arrays.
+The combination is what the PE architecture paper (Höppner et al. 2021) calls *hybrid*: the same chip can run event-driven SNNs on the ARM cores and dense DNN layers on the MAC arrays.
 
 <details>
 <summary><b>Why SpiNNaker2 is more than "many ARM cores":</b> what the specialised hardware adds</summary>
@@ -72,7 +74,7 @@ The combination is what the paper calls *hybrid*: the same chip can run event-dr
 A chip with only 152 ARM cores could run SNNs in principle, but poorly. The hardware around the cores makes the difference:
 
 - **MAC accelerator:** dense matrix operations run many times faster than on the ARM core (up to 34.3 times for convolutional layers).
-- **exp/log accelerator:** exponential terms of neuron and synapse models take a few clock cycles instead of a software routine.
+- **exp/log accelerator:** exponential terms of neuron and synapse models take 7 to 22 clock cycles, about 5 times faster than in software.
 - **Random number generators:** stochastic models get random numbers essentially for free.
 - **DMA:** cores don't spend cycles copying memory.
 - **Router with hardware multicast:** one neuron reaching thousands of targets costs one packet, not thousands (section 4). Without this, communication would swamp computation.
@@ -87,9 +89,9 @@ The ARM cores provide programmability (any neuron model, written in C), the spec
 
 ![How a PE spends its timesteps](figures/02_hardware_energy/02_pe_timestep.png)
 
-***Figure 4.** What a PE does over ten timesteps, here of 1 ms each, a common choice (the length of a timestep is configurable). A timer interrupt starts every step. The PE first processes the spikes that arrived (orange), then updates its neurons and sends their spikes (blue), and sleeps for the rest of the step (grey). The more spikes arrive, the longer the orange part. In a sparse network, the PE sleeps most of the time, which is where the energy saving of event-driven hardware comes from (section 6). If too many spikes arrive in one step (step 6), the work doesn't fit into the step and the next step starts late, a violated real-time deadline (section 7). **Source:** Illustration, spike counts and durations made up. From the sources: timer-driven timesteps and the measurement of the work per timestep and of deadline misses, where work that overruns extends into the following timesteps (py-spinnaker2 profiling). Assumed here: that the work per timestep grows with the number of incoming spikes, the split into spike processing and neuron update, and sleeping for the rest of the step. Not measured on the chip.*
+***Figure 4.** What a PE does over ten timesteps, here of 1 ms each, a common choice (the length of a timestep is configurable). A timer interrupt starts every step. The PE first processes the spikes that arrived (orange), then updates its neurons and sends their spikes (blue), and sleeps for the rest of the step (grey). The more spikes arrive, the longer the orange part. In a sparse network, the PE sleeps most of the time, which is where the energy saving of event-driven hardware comes from (section 6). If too many spikes arrive in one step (step 6), the work doesn't fit into the step and the next step starts late, a violated real-time deadline (section 7). **Source:** Illustration, spike counts and durations made up, not measured on the chip. From the sources: timer-driven timesteps, the order of spike processing and neuron update, sleeping for the rest of the step, and that the processing time grows with the input spike rate (chip paper; snn-core code); the measurement of the work per timestep and of deadline misses, where work that overruns extends into the following timesteps (py-spinnaker2 profiling).*
 
-**Is a PE a neuron?** No. Each PE simulates many neurons, hundreds to about a thousand, in software. A closer analogy: a PE corresponds to a small local population of neurons, the router and links play the role of the long-range axons, and synapses are not hardware at all but entries in weight tables in the SRAM.
+**Is a PE a neuron?** No. Each PE simulates many neurons in software: up to 256 with most neuron models, up to 1024 with some variants (primer, section 4). A closer analogy: a PE corresponds to a small local population of neurons, the router and links play the role of the long-range axons, and synapses are not hardware at all but entries in weight tables in the SRAM.
 
 **Workshop:** 1 min. The ARM core and SRAM matter for the hands-on parts; the accelerators only as an outlook.
 
@@ -98,17 +100,17 @@ The ARM cores provide programmability (any neuron model, written in C), the spec
 | Level | Where | Size | Used for |
 |---|---|---|---|
 | PE-local SRAM | inside each PE | 128 KB | neuron states, parameters, synapses, recordings |
-| DRAM (LPDDR4) | outside the chip, shared | 2 GB on the py-spinnaker2 boards (two 1 GB banks) | large data, recordings with `record_on_dram=True` |
+| DRAM (LPDDR4) | outside the chip, shared by all PEs | 2 GB per chip on the 48-node boards, of which py-spinnaker2 v0.8 can address 1 GB | large data, recordings with `record_on_dram=True` (a `Population` argument) |
 
-Keeping weights in the local SRAM of each PE is central to the energy argument: reading from on-chip SRAM costs about 100 times less energy than reading from external DRAM (primer, Figure 25). Each PE on its own is a small conventional computer, but there is no shared memory or bus for all PEs, so the system as a whole avoids the von Neumann bottleneck of conventional computers (`00_computing_fundamentals.md`, section 2). The price is capacity: 96 KB of data per PE is small, and memory, not compute, is usually what limits how many neurons and synapses fit on a PE (section 7).
+Keeping weights in the local SRAM of each PE is central to the energy argument: reading from on-chip SRAM costs 10 to 100 times less energy than reading from external DRAM, depending on the size of the SRAM (primer, Figure 25). Each PE on its own is a small conventional computer. The chip does have memory that all PEs share, the DRAM, and a PE can also reach the SRAM of other PEs over the network-on-chip. But the SNN software keeps all neuron states and weights in the local SRAM of each PE, so in normal operation the PEs don't compete for a shared memory: the von Neumann bottleneck of conventional computers is avoided by how the chip is used (`00_computing_fundamentals.md`, section 2). DNN workloads whose data don't fit into the SRAM do run into the limited bandwidth of the DRAM (Scholze et al. 2026). The price of local memory is capacity: about 68 KiB of network data per PE (for `lif`) is small, and memory, not compute, is usually what limits how many neurons and synapses fit on a PE (section 7).
 
-The chip paper specifies up to 4 GB per LPDDR4 interface, while tutorial 06 lists 2 GB for the boards used with py-spinnaker2. The likely explanation is the difference between what the chip supports and what is installed on a board, but this is not confirmed (see the list at the end).
+The chip paper specifies up to 4 GB per LPDDR4 interface. The 48-node boards carry 2 GB per chip (Gonzalez et al. 2024; tutorial 06: two 1 GB banks), and py-spinnaker2 v0.8 can address 1 GB of it (py-spinnaker2, SNNs on SpiNNaker2).
 
 Figure 5 makes this concrete with two example networks from the primer. The first is the **MNIST network** of primer sections 6 and 8 (Figures 19 and 24), which classifies handwritten digits: 784 input neurons (one per pixel of a 28 × 28 image), 128 hidden neurons and 10 output neurons (one per digit). Its *layer 1* is the set of connections from the inputs to the hidden neurons: with every input connected to every hidden neuron, that is 784 × 128 = 100,352 synapses. Its *layer 2* connects the hidden neurons to the outputs, 128 × 10 = 1,280 synapses. The second is the **clustered network** of primer section 7 (Figure 21), with 250 neurons and about 12,000 synapses.
 
 ![Memory of a PE and the trade-off between SRAM and DRAM](figures/02_hardware_energy/03_memory.png)
 
-***Figure 5.** Why SpiNNaker2 keeps the data local, and what that costs. A: reading all weights of the first MNIST layer (primer Figure 24) once takes about 0.5 µJ from the local SRAM, but about 65 µJ from the DRAM next to the chip, 130 times more. Synapses are read whenever a spike arrives, so over many timesteps this difference adds up. B: the price is capacity. Each box is the data memory of one PE (about 92 KB after heap and stack). The first MNIST layer, with about 100,000 synapses, fills 5 PEs at 4 bytes per synapse, and still 2 PEs at 1 byte per synapse (dashed line). The clustered network (about 12,000 synapses) and the second MNIST layer each fit into one PE. Larger networks therefore have to be split across several PEs; how py-spinnaker2 does this is still to be checked (section 7). **Source:** Estimate computed here. Synapse counts from the example networks (for the clustered network, the expected number from its connection probabilities). The memory per synapse is assumed (1 to 4 bytes, 4 bytes in A), as the synapse format of py-spinnaker2 is not confirmed yet. Energy per 64-bit read from Horowitz 2014 (45 nm, 8 KB SRAM and DRAM), as an order of magnitude, not measured on SpiNNaker2. Memory sizes from the py-spinnaker2 documentation (memory structure, tutorial 06). Routing tables and recordings, which also need memory, are ignored.*
+***Figure 5.** Why SpiNNaker2 keeps the data local, and what that costs. A: reading all weights of the first MNIST layer (primer Figure 24) once, at 2 bytes per synapse, takes 0.25–0.96 µJ from SRAM, depending on its size, but about 33 µJ from the DRAM next to the chip, 34 to 130 times more. Synapses are read whenever a spike arrives, so over many timesteps this difference adds up. B: the price is capacity. Each box is the memory of one PE that is left for the network (about 68 KiB for `lif`). Every presynaptic neuron gets a row of synapses in each PE it projects to, with a 12-byte header and 2 bytes per synapse, plus a 12-byte routing entry. For the first MNIST layer, at most 26 of the 128 hidden neurons fit on one PE, so the layer is split across 5 PEs. The clustered network fits easily, but needs 2 PEs, because each PE holds only one population. The second MNIST layer fits into one PE. **Source:** A: estimate computed here; energy per 64-bit read from Horowitz 2014 (45 nm: 8 KB SRAM 10 pJ, DRAM 1.3 nJ; the 128 KB value interpolated between his 32 KB and 1 MB values), as an order of magnitude, not measured on SpiNNaker2. B: memory per PE and per synapse as computed by py-spinnaker2 v0.8 itself, with its mapping run without a board (`hw.run(..., mapping_only=True)`), which reports the 26 neurons per PE for the MNIST layer; the clustered network is estimated with the same rules from its expected synapse counts. Neuron parameters and recordings, which also need memory, are not drawn.*
 
 <details>
 <summary><b>Memory layout of a PE:</b> what lives where in the 128 KB</summary>
@@ -118,9 +120,9 @@ Figure 5 makes this concrete with two example networks from the primer. The firs
 The 128 KB SRAM of a PE is split into two regions ([memory structure](https://spinnaker2.gitlab.io/py-spinnaker2/advanced_topic/memory/memory-structure.html)):
 
 - **ITCM** (instruction memory, about 32 KB): the compiled code of the neuron model.
-- **DTCM** (data memory, about 96 KB): everything the host writes before a run, in this order: reserved sections for the program's variables, error logs, a data specification, the memory regions with routing tables, synapse tables and user data, an optional log region, and a 4 KB heap and stack at the end.
+- **DTCM** (data memory, about 96 KB): in this order, the program's own variables, then what the host writes before a run (error logs, a data specification, the memory regions with routing tables, synapse tables and user data, an optional log region), and a 4 KB heap and stack at the end.
 
-The exact number of bits per synapse and the sizes of the synapse and recording regions aren't documented on that page. They are defined in the linker scripts of the neuron models in py-spinnaker2 and can be visualised with the memory visualisation tool of py-spinnaker2.
+The synapse format is defined per neuron model in py-spinnaker2 (a 16-bit word for most models, primer section 4), and the sizes of the synapse and recording regions are computed when the network is mapped. They can be inspected with the memory report and the memory visualisation tool of py-spinnaker2. For `lif`, the model's own variables occupy the start of the DTCM, and the regions the host writes start at address `0xE000`, which leaves about 68 KiB up to the heap and stack at `0x1F000` (py-spinnaker2 code).
 
 </details>
 
@@ -130,15 +132,17 @@ The exact number of bits per synapse and the sizes of the synapse and recording 
 
 ## 4. Communication: spikes as packets
 
-A spike leaves its PE as a small **multicast packet**: it carries a 32-bit routing key that identifies the sending neuron, and no destination address. The **event router** looks up the key in its routing table (16 K entries) and forwards a copy of the packet to every PE, and every neighbouring chip, that has neurons listening to this sender. One spike can thus reach many targets while being sent only once. This is the core idea inherited from SpiNNaker1, and it suits the brain-like pattern of one neuron talking to thousands of others.
+The chip's router supports **multicast packets**: a packet carries a 32-bit routing key that identifies the sending neuron, and no destination address. The **event router** looks up the key in its routing table (16 K entries) and forwards a copy of the packet to every PE, and every neighbouring chip, that has neurons listening to this sender. One spike can thus reach many targets while being sent only once. This is the core idea inherited from SpiNNaker1, and it suits the brain-like pattern of one neuron talking to thousands of others.
+
+py-spinnaker2 v0.8 doesn't use multicast by default, but **core-to-core** routing: the sending PE emits one packet per target PE, each with the address of its destination (py-spinnaker2, simulation options; snn-core). That is still one packet per PE, not per synapse, but without the router's copying. Multicast has to be switched on with `backend_settings.set_routing_type("MC")`, supported since v0.8.0.
 
 - **On the chip:** a network-on-chip (NoC), a small packet-switched network instead of a shared bus, connects the QPEs, the router and the memory interfaces, with a bisection bandwidth of 307 Gbit/s. Each block is attached through a NoC interface that packs outgoing data into packets and delivers incoming ones.
-- **Between chips:** 6 serial links per chip, 6 Gbit/s each on a board and 2 Gbit/s between boards, arranged as a hexagonal grid. Inside the chip, data travels on many parallel wires; for the links, SerDes blocks (serialiser/deserialiser) convert it to a fast serial stream and back, because many parallel wires between chips are hard to keep synchronised.
-- **To the host:** 1 Gbit Ethernet. py-spinnaker2 uses it to load the network, start the run and read back the results.
+- **Between chips:** 6 links per chip, arranged as a hexagonal grid, each in one of two modes. On a board, a link sends 6 bits in parallel together with a clock signal, at only 0.5 V to save power, 6 Gbit/s in total. Between boards, over cables up to 1.5 m long, a link sends one serial stream per direction at 2 Gbit/s, and the receiver recovers the clock from the data itself, because separate clock and data wires are hard to keep synchronised over that distance (chip paper).
+- **To the host:** 1 Gbit Ethernet with UDP. py-spinnaker2 uses it to load the network, start the run and read back the results.
 
 ![Multicast routing](figures/02_hardware_energy/04_multicast.png)
 
-***Figure 6.** How one spike reaches many neurons. A: when a neuron fires, its PE sends a single packet with the neuron's key. The router looks up the key in its table and sends one copy to every PE and link that has target neurons for this sender, here 3 PEs and one link to a neighbouring chip. Inside each target PE, the packet is handed to its own target neurons through the synapse table (step ③ in Figure 3), without any further packets. In total, this spike costs 1 packet plus 4 copies, however many target neurons the 3 PEs hold (red box). The neighbouring chip may copy the packet further to its own PEs. B: the same count for two examples. A spike of an MNIST input neuron has 128 targets in the hidden layer. If layer 1 is split across 5 PEs as in Figure 5, multicast needs 1 packet plus 5 copies instead of 128 packets, about 21 times fewer. For a cortex-like neuron with 1,000 targets on 10 PEs, it is about 91 times fewer. Fewer packets mean less traffic in the network-on-chip and less energy per spike. **Source:** Diagram and computed illustration. Keys, table entries and the distribution of target neurons across PEs are made up or assumed; the principle follows the chip paper (multicast packets with 32-bit keys, routing table with 16 K entries).*
+***Figure 6.** How one spike reaches many neurons. A: with multicast, a firing neuron's PE sends a single packet with the neuron's key. The router looks up the key in its table and sends one copy to every PE and link that has target neurons for this sender, here 3 PEs and one link to a neighbouring chip. Inside each target PE, the packet is handed to its own target neurons through the synapse table (step ③ in Figure 3), without any further packets. In total, this spike costs 1 packet plus 4 copies, however many target neurons the 3 PEs hold (red box). The neighbouring chip may copy the packet further to its own PEs. B: how many packets the sending PE emits for one spike, for two examples. A spike of an MNIST input neuron has 128 targets in the hidden layer, split across 5 PEs (Figure 5). One packet per target neuron would mean 128 packets; py-spinnaker2's default, core-to-core routing, sends one packet per target PE, i.e. 5; with multicast the PE sends 1 and the router makes the copies. For a cortex-like neuron with 1,000 targets on 10 PEs: 1,000, 10 and 1. Fewer packets mean less traffic in the network-on-chip and less energy per spike. **Source:** Diagram and computed illustration. Keys, table entries and the distribution of target neurons across PEs are made up or assumed; the principle follows the chip paper (multicast packets with 32-bit keys, routing table with 16 K entries) and the routing modes of py-spinnaker2 (simulation options; snn-core code).*
 
 In py-spinnaker2, every PE has an address such as `Chip_1_0_QPE_4_5_2`: chip coordinates (1, 0), QPE coordinates (4, 5), PE 2 within the quad.
 
@@ -147,8 +151,8 @@ In py-spinnaker2, every PE has an address such as `Chip_1_0_QPE_4_5_2`: chip coo
 
 <br>
 
-- **Tiny packets:** a spike packet has a 40-bit base payload, so what matters is the packet rate, not the bandwidth. The router runs at 400 MHz with a peak throughput of 1.8 Tbit/s towards the PEs.
-- **Multicast in hardware:** the sender emits one packet regardless of how many targets it has.
+- **Tiny packets:** a multicast spike packet has only 40 bits (the 32-bit key plus control bits), optionally extended by up to 128 bits of payload, so what matters is the packet rate, not the bandwidth. The router runs at 400 MHz with a peak throughput of 1.8 Tbit/s towards the PEs.
+- **Multicast in hardware:** with multicast routing, the sender emits one packet regardless of how many targets it has.
 - **Precomputed routing tables:** a lookup is a table access, fast and predictable.
 - **Sparse traffic:** in event-driven networks most neurons are silent, so the router is rarely saturated.
 - **One router per chip:** in a multi-chip system, routing capacity grows with the number of chips, so there is no global choke point.
@@ -157,27 +161,27 @@ In py-spinnaker2, every PE has an address such as `Chip_1_0_QPE_4_5_2`: chip coo
 
 <br>
 
-**Workshop:** 2 min, as the explanation of why spikes are cheap to send: one packet per spike, copied only where needed.
+**Workshop:** 2 min, as the explanation of why spikes are cheap to send: one packet per target PE (default) or per spike (multicast), not one per synapse.
 
 ## 5. From one chip to a supercomputer
 
 | System | Chips | PEs | Notes |
 |---|---|---|---|
-| Single-chip board | 1 | 152 | `hardware.SpiNNaker2Chip()` in py-spinnaker2 |
+| Single-chip board | 1 | 152 (148 for applications) | `hardware.SpiNNaker2Chip()` in py-spinnaker2 |
 | 48-node board | 48 | 7,296 (7,104 for applications) | `hardware.SpiNNcloud48NodeBoard()` |
 | SpiNNcloud system at TU Dresden | about 35,000 | about 5 million | eight racks |
-| Design limit | | 10 million | hexagonal chip grid |
+| Planned maximum | | 10 million | target of the SpiNNaker2 roadmap (Mayr et al. 2019), 10 times SpiNNaker1 |
 
 ![Scale of SpiNNaker2 systems](figures/02_hardware_energy/05_scale.png)
 
-***Figure 7.** A: the number of processing elements, from one chip to the largest systems. One run on the HPI installation uses one 48-node board, 7,296 PEs. B: how many neurons that corresponds to, at about 150,000 neurons per chip, compared with the brains of a mouse and a human. Even the Dresden system reaches only a few percent of the neurons of a human brain, and far fewer of its synapses. **Source:** PE and chip counts reported (chip paper, py-spinnaker2 tutorial 06, section 5 for the HPI installation, whose board type is not confirmed). Neuron capacities estimated here from the paper's figure of about 150,000 neurons per chip (with a 1 ms timestep), which depends strongly on connectivity. Brain sizes: common estimates of about 70 million (mouse) and 86 billion (human) neurons.*
+***Figure 7.** A: the number of processing elements, from one chip to the largest systems. One run on the HPI installation uses one 48-node board, 7,296 PEs (7,104 available). B: how many neurons that corresponds to, at about 150,000 neurons per chip, compared with the brains of a mouse and a human. This is an upper bound: it needs about 1000 neurons per PE, as in the `*_1024` model variants, while the default `lif` holds at most 256 per PE, i.e. about 38,000 per chip (section 7). Even the Dresden system reaches only a few percent of the neurons of a human brain, and far fewer of its synapses. **Source:** PE and chip counts reported (chip paper, py-spinnaker2 tutorial 06, section 5 for the HPI installation, whose board type is not confirmed). Neuron capacities estimated here from the paper's figure of more than 150,000 neurons per chip (with a 1 ms timestep), which depends strongly on connectivity. Brain sizes: common estimates of about 70 million (mouse) and 86 billion (human) neurons.*
 
 **The HPI setup** (as of end of September 2026, from the vendor and from the boot log of a run):
 
 - **6 boards in one frame.** The board management controller of the frame reports 6 boards, and the vendor refers to the installation as a 6-board system.
 - **Probably 48-node boards**, i.e. up to 6 × 48 = 288 chips in total. The boot log lists 49 devices on the management bus of a board (48 chips plus a controller), but the board type isn't confirmed yet.
 - **One board per run, for now.** Multi-board simulations aren't supported yet and are expected in a few months, so the board-to-board cables aren't needed yet. A single 48-node board is far larger than any network planned for the workshop.
-- **Boards are locked per user.** When a run starts, the session software (SpiNNMan2, used by py-spinnaker2) reserves a board with a lock file ("The board is locked for you"). If one board can only be used by one user at a time, at most 6 people can run on the chips simultaneously.
+- **Boards are locked per user.** When a run starts, the session software (SpiNNMan2, used by py-spinnaker2) reserves a board with a lock file ("The board is locked for you"). The lock covers the whole board, not single chips (SpiNNMan2 code), so at most 6 people can run on the chips simultaneously.
 
 <details>
 <summary><b>Reading the boot log:</b> what happens when a run starts</summary>
@@ -190,7 +194,7 @@ The start of a run on the cluster shows the boot sequence of a board:
 - a board is locked for the user
 - the board is power-cycled and the chips are switched on: core clock, adaptive body biasing (`turn on ABB`, which may need a second attempt before it reports `locked`), the LPDDR4 DRAM interfaces, clock distribution, the network-on-chip router, and Ethernet
 - `qgrid_adpll with default clk 1200.00 MHz` is the frequency of a clock generator (PLL). The clock of the PEs (150 or 300 MHz) is derived from it by dividing it down, so 1200 MHz is not the PE clock.
-- a small operating program (SCAMP) is loaded onto the chips, and the kernel status of each chip is checked
+- a small operating program (SCAMP2) is loaded onto the chips, where it runs on the 4 PEs of one QPE, and the kernel status of each chip is checked
 
 </details>
 
@@ -216,21 +220,22 @@ py-spinnaker2 v0.8 has no setting for the performance level, and its neuron mode
 
 ## 7. Limits in practice: when a network doesn't fit
 
-A network runs on the chip only if, on every PE, its data fits into the **memory** (about 92 KB after heap and stack, section 3 and Figure 5) and its work fits into one **timestep** (section 2 and Figure 4). If either budget is exceeded, the network has to be spread over more PEs. Claims marked *(assumption, to check)* are not confirmed by the sources read so far and are listed at the end.
+A network runs on the chip only if, on every PE, its data fits into the **memory** (about 68 KiB of network data for `lif`, section 3 and Figure 5) and its work fits into one **timestep** (section 2 and Figure 4). py-spinnaker2 splits every population into slices of at most `max_atoms_per_core` neurons, one slice per PE, and each PE holds only one population (py-spinnaker2 tutorials 04 and 05).
 
-**Which budget is tight?** For the workshop networks, memory: the first MNIST layer already needs several PEs (Figure 5). The time budget is generous in comparison. The chip paper reports up to 12 million synaptic events per second per PE (about 12,000 per 1 ms timestep), while an MNIST image with latency coding causes only about 15,000 synaptic events in total, spread over 50 timesteps and several PEs (my estimate). The time budget matters for large, brain-like networks with thousands of synapses per neuron.
+**Which budget is tight?** For the workshop networks, memory: the first MNIST layer needs 5 PEs (Figure 5). The time budget is generous in comparison. The chip paper reports up to 12 million synaptic events per second per PE at 300 MHz with 1024 neurons per PE (about 12,000 per 1 ms timestep, up to about 16 million with fewer neurons). An MNIST image with latency coding causes only about 15,000 synaptic events in total (116 input spikes × 128 targets), spread over 50 timesteps and 5 PEs (estimated here). Tutorial 05 of py-spinnaker2 gives a data point for the limit: 10,000 synaptic events per step on one PE missed the 1 ms deadline in 14 of 100 steps. The time budget matters for large, brain-like networks with thousands of synapses per neuron, or with very high activity.
 
 **How to notice that a budget is exceeded:**
 
-- **Time:** the profiling reports a deadline miss (`deadline_flag` > 0), and the work extends into the following timesteps (py-spinnaker2, profiling). Whether py-spinnaker2 also warns or stops the run is *(assumption, to check)*.
-- **Memory:** presumably py-spinnaker2 fails with an error when it maps the network onto the PEs, before the run starts *(assumption, to check)*.
+- **Memory:** py-spinnaker2 stops with `MemoryError: PE memory exceeded: … KiB needed, … KiB available` while it maps the network onto the PEs, before anything is sent to the board, and lists the memory regions by size. `hw.run(net, T, mapping_only=True)` performs this check without a board.
+- **Time:** the run continues. The chip logs "Deadline missed in systick …", py-spinnaker2 prints "Some PEs returned some errors! Results may be corrupted!" after the run, and the profiling reports `deadline_flag` > 0. The work of the late step extends into the following ones, and spikes that arrive in the meantime can be counted in the wrong step (chip paper; py-spinnaker2 tutorial 05 and profiling).
 
 **What helps:**
 
-- **Fewer neurons per PE:** less data and less work per PE, at the cost of more PEs. Whether and how the number of neurons per PE can be set is *(assumption, to check)* (tutorial 04, advanced topic "hardware allocation").
-- **Recording less:** only the final membrane potential (`record=["v_last"]`) instead of every timestep, or recording to DRAM with `record_on_dram=True` (py-spinnaker2, SNNs on SpiNNaker2).
+- **Fewer neurons per PE:** `pop.set_max_atoms_per_core(n)` lowers the number of neurons per PE for one population, at the cost of more PEs. `hw.run(..., iterative_mapping=True)` searches for a value that fits automatically (py-spinnaker2, simulation options; tutorial 05).
+- **Recording less:** recording `v` costs 4 bytes per neuron and timestep in the PE's memory; for 26 neurons over 400 steps that is already 42 KiB, more than half of the budget (py-spinnaker2 mapping). Alternatives: only the final membrane potential (`record=["v_last"]`), or recording to DRAM with `record_on_dram=True` (py-spinnaker2, SNNs on SpiNNaker2).
+- **A longer timestep:** `sys_tick_in_s` gives each PE more time per step, if real time isn't needed.
 
-**Orders of magnitude.** The chip paper gives more than 150,000 neurons per chip at a 1 ms timestep, roughly 1000 neurons on each of the 152 PEs (my calculation). The `*_1024` variants of the neuron models are documented for 1024 neurons per PE (py-spinnaker2, neuron models); the default for the other models is *(assumption, to check)*. These numbers depend strongly on connectivity, weight precision, recording and activity, so they are orders of magnitude, not guarantees.
+**Orders of magnitude.** The chip paper gives more than 150,000 neurons per chip at a 1 ms timestep, roughly 1000 neurons on each PE. In py-spinnaker2 that corresponds to the variants with 1024 neurons per PE (148 × 1024 = 151,552). Most models, including the default `lif`, hold at most 256 neurons per PE, limited by the 8-bit target index of their synapse format (primer, section 4), i.e. at most about 38,000 neurons per chip. Densely connected layers fit far fewer (26 per PE in Figure 5). These numbers depend strongly on connectivity, weight precision, recording and activity, so they are orders of magnitude, not guarantees.
 
 **Workshop:** 2 min in hands-on 1, as a troubleshooting guide when participants make a network larger.
 
@@ -309,17 +314,10 @@ A GPU comparison is optional and needs care: the same model, the same accuracy, 
 
 ## To check on the cluster
 
-- [ ] **Once the cluster is available:** check how much DRAM each chip of the HPI boards has (2 GB as in tutorial 06, or up to 2 × 4 GB as the chip supports), e.g. from the board information or by allocating DRAM in a test run.
-- [ ] Confirm that the 6 boards of the HPI setup are 48-node boards, and whether one board can be shared by several users at the same time (e.g. on different chips). This decides how many participants can run on the chips in parallel.
-- [ ] How the Ethernet port of a board is connected to its chips: only to one chip (as on SpiNNaker1 boards), to several, or to all (every SpiNNaker2 chip has its own Ethernet interface). Figure 1C assumes a single entry chip. Ask the admins or the vendor.
+Answered from the sources and the py-spinnaker2 code on 2026-09-30, no longer on this list: DRAM per chip (section 3), board sharing (per board, section 5), neurons per PE and how populations are split (section 7), accelerators per PE (section 2), bytes per synapse (section 3), the timestep length (`sys_tick_in_s`, default 1 ms), what happens when a budget is exceeded (section 7), how incoming spikes are processed (Figure 3), and the low performance level's energy (section 6).
+
 - [ ] **First priority:** power measurement on the HPI boards: the idle baseline of a board and its fluctuation, the sampling interval (0.1 or 0.2 s), and the smallest network whose energy is visible above the baseline (section 9). This decides whether hands-on 2 can measure energy at all.
-- [ ] Where SpiNNcloud's "18×" comes from: the EGRU benchmark of Nazeer et al. 2024 or another one (ask the vendor), section 8.
-- [ ] Default number of neurons per PE for each neuron model, and how py-spinnaker2 splits populations.
+- [ ] Confirm that the 6 boards of the HPI setup are 48-node boards, and how many of them workshop accounts can use.
 - [ ] Which performance level the chips run at during a py-spinnaker2 run (v0.8 has no setting for it, section 6).
-- [ ] Whether the accelerators (MLA, exp/log unit, random number generators) belong to each PE or are shared by the 4 PEs of a QPE. The chip paper lists them per PE; an earlier note claimed they are shared per QPE.
-- [ ] **Once the cluster is available:** how many bytes py-spinnaker2 uses per synapse (weight, target, delay), e.g. with its memory visualisation tool. Figure 5A assumes 1 to 4 bytes.
-- [ ] **Once the cluster is available:** where the length of a timestep is set in py-spinnaker2 and what its default is (the chip paper uses 1 ms), section 7. Also on the primer's list.
-- [ ] What happens when a network exceeds the memory budget of a PE (error during mapping?) or the time budget (only `deadline_flag`, or also a warning or abort?), section 7.
-- [ ] Whether and how the number of neurons per PE can be set by the user (tutorial 04, advanced topic "hardware allocation"), section 7.
-- [ ] How py-spinnaker2 processes an incoming spike in detail: interrupt or polling, whether DMA is involved, how the synapse tables are laid out (Figure 3 shows only the principle).
-- [ ] Whether Höppner et al. 2021 (PE architecture paper) contains a layout image or chip photo of a PE, and link it from section 2.
+- [ ] Whether multicast routing (`set_routing_type("MC")`) works on the HPI boards, if the workshop shows it (section 4).
+- [ ] Where SpiNNcloud's "18×" comes from: the EGRU benchmark of Nazeer et al. 2024 or another one (ask the vendor), section 8.
