@@ -105,7 +105,7 @@ The main software for the workshop. Python interface for running experiments on 
 |---|---|---|
 | [DVS gesture recognition via NIR (2025)](https://arxiv.org/abs/2504.06748) | Quantisation (PTQ, QAT) and 8-bit on-chip inference | todo |
 | [Hardware-aware fine-tuning of spiking Q-networks (2025)](https://arxiv.org/abs/2507.23562) | Reinforcement learning on chip | todo |
-| Nazeer et al. 2024, Language modeling on a SpiNNaker2 neuromorphic chip (IEEE AICAS) | LLM-style workload, link still to find | todo |
+| [Nazeer et al. 2024, Language modeling on a SpiNNaker2 neuromorphic chip (IEEE AICAS)](https://arxiv.org/abs/2312.09084) | Event-based GRU language model; the source of the "18×" (batch size 1, 8.6× slower than an A100) | read |
 
 ### Ecosystem and context
 

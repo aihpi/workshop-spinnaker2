@@ -348,7 +348,7 @@ The two reset modes differ in what happens to the charge above the threshold. Wi
 
 <br>
 
-Time on the chip has no unit (`hw.run(net, timesteps=50)`), so the meaning of one step is a modelling choice. The clustered network example uses time constants in ms. Where (and whether) py-spinnaker2 fixes a physical step duration is still to be checked.
+The neuron parameters are per step and have no unit: $\tau_m$ only enters through `alpha_decay`, so what one step means in model time is a modelling choice. The clustered network example, for instance, reads one step as 1 ms. On the chip, each step is in addition a real interval of wall-clock time, started by a hardware timer: `hw.run(net, 50, sys_tick_in_s=1e-3)` runs 50 steps of 1 ms each, and 1 ms is the default (py-spinnaker2, simulation options). `sys_tick_in_s` doesn't change the dynamics, only how much real time each PE has per step to do its work (`02_hardware_energy.md`, section 7).
 
 <details>
 <summary><b>Note on units:</b> why every model uses different numbers, and how to map physical values onto the chip</summary>
@@ -636,7 +636,7 @@ import numpy as np
 from spinnaker2 import snn
 
 img = ...                      # one MNIST image, shape (28, 28), values 0-255
-x = img.flatten()              # 784 values, neuron i = pixel i
+x = img.flatten().astype(int)  # 784 values, neuron i = pixel i; uint8 arithmetic would overflow
 t_max = 50
 
 # one spike per non-zero pixel, brighter = earlier; black pixels (0) don't spike
@@ -645,7 +645,9 @@ spike_times = {i: [int(t_max * (255 - v) / 255)] for i, v in enumerate(x) if v >
 stim = snn.Population(size=784, neuron_model="spike_list", params=spike_times)
 ```
 
-The built-in encoder does the same on the chip: `snn.Population(size=784, neuron_model="spikes_from_array_latency_code", params={"data": x.astype(np.uint16), "x_max": 255, "t_max": 50})`. The exact parameter format and how it treats pixels with value 0 are still to be checked.
+The cast to `int` matters: MNIST loaders return `uint8` arrays, and with NumPy 2 the product `t_max * (255 - v)` then overflows silently, so every spike time comes out as 0.
+
+The built-in encoder computes the same spike times on the chip, rounded down in the same way: `snn.Population(size=784, neuron_model="spikes_from_array_latency_code", params={"data": x.astype(np.uint16), "x_max": 255, "t_max": 50})`, with `data` as `np.uint16` and `x_max`, `t_max` as Python integers. One difference: it doesn't skip black pixels, but gives them the spike time `t_max` (snn-core code). In a run longer than `t_max` steps, all 668 background pixels of the digit in Figure 19 then fire together at step 50. Running for at most `t_max` steps, or using `spike_list`, avoids this.
 
 ![Encoding an MNIST digit](figures/01_primer_snn_basics/06_mnist_encoding.png)
 
@@ -672,7 +674,7 @@ Besides these one-off runs, py-spinnaker2 can also stream spikes to and from the
 
 ## 7. Networks
 
-**Building blocks in py-spinnaker2:** a `Population` is a group of neurons with the same model and parameters. A `Projection` is a list of connections between two populations. A `Network` holds both and runs on the `SpiNNaker2Chip`:
+**Building blocks in py-spinnaker2:** a `Population` is a group of neurons with the same model and parameters. A `Projection` is a list of connections between two populations. A `Network` holds both and runs on the hardware, here a 48-node board (`SpiNNaker2Chip()` would be a single-chip board):
 
 ```python
 from spinnaker2 import snn, hardware
@@ -683,8 +685,11 @@ proj = snn.Projection(pre=stim, post=pop, connections=[[0, 1, 2, 1], [0, 0, -2, 
 
 net = snn.Network("my network")
 net.add(stim, pop, proj)
-hardware.SpiNNaker2Chip().run(net, timesteps=50)
+hw = hardware.SpiNNcloud48NodeBoard()
+hw.run(net, 50)  # 50 timesteps; the keyword is time_steps, not timesteps
 ```
+
+The parameters not given (`i_offset`, `v_init`, `v_reset`, `reset`) take their defaults. Some pages of the py-spinnaker2 documentation call `hw.run(net, timesteps=…)`; this fails with `ValueError: time_steps must be provided`, because the parameter is called `time_steps`.
 
 **Architectures:**
 
@@ -767,17 +772,19 @@ DNNs and SNNs are two branches of the same family, distinguished by how neurons 
 
 - **Event-driven computing:** work happens only when a spike arrives. A silent neuron costs (almost) nothing. A GPU computes every multiply-accumulate (MAC), whether the activation is zero or not.
 - **Cheaper operations:** a spike arriving at a synapse is an addition of a weight (an "accumulate"), not a multiplication.
-- **Local memory:** weights sit in SRAM next to each core, so less data moves to and from DRAM, which is where most energy goes in conventional accelerators.
+- **Local memory:** weights sit in SRAM next to each core, so less data moves to and from DRAM, whose accesses cost one to two orders of magnitude more energy than an arithmetic operation (Figure 25).
 
 ![Energy per operation](figures/01_primer_snn_basics/09_energy_per_operation.png)
 
-***Figure 25.** Energy of basic operations in a 45 nm chip process, a widely used reference. Newer processes need less energy per operation, but the ratios are similar. Two things matter for neuromorphic hardware: an addition, which is what a spike costs at a synapse, is several times cheaper than a multiply-accumulate (MAC), the basic operation of an ANN layer. And reading data from off-chip DRAM costs about 100 times more than reading it from on-chip SRAM, and more than 1000 times more than a 32-bit addition. Keeping the weights in local SRAM next to each core (as on SpiNNaker2) avoids the most expensive item on the list. **Source:** Reported data: [Horowitz (ISSCC 2014)](https://doi.org/10.1109/ISSCC.2014.6757323), 45 nm process.*
+***Figure 25.** Energy of basic operations in a 45 nm chip process, a widely used reference; absolute values are lower in newer processes. Three things matter for neuromorphic hardware. First, an addition, which is what a spike costs at a synapse, is cheaper than a multiply-accumulate (MAC), the basic operation of an ANN layer: 5 times for 32-bit floats, 32 times for 32-bit integers. Second, reading data from off-chip DRAM costs 13 to 130 times more than reading it from on-chip SRAM, depending on the size of the SRAM (the larger the memory, the more each read costs), and more than 1000 times more than a 32-bit addition. Keeping the weights in local SRAM next to each core (as on SpiNNaker2) avoids the most expensive item on the list. Third, on a programmable core every instruction costs about 70 pJ of overhead (fetching and decoding it, accessing registers), far more than the arithmetic it performs. **Source:** Reported data: [Horowitz (ISSCC 2014)](https://doi.org/10.1109/ISSCC.2014.6757323), 45 nm process, 0.9 V. The MAC energy is computed here as multiply + add; the SRAM values are Horowitz's cache reads of 8 KB and 1 MB, the DRAM value the lower end of his 1.3–2.6 nJ.*
 
-The saving depends on **sparsity**. With dense activity or many timesteps (rate coding), the advantage shrinks or disappears. Claims like "18× more efficient than GPUs" are workload-dependent, and an ML audience will ask how they were measured. The workshop should therefore show its own measurement (power measurement in py-spinnaker2) rather than quote marketing numbers. The reported numbers, including where the "18×" comes from, are in `02_hardware_energy.md`, section 8.
+The saving depends on **sparsity**. With dense activity or many timesteps (rate coding), the advantage shrinks or disappears. Claims like "18× more efficient than GPUs" depend on the workload, the batch size and what is counted, and an ML audience will ask how they were measured: the "18×" matches one benchmark, a language model run one sample at a time, on which SpiNNaker2 also took 8.6 times longer than the GPU. The workshop should therefore show its own measurement (power measurement in py-spinnaker2) rather than quote marketing numbers. The reported numbers, and how to read them, are in `02_hardware_energy.md`, section 8.
 
 ![When an SNN saves energy](figures/01_primer_snn_basics/09_energy_breakeven.png)
 
-***Figure 26.** An **estimate from a simple model, not a measurement**, of when sparsity pays off. Only the energy per operation comes from published data (Horowitz 2014, Figure 25). Everything else is computed here from the following assumptions. An ANN layer performs one MAC per connection and inference, whatever the input. An SNN performs one addition per spike and connection, so its cost grows with the number of spikes. With 32-bit values (MAC 4.6 pJ, addition 0.9 pJ), the estimated energy ratio is (spikes per neuron) × 0.9 / 4.6, so the SNN is cheaper as long as each neuron fires fewer than about 5 spikes per inference. The MNIST examples of section 6 lie well below this (0.15 spikes per input neuron with latency coding, 0.8 with rate coding over 50 steps). Rate coding with 10 % precision (Figure 18) needs about 100 spikes, which gives an estimated factor of about 20 in favour of the ANN. The model counts only synaptic operations: it ignores neuron updates in every timestep, memory access and communication, and the real chip uses integer weights rather than 32-bit floats. The numbers show the trend, not actual energies, which is why the workshop needs its own measurements on the chip. **Source:** Estimate computed here in `make_figures.py` from the Horowitz values of Figure 25 and the assumptions above, not a measurement.*
+***Figure 26.** An **estimate of ideal arithmetic, not a measurement**, of when sparsity pays off. Only the energy per operation comes from published data (Horowitz 2014, Figure 25). Everything else is computed here from the following assumptions. An ANN layer performs one MAC per connection and inference, whatever the input. An SNN performs one addition per spike and connection, so its cost grows with the number of spikes. With 32-bit floats (MAC 4.6 pJ, addition 0.9 pJ), the estimated energy ratio is (spikes per neuron) × 0.9 / 4.6, so the SNN is cheaper as long as each neuron fires fewer than about 5 spikes per inference. The break-even depends on the precision: about 8 spikes for 8-bit integers, 32 for 32-bit integers. The MNIST examples of section 6 lie well below this (0.15 spikes per input neuron with latency coding, 0.8 with rate coding over 50 steps). Rate coding with 10 % precision (Figure 18) needs about 100 spikes, which gives an estimated factor of about 20 in favour of the ANN at 32-bit float. The model counts only the arithmetic of synaptic operations: it ignores the instruction overhead of programmable cores, neuron updates in every timestep, memory access, communication and idle power. The lines show the trend under these assumptions, not the energy of the chip (see the paragraph below). **Source:** Estimate computed here in `make_figures.py` from the Horowitz values of Figure 25 and the assumptions above, not a measurement.*
+
+**What the estimate leaves out.** On SpiNNaker2 a synaptic event is not a single addition in a dedicated circuit, but a few instructions on the ARM core: take the spike from the input buffer, look up the synapse, read the weight, add it. Each instruction costs far more than the addition itself (Figure 25). Measured on a SpiNNaker2 test chip, one synaptic event costs about 0.2 nJ and one neuron update about 1.5 nJ per timestep, about 200 times the 0.9 pJ assumed in Figure 26, and the baseline power of the chip dominates the total (Höppner et al. 2021, 22FDX prototype). GPUs pay overheads as well, e.g. their idle power when a small batch leaves most of the chip unused (`02_hardware_energy.md`, section 8). The real break-even therefore can't be read off Figure 26 in either direction; it has to be measured.
 
 **Workshop:** the core of the 20 min motivation block, and revisited with real numbers in hands-on 2.
 

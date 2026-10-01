@@ -1119,18 +1119,26 @@ def fig_deployment():
     plt.close(fig)
 
 
-# Energy per operation in a 45 nm process, from M. Horowitz, "Computing's energy problem", ISSCC 2014
-# (doi:10.1109/ISSCC.2014.6757323). Absolute values are smaller in newer processes, the ratios are similar.
+# Energy per operation in a 45 nm process at 0.9 V, from M. Horowitz, "Computing's energy problem", ISSCC 2014
+# (doi:10.1109/ISSCC.2014.6757323), Figure 1.1.9. The MAC values are computed here (multiply + add). The memory values
+# are 64-bit reads from a cache of the given size; the instruction value is the overhead of one instruction on a
+# programmable core (fetch, decode, registers, control), from the same figure.
 HOROWITZ_PJ = {"8-bit integer add": 0.03, "32-bit integer add": 0.1, "32-bit float add": 0.9,
-               "8-bit integer multiply": 0.2, "32-bit float multiply": 3.7, "32-bit float MAC\n(multiply + add)": 4.6,
-               "SRAM read, 64 bit\n(8 KB, on chip)": 10, "DRAM read, 64 bit\n(off chip)": 1300}
+               "8-bit integer multiply": 0.2, "32-bit integer multiply": 3.1, "32-bit float multiply": 3.7,
+               "32-bit float MAC\n(multiply + add, computed)": 4.6,
+               "one instruction on a\nprogrammable core (overhead)": 70,
+               "SRAM read, 64 bit\n(8 KB, on chip)": 10, "SRAM read, 64 bit\n(1 MB, on chip)": 100,
+               "DRAM read, 64 bit\n(off chip)": 1300}
+# (MAC, addition) in pJ per precision, for the break-even estimate of Figure 26
+PRECISIONS = {"32-bit float": (3.7 + 0.9, 0.9), "8-bit integer": (0.2 + 0.03, 0.03), "32-bit integer": (3.1 + 0.1, 0.1)}
+PURPLE = "#9467bd"
 
 
 def fig_energy_ops():
     names = list(HOROWITZ_PJ)
     vals = np.array(list(HOROWITZ_PJ.values()))
-    colors = [GREEN, GREEN, GREEN, ORANGE, ORANGE, ORANGE, BLUE, "#d62728"]
-    fig, ax = plt.subplots(figsize=(8, 4.2))
+    colors = [GREEN] * 3 + [ORANGE] * 4 + [PURPLE] + [BLUE] * 2 + ["#d62728"]
+    fig, ax = plt.subplots(figsize=(8, 5.2))
     y = np.arange(len(names))[::-1]
     ax.barh(y, vals, color=colors, height=0.6)
     for yy, v in zip(y, vals):
@@ -1142,7 +1150,8 @@ def fig_energy_ops():
     ax.set_title("Energy per operation, 45 nm process (Horowitz 2014)", loc="left", fontsize=10)
     handles = [plt.matplotlib.patches.Patch(color=c, label=l) for l, c in [
         ("additions (what a spike costs at a synapse)", GREEN), ("multiplications / MAC (ANN layers)", ORANGE),
-        ("on-chip memory access", BLUE), ("off-chip memory access", "#d62728")]]
+        ("instruction overhead (programmable core)", PURPLE), ("on-chip memory access", BLUE),
+        ("off-chip memory access", "#d62728")]]
     ax.legend(handles=handles, frameon=False, fontsize=8, loc="upper right")
     fig.tight_layout()
     fig.savefig(OUT / "09_energy_per_operation.png")
@@ -1150,39 +1159,39 @@ def fig_energy_ops():
 
 
 def fig_energy_breakeven():
-    """Synaptic operations only: ANN = one MAC per connection, SNN = one addition per spike and connection."""
-    e_mac, e_add = HOROWITZ_PJ["32-bit float MAC\n(multiply + add)"], HOROWITZ_PJ["32-bit float add"]
+    """Arithmetic of synaptic operations only: ANN = one MAC per connection, SNN = one addition per spike and connection."""
     spikes = np.logspace(-2, np.log10(400), 400)  # average spikes per neuron and inference
-    ratio = spikes * e_add / e_mac
-    breakeven = e_mac / e_add
-    fig, ax = plt.subplots(figsize=(7.5, 4.2))
-    ax.plot(spikes, ratio, color="k", lw=2)
+    fig, ax = plt.subplots(figsize=(7.5, 5.0))
     ax.axhline(1, color=GREY, ls="--", lw=1)
-    ax.axvline(breakeven, color=GREY, ls=":", lw=1)
     ax.fill_between(spikes, 1e-3, 1, color=GREEN, alpha=0.12)
     ax.fill_between(spikes, 1, 1e3, color="#d62728", alpha=0.08)
     ax.text(0.012, 0.3, "SNN needs less energy", fontsize=9, color=GREEN)
     ax.text(0.012, 3, "SNN needs more energy", fontsize=9, color="#d62728")
-    ax.text(breakeven * 1.1, 0.0025, f"break-even:\n≈ {breakeven:.0f} spikes per neuron", fontsize=8, color="0.3")
+    for (name, (e_mac, e_add)), (c, ls) in zip(PRECISIONS.items(), [("k", "-"), (BLUE, "--"), (PURPLE, ":")]):
+        breakeven = e_mac / e_add
+        ax.plot(spikes, spikes * e_add / e_mac, color=c, ls=ls, lw=2, label=f"{name}: break-even ≈ {breakeven:.0f} spikes")
+        ax.plot(breakeven, 1, "o", color=c, ms=5)
+    e_mac, e_add = PRECISIONS["32-bit float"]
     for x, label, off in [(116 / 784, "latency coding, MNIST input\n(Figure 19): 0.15 spikes", (2.5, 0.08)),
                           (619 / 784, "rate coding, 50 steps, MNIST\ninput (Figure 19): 0.8 spikes", (2.5, 0.08)),
-                          (0.1 * 1000, "rate coding, 10 % precision\n(Figure 18): 100 spikes", (0.06, 5))]:
+                          (0.1 * 1000, "rate coding, 10 % precision\n(Figure 18): 100 spikes", (0.25, 8))]:
         y = x * e_add / e_mac
         ax.plot(x, y, "o", color=ORANGE, mec="k", ms=7, zorder=5)
         ax.annotate(label, (x, y), (x * off[0], y * off[1]), fontsize=7.5, arrowprops={"arrowstyle": "->", "color": "0.3"})
+    ax.legend(frameon=False, fontsize=7.5, loc="upper left", title="precision of weights and activations",
+              title_fontsize=7.5, alignment="left")
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xlim(0.01, 400)
     ax.set_ylim(1e-3, 1e3)
     ax.set_xlabel("average number of spikes per neuron and inference")
-    ax.set_ylabel("estimated energy of synaptic\noperations, SNN relative to ANN")
-    ax.set_title("When does an SNN save energy? ESTIMATE from a simple model, not a measurement", loc="left", fontsize=10)
-    ax.text(0.015, 0.97, "assumptions: energy per operation from Horowitz 2014 (Figure 25),\n"
-            "32-bit float MAC (ANN) vs. 32-bit float addition per spike (SNN),\n"
-            "only synaptic operations counted: no neuron updates,\nno memory access, no communication",
-            transform=ax.transAxes, ha="left", va="top", fontsize=7, color="0.25",
-            bbox={"boxstyle": "round,pad=0.3", "fc": "white", "ec": "0.6"})
-    fig.tight_layout()
+    ax.set_ylabel("estimated energy of synaptic\narithmetic, SNN relative to ANN")
+    ax.set_title("When does an SNN save energy? ESTIMATE of ideal arithmetic, not a measurement", loc="left", fontsize=10)
+    fig.text(0.01, 0.01, "Assumptions: energy per operation from Horowitz 2014 (Figure 25), one MAC per connection (ANN) vs. one\n"
+             "addition per spike and connection (SNN). Not counted: instruction overhead (about 70 pJ per instruction on a\n"
+             "programmable core), neuron updates, memory access, communication, idle power.",
+             ha="left", va="bottom", fontsize=7, color="0.25")
+    fig.tight_layout(rect=(0, 0.09, 1, 1))
     fig.savefig(OUT / "09_energy_breakeven.png")
     plt.close(fig)
 
@@ -1225,6 +1234,9 @@ def check():
     active = rates.max(0) > 20
     assert len(set(rates.argmax(0)[active])) >= 3
     assert list(quantize(np.array([0.9, -0.9, 1.7, -1.7, 20, -20]), 1.0)) == [0, 0, 1, -1, 15, -15]
+    # energy break-even (Figure 26): about 5 (float32), 8 (int8) and 32 (int32) spikes per neuron
+    assert [round(mac / add) for mac, add in PRECISIONS.values()] == [5, 8, 32]
+    assert abs(HOROWITZ_PJ["32-bit float MAC\n(multiply + add, computed)"] - PRECISIONS["32-bit float"][0]) < 1e-9
 
 
 if __name__ == "__main__":

@@ -1,7 +1,8 @@
 """Figures for 02_hardware_energy.md. Run: uv run --with numpy --with matplotlib make_figures.py
 
-All numbers are reported values from Scholze et al. 2026, "The SpiNNaker2 chip: a many-core platform for flexible and
-scalable brain-inspired computing", arXiv:2607.24396, extracted from the paper text (to be verified against its tables).
+Reported values from Scholze et al. 2026, "The SpiNNaker2 chip: a many-core platform for flexible and scalable
+brain-inspired computing", arXiv:2607.24396 (checked against its tables on 2026-09-30), and from Nazeer et al. 2024,
+"Language modeling on a SpiNNaker2 neuromorphic chip", arXiv:2312.09084 (the source of the "18x").
 """
 from pathlib import Path
 
@@ -12,17 +13,29 @@ OUT = Path(__file__).parent
 BLUE, ORANGE, GREEN, GREY, RED = "#1f77b4", "#ff7f0e", "#2ca02c", "0.5", "#d62728"
 plt.rcParams.update({"figure.dpi": 150, "axes.spines.top": False, "axes.spines.right": False, "font.size": 10})
 
-# Chip-level power per operating state (mW): (PE power, total power); coremark only reports PE power
+# Chip power per operating state (Table 2), in mW: (power of all 152 PEs, total power of the chip)
 POWER_STATES = {"PEs off": (59.7, 75.2), "PEs sleep, 0.5 V": (214.7, 235.4), "PEs sleep, 0.8 V": (544.0, 564.7),
-                "all PEs busy (CoreMark),\n0.5 V, 150 MHz": (403.9, None),
-                "all PEs busy (CoreMark),\n0.8 V, 300 MHz": (1227.2, None)}
-# DNN inference efficiency (TOPS, W) for matrix-matrix multiplication; other devices as quoted in the paper
-TOPS_W = {"SpiNNaker2\n150 MHz": (2.281, 0.825), "SpiNNaker2\n300 MHz": (4.563, 2.219),
-          "Coral EdgeTPU": (4.0, 2.0), "Jetson Orin Nano": (67.0, 25.0)}
-# DVS gesture SNN, 1000 time steps (1 s), energy per inference (J) per performance level
+                "CoreMark, 0.5 V, 150 MHz": (403.9, 424.6), "CoreMark, 0.8 V, 300 MHz": (1227.2, 1247.9)}
+# CoreMark throughput of all 152 PEs at full load (Table 2), iterations per second
+COREMARK_PER_S = {"0.5 V, 150 MHz": 65_968, "0.8 V, 300 MHz": 138_168}
+# DVS gesture SNN, 1000 time steps, energy per inference (J) per performance level and the timestep used (Table 4)
 DVS_ENERGY = {"low PL\n(0.5 V, 150 MHz)": 2.010, "high PL\n(0.8 V, 300 MHz)": 1.023, "automatic PL\n(switches by load)": 0.741}
-# EGRU language model, energy per inference (J)
-EGRU = {"SpiNNaker2": 0.065, "Nvidia A100": 1.19}
+DVS_TICK_MS = {"low PL\n(0.5 V, 150 MHz)": 3, "high PL\n(0.8 V, 300 MHz)": 1, "automatic PL\n(switches by load)": 1}
+# INT8 DNN efficiency in TOPS/W (Table 3). SpiNNaker2: measured on some PEs with all data in SRAM and extrapolated to
+# all 152 PEs (Fig. 8 of the paper); the other devices: datasheet or survey values quoted by the paper
+TOPS_PER_W = {"SpiNNaker2, 150 MHz": 2.77, "SpiNNaker2, 300 MHz": 2.06, "ARM Ethos N77": 5.13, "Groq TSP": 2.73,
+              "IBM NorthPole": 2.70, "Jetson Orin Nano": 2.68, "Mobileye EyeQ5": 2.40, "Google Coral Edge TPU": 2.00,
+              "GreenWaves GAP9": 0.34}
+# Measured comparisons with an Nvidia A100, per inference or sample:
+# (SpiNNaker2 energy, SpiNNaker2 time in ms, A100 energy, A100 time in ms), energies in the same unit per row
+# dense INT8 layers including DRAM transfers, SpiNNaker2 at 150 MHz (Table 5 of the chip paper), energies in mJ
+DNN_LAYERS = {"FC 1": (0.064, 0.111, 1.332, 0.012), "FC 2": (0.755, 0.944, 2.648, 0.024),
+              "CONV 1": (2.195, 3.035, 7.041, 0.053), "CONV 2": (2.339, 3.918, 4.599, 0.039),
+              "MM 1": (2.429, 3.971, 1.590, 0.015), "MM 2": (17.073, 24.501, 4.176, 0.034)}
+# event-based GRU (EGRU), Nazeer et al. 2024, Table II (language model) and Table III (DVS gesture), energies in J
+EGRU = {"language model, batch size 1": (0.0653, 170.25, 1.1935, 19.9),
+        "DVS gesture, batch size 1": (0.023, 60.19, 0.067, 1.09),
+        "DVS gesture, batch size 6": (0.023, 56.20, 0.011, 0.19)}
 
 
 CORE, MEM, NET = "#cfe2f3", "#fde0c5", "#d9ead3"  # same colours as in 00_computing_fundamentals
@@ -492,79 +505,104 @@ def fig_power_states():
     B: DVS gesture energy per performance level."""
     fig, (ax_a, ax_b) = plt.subplots(1, 2, figsize=(12.5, 4.8), gridspec_kw={"width_ratios": [1.2, 1]})
     off = POWER_STATES["PEs off"][0]
-    lo0, lo1 = POWER_STATES["PEs sleep, 0.5 V"][0], POWER_STATES["all PEs busy (CoreMark),\n0.5 V, 150 MHz"][0]
-    hi0, hi1 = POWER_STATES["PEs sleep, 0.8 V"][0], POWER_STATES["all PEs busy (CoreMark),\n0.8 V, 300 MHz"][0]
-    # x = work per second relative to the maximum of the high level; the low level reaches at most half of it
-    ax_a.plot([0, 0.5], [lo0, lo1], ":", color=BLUE, lw=2)
-    ax_a.plot([0, 1], [hi0, hi1], ":", color=RED, lw=2)
-    ax_a.plot([0, 0.5], [lo0, lo1], "o", color=BLUE, ms=9)
-    ax_a.plot([0, 1], [hi0, hi1], "o", color=RED, ms=9)
-    hi_at_half = hi0 + 0.5 * (hi1 - hi0)
-    ax_a.plot([0, 0.5], [lo0, lo1], color=GREEN, lw=6, alpha=0.35, solid_capstyle="round", zorder=0)
-    ax_a.plot([0.5, 1], [hi_at_half, hi1], color=GREEN, lw=6, alpha=0.35, solid_capstyle="round", zorder=0)
-    ax_a.plot([0.5, 0.5], [lo1, hi_at_half], color=GREEN, lw=2, ls="--")
-    ax_a.text(0.52, (lo1 + hi_at_half) / 2, "switch: the low level\ncan't do more work", fontsize=7.5, color=GREEN,
+    lo0, lo1 = POWER_STATES["PEs sleep, 0.5 V"][0], POWER_STATES["CoreMark, 0.5 V, 150 MHz"][0]
+    hi0, hi1 = POWER_STATES["PEs sleep, 0.8 V"][0], POWER_STATES["CoreMark, 0.8 V, 300 MHz"][0]
+    # x = CoreMark throughput of all PEs (thousand iterations per second): 0 when sleeping, the measured value at full load
+    w_lo, w_hi = COREMARK_PER_S["0.5 V, 150 MHz"] / 1e3, COREMARK_PER_S["0.8 V, 300 MHz"] / 1e3
+    ax_a.plot([0, w_lo], [lo0, lo1], ":", color=BLUE, lw=2)
+    ax_a.plot([0, w_hi], [hi0, hi1], ":", color=RED, lw=2)
+    ax_a.plot([0, w_lo], [lo0, lo1], "o", color=BLUE, ms=9)
+    ax_a.plot([0, w_hi], [hi0, hi1], "o", color=RED, ms=9)
+    hi_at_lo_max = hi0 + w_lo / w_hi * (hi1 - hi0)
+    ax_a.plot([0, w_lo], [lo0, lo1], color=GREEN, lw=6, alpha=0.35, solid_capstyle="round", zorder=0)
+    ax_a.plot([w_lo, w_hi], [hi_at_lo_max, hi1], color=GREEN, lw=6, alpha=0.35, solid_capstyle="round", zorder=0)
+    ax_a.plot([w_lo, w_lo], [lo1, hi_at_lo_max], color=GREEN, lw=2, ls="--")
+    ax_a.text(w_lo + 2, (lo1 + hi_at_lo_max) / 2, "switch: the low level\ncan't do more work", fontsize=7.5, color=GREEN,
               va="center")
-    ax_a.text(0.02, lo0 - 70, f"{lo0:.0f}", fontsize=8, color=BLUE)
-    ax_a.text(0.02, hi0 + 40, f"{hi0:.0f}", fontsize=8, color=RED)
-    ax_a.text(0.5, lo1 - 70, f"{lo1:.0f}", fontsize=8, color=BLUE, ha="center")
-    ax_a.text(1.0, hi1 + 50, f"{hi1:.0f}", fontsize=8, color=RED, ha="center")
-    ax_a.text(0.12, 300, "low level: 0.5 V, 150 MHz", fontsize=8.5, color=BLUE, fontweight="bold", rotation=12)
-    ax_a.text(0.25, 780, "high level: 0.8 V, 300 MHz", fontsize=8.5, color=RED, fontweight="bold", rotation=24)
+    ax_a.text(w_lo + 2, hi_at_lo_max - 40, f"≈ {hi_at_lo_max:.0f}", fontsize=8, color=RED, ha="left")
+    ax_a.text(2, lo0 - 70, f"{lo0:.0f}", fontsize=8, color=BLUE)
+    ax_a.text(2, hi0 + 40, f"{hi0:.0f}", fontsize=8, color=RED)
+    ax_a.text(w_lo, lo1 - 70, f"{lo1:.0f}", fontsize=8, color=BLUE, ha="center")
+    ax_a.text(w_hi, hi1 + 50, f"{hi1:.0f}", fontsize=8, color=RED, ha="center")
+    ax_a.text(14, 290, "low level: 0.5 V, 150 MHz", fontsize=8.5, color=BLUE, fontweight="bold", rotation=13)
+    ax_a.text(10, 640, "high level: 0.8 V, 300 MHz", fontsize=8.5, color=RED, fontweight="bold", rotation=24)
     ax_a.axhline(off, color="k", ls="--", lw=1)
-    ax_a.text(0.75, off + 25, f"all PEs switched off: {off:.0f} mW", ha="center", fontsize=7.5)
-    ax_a.text(0.02, 1330, "green: automatic switching, the cheapest way to do a given amount of work\n"
-              "points: measured (sleeping and full load), dotted lines: interpolated", fontsize=7, color="0.3", va="top")
-    ax_a.set_xticks([0, 0.5, 1], ["0\n(sleeping)", "0.5\n(low level at full load)", "1\n(high level at full load)"],
-                    fontsize=8)
-    ax_a.set_xlim(-0.05, 1.12)
+    ax_a.text(0.75 * w_hi, off + 25, f"all PEs switched off: {off:.0f} mW", ha="center", fontsize=7.5)
+    ax_a.text(2, 1330, "green: automatic switching, the cheapest way to do a given amount of work\n"
+              "points: measured (sleeping and CoreMark at full load), dotted lines: interpolated", fontsize=7, color="0.3",
+              va="top")
+    ax_a.set_xticks([0, w_lo, w_hi], ["0\n(sleeping)", f"{w_lo:.0f}\n(low level at full load)",
+                                      f"{w_hi:.0f}\n(high level at full load)"], fontsize=8)
+    ax_a.set_xlim(-7, 1.12 * w_hi)
     ax_a.set_ylim(0, 1400)
-    ax_a.set_xlabel("work per second (relative to the maximum of the high level)")
+    ax_a.set_xlabel("work per second: CoreMark throughput of all PEs (thousand iterations per second)")
     ax_a.set_ylabel("power of all 152 PEs (mW)")
     ax_a.set_title("A: stay at the low level as long as it can keep up", loc="left", fontsize=10)
-    names = list(DVS_ENERGY)
     vals = list(DVS_ENERGY.values())
     ax_b.bar(range(3), vals, color=[GREY, RED, GREEN], width=0.7)
     for i, v in enumerate(vals):
         ax_b.text(i, v + 0.04, f"{v:.2f} J", ha="center", fontsize=8.5)
-    ax_b.annotate("−28 % compared\nwith always high", (2, 0.85), (1.4, 1.65), fontsize=8.5, color=GREEN, fontweight="bold",
-                  arrowprops={"arrowstyle": "->", "color": GREEN})
-    ax_b.text(0, 2.12, "highest energy despite\nlow voltage: reason not\ngiven, to check", ha="center", va="bottom",
-              fontsize=7, color="0.35")
-    ax_b.set_xticks(range(3), ["always low\n(0.5 V, 150 MHz)", "always high\n(0.8 V, 300 MHz)", "automatic\n(switches by load)"],
-                    fontsize=7.5)
+    ax_b.annotate("−28 % compared\nwith always high", (2, 0.80), (2, 1.45), fontsize=8.5, color=GREEN, fontweight="bold",
+                  ha="center", arrowprops={"arrowstyle": "->", "color": GREEN})
+    ax_b.text(0.42, 1.75, "← 3 ms per step at the low level:\nthe 1000 steps take 3 s instead\nof 1 s, and the baseline power\n"
+              "is paid three times as long", ha="left", va="center", fontsize=7.5, color="0.3")
+    ticks = [f"{name}\n{DVS_TICK_MS[key]} ms per step: {DVS_TICK_MS[key]} s" for key, name in
+             zip(DVS_ENERGY, ["always low\n(0.5 V, 150 MHz)", "always high\n(0.8 V, 300 MHz)", "automatic\n(switches by load)"])]
+    ax_b.set_xticks(range(3), ticks, fontsize=7.5)
     ax_b.set_ylabel("energy per inference (J)")
     ax_b.set_ylim(0, 2.7)
-    ax_b.set_title("B: SNN (DVS gesture): adapting the level to the load", loc="left", fontsize=10)
+    ax_b.set_title("B: SNN (DVS gesture, 1000 steps): adapting the level to the load", loc="left", fontsize=10)
     fig.tight_layout()
     fig.savefig(OUT / "02_power_states.png")
     plt.close(fig)
 
 
+def energy_ratios():
+    """Rows of Figure 9B: (label, A100 energy / SpiNNaker2 energy, SpiNNaker2 time / A100 time, group)."""
+    rows = [(f"EGRU {k}", a / s, ts / ta, "egru") for k, (s, ts, a, ta) in EGRU.items()]
+    layers = sorted(DNN_LAYERS.items(), key=lambda kv: -kv[1][2] / kv[1][0])
+    return rows + [(f"dense INT8 layer {k}", a / s, ts / ta, "dnn") for k, (s, ts, a, ta) in layers]
+
+
 def fig_reported_energy():
-    eff_s2 = TOPS_W["SpiNNaker2\n150 MHz"][0] / TOPS_W["SpiNNaker2\n150 MHz"][1]
-    items = [("dense DNN layers\nvs. Nvidia Jetson Orin Nano", eff_s2 / (67.0 / 25.0), "0.55"),
-             ("dense DNN layers\nvs. Google Coral Edge TPU", eff_s2 / (4.0 / 2.0), "0.55"),
-             ("event-based language model\nvs. Nvidia A100 GPU", EGRU["Nvidia A100"] / EGRU["SpiNNaker2"], BLUE)]
-    fig, ax = plt.subplots(figsize=(9.5, 4.2))
-    y = np.array([2.3, 1.5, 0])
-    ax.axhspan(1.05, 2.75, color="0.93", zorder=0)
-    ax.axhspan(-0.45, 0.45, color="#dbe9f6", zorder=0)
-    ax.text(19.8, 2.62, "dense workloads", ha="right", va="top", fontsize=9, color="0.35", fontweight="bold")
-    ax.text(19.8, 0.38, "sparse, event-based", ha="right", va="top", fontsize=9, color=BLUE, fontweight="bold")
-    for yy, (name, r, c) in zip(y, items):
-        ax.barh(yy, r, color=c, height=0.5)
-        ax.text(r + 0.3, yy, f"{r:.1f} ×" if r < 10 else f"{r:.0f} ×", va="center", fontsize=13, fontweight="bold",
-                color=c if c != "0.55" else "0.3")
-    ax.axvline(1, color="k", ls="--", lw=1)
-    ax.text(1.15, -0.62, "1 × = same energy", fontsize=8, va="top")
-    ax.set_yticks(y, [i[0] for i in items], fontsize=9)
-    ax.set_xlim(0, 20)
-    ax.set_ylim(-0.95, 2.75)
-    ax.set_xticks([0, 1, 5, 10, 15, 20], ["0", "1", "5", "10", "15", "20"])
-    ax.set_xlabel("how many times less energy SpiNNaker2 needs than the comparison hardware")
-    ax.set_title("SpiNNaker2's energy advantage grows with sparsity", loc="left", fontsize=11, fontweight="bold")
-    fig.text(0.01, 0.01, "Different workloads, devices and measurement set-ups: the bars show the trend, not an exact comparison.",
+    """A: ideal INT8 efficiency vs edge accelerators (Table 3). B: measured energy and time vs an A100 (Table 5, Nazeer)."""
+    fig, (ax_a, ax_b) = plt.subplots(1, 2, figsize=(14, 5.2), gridspec_kw={"width_ratios": [0.8, 1.25]})
+    # A: TOPS/W
+    names = list(TOPS_PER_W)
+    y = np.arange(len(names))[::-1]
+    for yy, name in zip(y, names):
+        s2 = name.startswith("SpiNNaker2")
+        ax_a.barh(yy, TOPS_PER_W[name], color=BLUE if s2 else GREY, height=0.6)
+        ax_a.text(TOPS_PER_W[name] + 0.08, yy, f"{TOPS_PER_W[name]:.2f}", va="center", fontsize=8)
+    ax_a.set_yticks(y, names, fontsize=8.5)
+    ax_a.set_xlim(0, 6)
+    ax_a.set_xlabel("INT8 efficiency for dense DNN layers (TOPS/W)")
+    ax_a.set_title("A: ideal efficiency: on par with edge accelerators", loc="left", fontsize=10)
+    ax_a.text(5.95, y[-1], "blue: measured with all data in SRAM,\nextrapolated to all 152 PEs\ngrey: datasheet or survey values",
+              ha="right", va="center", fontsize=7, color="0.35")
+    # B: measured energy ratio vs A100, and how much longer SpiNNaker2 takes
+    rows = energy_ratios()
+    yb = np.arange(len(rows))[::-1].astype(float)
+    yb[len(EGRU):] -= 0.6  # gap between the two groups
+    for yy, (label, r, slow, group) in zip(yb, rows):
+        c = GREEN if r > 1 else RED
+        ax_b.barh(yy, r - 1, left=1, color=c, height=0.6)
+        ax_b.text(r * 1.12 if r > 1 else r / 1.12, yy, f"{r:.0f} ×" if r >= 10 else f"{r:.{1 if r > 1 else 2}f} ×", va="center",
+                  ha="left" if r > 1 else "right", fontsize=8.5, fontweight="bold", color=c)
+        ax_b.text(150, yy, f"{slow:.{1 if slow < 10 else 0}f} ×", va="center", ha="right", fontsize=8.5, color="0.3")
+    ax_b.text(150, yb[0] + 0.75, "SpiNNaker2\ntakes longer", ha="right", va="bottom", fontsize=7.5, color="0.3")
+    ax_b.axvline(1, color="k", lw=1)
+    ax_b.set_xscale("log")
+    ax_b.set_xlim(0.08, 160)
+    ax_b.set_xticks([0.1, 1, 10], ["0.1", "1", "10"])
+    ax_b.set_yticks(yb, [r[0] for r in rows], fontsize=8.5)
+    ax_b.set_ylim(yb[-1] - 0.7, yb[0] + 1.6)
+    ax_b.text(1.15, yb[-1] - 0.55, "SpiNNaker2 needs less energy →", fontsize=7.5, color=GREEN)
+    ax_b.text(0.87, yb[-1] - 0.55, "← more energy", fontsize=7.5, color=RED, ha="right")
+    ax_b.set_xlabel("energy of the A100 / energy of SpiNNaker2 (log scale)")
+    ax_b.set_title("B: measured against an Nvidia A100 GPU", loc="left", fontsize=10)
+    fig.text(0.01, 0.01, "B: EGRU = event-based GRU (Nazeer et al. 2024), energy per inference or sample; dense layers: "
+             "SpiNNaker2 at 150 MHz, including DRAM transfers (Scholze et al. 2026, Table 5).",
              fontsize=7.5, color="0.4")
     fig.tight_layout(rect=(0, 0.04, 1, 1))
     fig.savefig(OUT / "03_reported_energy.png")
@@ -572,12 +610,20 @@ def fig_reported_energy():
 
 
 def check():
-    assert abs(EGRU["Nvidia A100"] / EGRU["SpiNNaker2"] - 18.3) < 0.1  # the "18x" figure
+    ratios = {label: (r, slow) for label, r, slow, _ in energy_ratios()}
+    r18, slow18 = ratios["EGRU language model, batch size 1"]
+    assert abs(r18 - 18.3) < 0.1 and abs(slow18 - 8.6) < 0.1  # the "18x", and 8.6 times slower
+    assert ratios["EGRU DVS gesture, batch size 6"][0] < 0.5  # at batch size 6 the A100 needs less energy
+    assert abs(ratios["dense INT8 layer FC 1"][0] - 20.8) < 0.1 and abs(ratios["dense INT8 layer MM 2"][0] - 0.24) < 0.01
+    slows = [slow for _, slow in ratios.values()]
+    assert min(slows) > 8 and max(slows) < 730  # SpiNNaker2 is always slower, by 8.6 to 721 times
     assert abs((1 - DVS_ENERGY["automatic PL\n(switches by load)"] / DVS_ENERGY["high PL\n(0.8 V, 300 MHz)"]) - 0.28) < 0.01
+    hi_at_lo_max = 544.0 + COREMARK_PER_S["0.5 V, 150 MHz"] / COREMARK_PER_S["0.8 V, 300 MHz"] * (1227.2 - 544.0)
+    assert abs(hi_at_lo_max - 870) < 1  # Figure 8A: high level at the work the low level reaches at full load
     assert 784 * 128 / 1024 > 92 and round(clustered_synapses()) == 11925  # MNIST layer 1 exceeds one PE at 1 byte
     assert 6 * 48 * 152 == 43776 and 48 * 152 == 7296  # HPI installation and one board, if 48-node boards
     assert abs((1227.2 / 300) / (403.9 / 150) - 1.52) < 0.01  # energy per cycle at full load, high vs low level
-    assert abs(TOPS_W["SpiNNaker2\n150 MHz"][0] / TOPS_W["SpiNNaker2\n150 MHz"][1] - 2.77) < 0.01
+    assert abs(2.281 / 0.825 - TOPS_PER_W["SpiNNaker2, 150 MHz"]) < 0.01  # Table 3: TOPS / W at 150 MHz
 
 
 if __name__ == "__main__":
