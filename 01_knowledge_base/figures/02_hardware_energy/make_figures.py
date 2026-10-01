@@ -116,7 +116,7 @@ def fig_installation():
     path = [pos[(7, 0)], pos[(6, 1)], pos[(5, 2)]]  # host packets enter at a chip and travel over the links
     ax_b.plot([1.15, path[0][0] + 0.21], [5.1, path[0][1] + 0.36], color=ETH, lw=2.2, zorder=4)
     ax_b.plot([p[0] + 0.21 for p in path], [p[1] + 0.18 for p in path], color=ETH, lw=2.2, zorder=4)
-    ax_b.text(2.5, -0.3, "top view: 48 chips (probably, 48-node board, layout\nschematic), each with its DRAM (red, outside the\n"
+    ax_b.text(2.5, -0.3, "top view: 48 chips (48-node board, layout\nschematic), each with its DRAM (red, outside the\n"
               "chip), linked to its neighbours (green)", ha="center", va="top", fontsize=7.5, color="0.25")
     ax_b.set_xlim(-0.3, 5.3)
     ax_b.set_ylim(-1.4, 6.2)
@@ -155,7 +155,7 @@ def fig_installation():
         fig.text(ax.get_position().x0, 0.95, t, fontsize=10, va="top")
     fig.text(0.5, 0.055, "One run = one board: 48 chips × 152 PEs = 7,296 PEs (7,104 for applications)",
              ha="center", fontsize=11, fontweight="bold")
-    fig.text(0.5, 0.015, "whole HPI installation: 6 boards ≈ 43,800 PEs, if all are 48-node boards. "
+    fig.text(0.5, 0.015, "whole HPI installation: 6 boards ≈ 43,800 PEs. "
              "Purple: the path of data from py-spinnaker2 to a chip.", ha="center", fontsize=9, color="0.3")
     fig.savefig(OUT / "01_installation_hierarchy.png", bbox_inches="tight")
     plt.close(fig)
