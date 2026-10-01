@@ -45,7 +45,7 @@ After the cabling fix, allocation succeeded only sometimes. The boards became re
 ## 4. Mapping limits
 
 - A `Hardware` object runs **once**. A second `run()` on the same object fails; a new object is needed per run.
-- At most **100** `lif_curr_exp` neurons fit on one core, not the 125 that the memory budget suggests.
+- In the synfire chain of tutorial 00 (`lif_curr_exp`, 60 inputs per neuron, `v` and spikes recorded) at most **100** neurons fit on one core, not the 125 that the memory budget suggests. The limit depends on connectivity and recording; it is not a general cap for the model (documented cap: 256).
 - `mapping_only=True` performs placement and routing without touching the hardware, which makes network sizes testable without an allocated board.
 
 ## 5. Diagnostic techniques on cx51

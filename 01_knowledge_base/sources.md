@@ -2,7 +2,7 @@
 
 Library of everything worth reading for the workshop. Status: `todo` = not read yet, `read` = read and notes taken, `skim` = looked at, not in depth.
 
-**Version used: py-spinnaker2 v0.8** (installed on the HPI cluster). For the fact-check of 2026-09-30, the docs, tutorials, examples and code were read in full from the repository at tag v0.8.2, together with the chip-side code (snn-core) it pins; v0.8.0 to v0.8.2 differ in no neuron model or synapse format. The online docs currently match it (latest migration guide is v0.8.0). Before relying on a docs page, check it hasn't moved on to a newer release.
+**Version used: py-spinnaker2 v0.8.** The HPI cluster runs v0.8.0 plus a hotfix (commit `6c9084fc`, see `03_setup/README.md`). For the fact-check of 2026-09-30, the docs, tutorials, examples and code were read in full from the repository at tag v0.8.2, together with the chip-side code (snn-core) it pins; v0.8.0 to v0.8.2 differ in no neuron model or synapse format. The online docs currently match it (latest migration guide is v0.8.0). Before relying on a docs page, check it hasn't moved on to a newer release.
 
 ## Core: py-spinnaker2
 

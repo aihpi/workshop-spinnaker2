@@ -695,6 +695,8 @@ hw.run(net, 50)  # 50 timesteps; the keyword is time_steps, not timesteps
 
 The parameters not given (`i_offset`, `v_init`, `v_reset`, `reset`) take their defaults. Some pages of the py-spinnaker2 documentation call `hw.run(net, timesteps=…)`; this fails with `ValueError: time_steps must be provided`, because the parameter is called `time_steps`.
 
+The HPI cluster runs py-spinnaker2 v0.8.0 (plus a hotfix, see [`03_setup/`](../03_setup/README.md)). There, a `Hardware` object runs only once, and network names must be unique within a Python session. Re-running a notebook cell with this snippet therefore fails unless the hardware object is created anew and `snn.Network.clear_names()` is called before `snn.Network(…)`. Both restrictions show up on the cluster and were removed in v0.8.1 (py-spinnaker2 changelog).
+
 **Architectures:**
 
 - **Feed-forward:** layers like an MLP or CNN. What ML models trained elsewhere look like (section 8).
@@ -808,9 +810,8 @@ The saving depends on **sparsity**. With dense activity or many timesteps (rate 
 
 ## To check on the cluster
 
-Answered from the py-spinnaker2 code and the chip-side C code on 2026-09-30, no longer on this list: the timestep length (`sys_tick_in_s`, default 1 ms), floating point for $v$ and the parameters, the models supported by the Brian2 backend, `lif_prob` above threshold, the step size of `izhikevich`, the encoder parameters, the NIR type mapping, and the weight range of `*_no_delay_1024`.
+Answered from the py-spinnaker2 code and the chip-side C code on 2026-09-30, no longer on this list: the timestep length (`sys_tick_in_s`, default 1 ms), floating point for $v$ and the parameters, the models supported by the Brian2 backend, `lif_prob` above threshold, the step size of `izhikevich`, the encoder parameters, the NIR type mapping, and the weight range of `*_no_delay_1024`. Answered on the cluster on 2026-10-01: the installed version is v0.8.0 plus a hotfix (section 7, [`03_setup/`](../03_setup/README.md)).
 
-- [ ] Which py-spinnaker2 patch version is installed: v0.8.0 allows only one run per hardware object and requires unique network names (re-running a notebook cell fails), v0.8.1 and later don't.
 - [ ] **Validate the figures against the chip.** The chip-model figures are simulated with NumPy reimplementations of the update rules (`figures/01_primer_snn_basics/make_figures.py`), checked against the chip code but not run with py-spinnaker2. Run the same inputs on the chip, record `v` and spikes, and compare. The chip records $v$ after the reset, so compare spikes and the values between spikes, or reconstruct $v$ before the reset. Stochastic models need a different `seed` per run.
   - [ ] Figure 7 (discrete `lif` update), Figure 9 (reset modes), Figure 10 (delay of `delay + 1` steps), Figure 11 (`lif` vs. `lif_curr_exp`), Figure 13 (`alif`): match the chip code, confirm on the chip
   - [ ] Figure 12 (quantisation): rounding toward zero and clipping of float weights
