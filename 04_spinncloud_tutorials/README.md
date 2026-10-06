@@ -14,10 +14,16 @@ Setup and the pinned library version are in [`../03_setup/README.md`](../03_setu
 | `03_lif_conv2d.ipynb` | Convolutional LIF layers |
 | `04_hardware_allocation.ipynb` | Choosing a board, placement across cores |
 | `05_debugging.ipynb` | Reading the output when a run misbehaves |
+| `06_hardware_architecture.ipynb` | Chip and board architecture |
+| `07_streaming.ipynb` | Streaming spikes in and out during a run |
+| `08_nir.ipynb` | Importing an snnTorch network via NIR |
+| `09_custom-neuron-models_basics.ipynb` | Writing a custom neuron model in C |
 
-`helpers/` and `images/` hold what these six notebooks import and display. Only the referenced assets were copied; the remaining tutorials (`06`–`09`, streaming, NIR, custom neuron models) stay unmodified in the vendor clone at `py-spinnaker2/tutorials/deep_dive/`.
+`helpers/`, `images/` and `code/` hold what the notebooks import, display and compile. Only the referenced assets were copied.
 
 ## What differs from upstream
+
+Notebooks `06`–`09` are unmodified copies of upstream v0.8.2 and have not been run on our chips yet. Their stored outputs are upstream's: `07` and `09` from a SpiNNcloud board, `08` from the Brian2 backend (`USE_HARDWARE = False`), `06` is mostly text. The points below apply to `00`–`05`.
 
 - `USE_HARDWARE = True`, so the stored outputs are real chip results rather than Brian2 simulations.
 - Weights and a few parameters adjusted where the upstream defaults produced no spikes on hardware.
