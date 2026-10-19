@@ -1,6 +1,6 @@
 # Workshop Brief
 
-Draft, as of 2026-09-28, open questions updated on 2026-10-01 after the fact-check of the knowledge base.
+Draft, as of 2026-09-28, open questions updated on 2026-10-01 after the fact-check of the knowledge base, dates added on 2026-10-19.
 
 ## Audience
 
@@ -16,7 +16,7 @@ After the workshop, participants understand why neuromorphic hardware can save e
 - 3 hours, hands-on.
 - Participants with access to the HPI cluster run the code on the real chips.
 - Fallback: the Brian2 simulation backend, for participants without cluster access or if the hardware fails on the day.
-- Date: beginning of November 2026, to be fixed this week.
+- Dates: 18 November 2026, 14:00–17:00, room H-2.57/58, and 9 December 2026, 10:00–13:00, room K.104 (`01_announcement.md`).
 
 ## Content pillars
 
@@ -44,4 +44,4 @@ After the workshop, participants understand why neuromorphic hardware can save e
 - [x] Which py-spinnaker2 features does the Brian2 backend support? Answered in `01_knowledge_base/03_brian2_fallback.md`, compared with the chip on 2026-10-01: `lif` and `alif` match the chip exactly; `lif_curr_exp` and `poisson_process` deviate in specific cases; `lif_prob`, `izhikevich`, `qubo_neuron` and the latency encoder are chip only; no power measurement or profiling. Still open: how participants without cluster access install it on their laptops.
 - [x] Which py-spinnaker2 version on the cluster? Upgraded from v0.8.0 to v0.8.2 on 2026-10-01, so re-running notebook cells works without workarounds (`03_setup/README.md`).
 - [x] Is the workshop open to people outside HPI? Yes (decided 2026-10-06). How they reach the chips is still to be worked out; the Brian2 backend is the fallback.
-- [ ] Date and room.
+- [x] Date and room: fixed, see Format.

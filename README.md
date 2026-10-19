@@ -9,7 +9,7 @@ Material for a 3-hour hands-on workshop on the SpiNNaker2 neuromorphic chip, aim
 
 Replace `00_aisc/img/screenshot_app.png` with a screenshot of your application. Keep the image under the description so it is the first thing a visitor sees after the title; a 1280 by 720 PNG renders well on GitHub.
 
-> **Status:** planning. The workshop is planned for early November 2026. Either 03./05./06. (favourite) or 17./19.20.
+> **Status:** planning. Dates: 18 November 2026, 14:00–17:00, and 9 December 2026, 10:00–13:00.
 
 ## Repository structure
 

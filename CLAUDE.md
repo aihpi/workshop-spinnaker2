@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Planning repository for a 3-hour hands-on SpiNNaker2 workshop (AISC, planned for November 2026). Audience: ML PhD students and software developers. Software: py-spinnaker2 v0.8, run on the chips via the HPI cluster, with the Brian2 backend as fallback.
+Planning repository for a 3-hour hands-on SpiNNaker2 workshop (AISC, dates 18 November and 9 December 2026). Audience: ML PhD students and software developers. Software: py-spinnaker2 v0.8, run on the chips via the HPI cluster, with the Brian2 backend as fallback.
 
 ## Structure
 
