@@ -179,7 +179,7 @@ In py-spinnaker2, every PE has an address such as `Chip_1_0_QPE_4_5_2`: chip coo
 **The HPI setup** (as of 1 October 2026, from the vendor, the boot log and runs on the cluster; how to run is in [`03_setup/`](../03_setup/README.md)):
 
 - **6 boards in one frame.** The board management controller of the frame reports 6 boards, and the vendor refers to the installation as a 6-board system.
-- **48-node boards**, i.e. 6 × 48 = 288 chips in total. The boot log lists 49 devices on the management bus of a board (48 chips plus a controller), and runs with `hardware.SpiNNcloud48NodeBoard()` report 7,104 available cores (the SpiNNcloud tutorials run on the cluster, [`04_spinncloud_tutorials/`](../04_spinncloud_tutorials/README.md)).
+- **48-node boards**, i.e. 6 × 48 = 288 chips in total. The boot log lists 49 devices on the management bus of a board (48 chips plus a controller), and runs with `hardware.SpiNNcloud48NodeBoard()` report 7,104 available cores (the SpiNNcloud tutorials run on the cluster).
 - **One board per run, for now.** Multi-board simulations aren't supported yet and are expected in a few months, so the board-to-board cables aren't needed yet. A single 48-node board is far larger than any network planned for the workshop.
 - **Boards are locked per user.** When a run starts, the session software (SpiNNMan2, used by py-spinnaker2) reserves a board with a lock file ("The board is locked for you"). The lock covers the whole board, not single chips (SpiNNMan2 code), so at most 6 people can run on the chips simultaneously.
 

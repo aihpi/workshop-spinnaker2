@@ -19,7 +19,7 @@ Replace `00_aisc/img/screenshot_app.png` with a screenshot of your application. 
 | `01_knowledge_base/` | Notes, sources and figures |
 | `02_workshop_design/` | Brief, outline and demo plans |
 | `03_setup/` | Running py-spinnaker2 on the HPI cluster, troubleshooting |
-| `04_spinncloud_tutorials/` | SpiNNcloud's own tutorial notebooks, run on our chips. Reference, not workshop material |
+| `04_spinncloud_tutorials/` | SpiNNcloud's own tutorial notebooks, run on our chips. Reference, not workshop material. Local only, not in the repository |
 | `05_measurements/` | Measurements on the chips, e.g. the power baseline of a board, with scripts and data |
 
 ## Setup
