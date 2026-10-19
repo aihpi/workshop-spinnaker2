@@ -9,6 +9,7 @@ Measured on 2026-10-19 on the HPI cluster (cx51, py-spinnaker2 v0.8.2). Question
 - [What was run](#what-was-run)
 - [Results](#results)
 - [What it means for the workshop](#what-it-means-for-the-workshop)
+- [Check: do the networks do what they should?](#check-do-the-networks-do-what-they-should)
 - [Caveats and open points](#caveats-and-open-points)
 - [How to reproduce](#how-to-reproduce)
 - [Files](#files)
@@ -75,8 +76,9 @@ Full table with sample counts, minimum and maximum: `data/summary.csv`.
 
 - **The scale can't see small networks.** Up to 100 fully active cores (1 billion synaptic events per second) the board stays at 57 W.
 - **Running cores without spikes cost little:** about 3 W, the same for 1,000 and 3,000 cores. That fits cores that sleep between timer ticks (`02_hardware_energy.md`, section 2).
-- **Spiking is what costs energy:** with 1,000 cores, spikes add 6 W on top of the 3 W of the silent network. 6 W for 10 billion synaptic events per second is about 0.6 nJ per event, including the neuron updates and the sending of the spikes. The test chip in Höppner et al. 2021 needs 0.20–0.26 nJ per synaptic event plus 1.5–1.9 nJ per neuron update, so the order of magnitude agrees (estimate here, from a 1 W-resolution reading).
-- **The increase is not proportional:** 3,000 active cores add only 3 W more than 1,000, while 7,000 add another 17 W. Possible causes, none checked yet: cores that miss their deadline and do less work per second, placement onto more chips, or the controller's own reading. See the open points.
+- **Spiking is what costs energy:** with 1,000 cores, spikes add 6 W on top of the 3 W of the silent network.
+- **The increase is not proportional to the work:** 3,000 active cores add only 3 W more than 1,000, while 7,000 add another 17 W. The check below shows that every core does exactly the same work in all sizes, so the cause is not missing spikes or missed deadlines. It lies in how the board's power or its reading scales (e.g. which chips are in use, voltage regulators, fans), which these measurements can't separate.
+- **Energy per synaptic event, roughly:** the spike-related power divided by the events per second gives 0.6 nJ (1,000 cores: 6 W / 10¹⁰ events/s), 0.3 nJ (3,000 cores: 9 W / 3·10¹⁰) and 0.4 nJ (7,000 cores: 26 W / 7·10¹⁰), each including the neuron updates and the sending of the spikes. The test chip in Höppner et al. 2021 needs 0.20–0.26 nJ per synaptic event plus 1.5–1.9 nJ per neuron update, so the order of magnitude agrees. Given the 1 W resolution and the non-proportional increase, this is a rough estimate, not a measurement of the chip's energy per event.
 
 ## What it means for the workshop
 
@@ -84,9 +86,22 @@ Full table with sample counts, minimum and maximum: `data/summary.csv`.
 - **A demo can show energy.** A run with 1,000 or more active cores, or the full board, shows a clear difference: silent vs. active at the same size isolates the cost of the spikes (Figure 2). That makes a good instructor demo, or a shared run that participants look at.
 - **The core message holds and becomes concrete:** the board costs 57 W just for being on, and only massive spiking activity becomes visible. This is the baseline problem of `02_hardware_energy.md`, section 9, now with measured numbers.
 
+## Check: do the networks do what they should?
+
+The power runs record nothing from the neurons. `03_check_activity.py` therefore reran the active networks for 2 s (2,000 steps) and observed 10 populations spread over the network: their spikes (recorded to DRAM) and their timing per step (`profile=True`, py-spinnaker2 profiling).
+
+| Cores | Spikes per neuron in 2,000 steps (min / max) | Steps with a missed deadline | Time per step on the observed cores (median) |
+|---|---|---|---|
+| 10 | 2,000 / 2,000 | 0 | 778 µs |
+| 1,000 | 2,000 / 2,000 | 0 | 854 µs |
+| 3,000 | 2,000 / 2,000 | 0 | 854 µs |
+| 7,000 | 2,000 / 2,000 | 0 | 815 µs |
+
+Every observed neuron spiked in every step, and no core missed its 1 ms deadline, at all sizes. Each core uses about 80–85 % of its time budget per step, so this load is close to the limit of one core at 1 ms per step. Data: `data/activity_checks.csv`. The power values in that file come from 2 s runs, in which the reading hasn't settled yet (lag of up to 1 s), and are not used.
+
 ## Caveats and open points
 
-- [ ] **Spike activity not verified.** Nothing was recorded, to keep the runs light. The active runs assume every neuron spikes every step and no deadline is missed. Check with a short run that records `spikes` of a few populations and `time_done`, especially for 3,000 and 7,000 cores (could explain the non-proportional increase).
+- [x] **Spike activity verified** for 10, 1,000, 3,000 and 7,000 cores on 10 sampled populations each (previous section).
 - [ ] **What the controller measures:** the whole board including DRAM and voltage regulators, and maybe fans. A fan stepping up under heat would show up as power that isn't the chips'. Ask the admins or SpiNNcloud what the SNMP value covers and how often it is updated.
 - [ ] **One board only.** All runs used the first free board. Whether all 6 boards have the same 57 W baseline is not checked.
 - [ ] **Other users:** a tutorial was run on another board during the 100- and 1,000-core runs (14:13–14:15). Boards are locked per user, and the value is per board, so it should not affect the result; the three identical idle runs support this.
@@ -101,6 +116,7 @@ python 00_pilot.py                            # one 20 s idle run, prints the ra
 python 01_run_power.py idle_1 1 idle          # name, cores, mode [, time steps]
 python 01_run_power.py active_1000 1000 active
 python 01_run_power.py silent_1000 1000 silent
+python 03_check_activity.py 1000              # cores [, time steps]
 uv run --with pandas --with pyarrow --with matplotlib 02_analyse.py
 ```
 
@@ -113,8 +129,10 @@ Each call of `01_run_power.py` appends one line to `data/runs.csv` and stores th
 | `00_pilot.py` | First run: what the power data looks like |
 | `01_run_power.py` | One measurement: builds the network, runs it with `record_power=True`, stores the trace |
 | `02_analyse.py` | Summary table and Figures 1 and 2 |
+| `03_check_activity.py` | Short runs with spike recording and profiling, to check the active networks |
 | `data/*.parquet` | Raw power traces as written by py-spinnaker2 (time, board power, phase markers) |
 | `data/runs.csv` | One line per run, written by `01_run_power.py` |
 | `data/summary.csv` | `runs.csv` plus steady power, written by `02_analyse.py` |
+| `data/activity_checks.csv` | Results of `03_check_activity.py` |
 
 The diagnostic folders and logs of the runs stay local (`.gitignore`), because they contain internal addresses.
