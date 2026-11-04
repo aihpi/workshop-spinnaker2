@@ -36,9 +36,18 @@ After the workshop, participants understand why neuromorphic hardware can save e
 | Hands-on 2: trained model via NIR, energy measurement | 45 min |
 | Clustered networks demo, outlook, Q&A | 20 min |
 
+## Chip time in the hands-on parts
+
+The frame handles about 2 runs per minute for all participants together, and every run takes at least about 1 minute (`02_participant_access.md`, capacity). The notebooks are designed for it:
+
+- develop and debug on Brian2, chip only for the final run
+- several variants bundled into one network, so one run instead of several
+- pairs, and staggered start times per group
+- `set_rebuild_apps(False)` in every notebook (otherwise two runs started at once by the same user collide while compiling)
+
 ## Open questions
 
-- [ ] How do participants get cluster access, and how long does account creation take? 
+- [x] How do participants get cluster access? Decided with the cluster admins on 2026-11-04 (`02_participant_access.md`): HPI participants work on cx51 and get access to the `pot-hpi-early-access` partition for the workshop; outside participants use the Brian2 backend on their laptops.
 - [ ] How many participants can use the chips at the same time? The HPI setup has 6 boards (48-node boards, confirmed on the cluster), runs use one board each, and the lock covers the whole board (SpiNNMan2 code), so at most 6 participants can run in parallel: plan for turns, pairs, or the Brian2 fallback for the rest. Still open: how many boards workshop accounts get. Details in `01_knowledge_base/02_hardware_energy.md`, section 5.
 - [x] Does power measurement work on our setup? Measured on 2026-10-19 (`05_measurements/01_power_baseline/`): the board reads 57 W when empty, in 1 W steps. Networks up to 100 fully active cores are invisible; 1,000 active cores add 9 W, the full board about 29 W. So participants can't measure their own (small) networks; hands-on 2 can show a large demo run (silent vs. active network of the same size) and reported numbers.
 - [x] Which py-spinnaker2 features does the Brian2 backend support? Answered in `01_knowledge_base/03_brian2_fallback.md`, compared with the chip on 2026-10-01: `lif` and `alif` match the chip exactly; `lif_curr_exp` and `poisson_process` deviate in specific cases; `lif_prob`, `izhikevich`, `qubo_neuron` and the latency encoder are chip only; no power measurement or profiling. Still open: how participants without cluster access install it on their laptops.
