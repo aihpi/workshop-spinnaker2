@@ -106,8 +106,15 @@ The main software for the workshop. Python interface for running experiments on 
 | Source | What | Status |
 |---|---|---|
 | [DVS gesture recognition via NIR (2025)](https://arxiv.org/abs/2504.06748) | Quantisation (PTQ, QAT) and 8-bit on-chip inference | read |
-| [Hardware-aware fine-tuning of spiking Q-networks (2025)](https://arxiv.org/abs/2507.23562) | Reinforcement learning on chip | read |
+| [Arfa, Vogginger, Mayr 2025, Hardware-aware fine-tuning of spiking Q-networks on the SpiNNaker2 neuromorphic platform (ICONS 2025)](https://arxiv.org/abs/2507.23562) | Reinforcement learning on chip, closed loop; code repository private (2026-11-04) | read |
 | [Nazeer et al. 2024, Language modeling on a SpiNNaker2 neuromorphic chip (IEEE AICAS)](https://arxiv.org/abs/2312.09084) | Event-based GRU language model; the source of the "18×" (batch size 1, 8.6× slower than an A100) | read |
+| [Béna et al. 2025, Event-based backpropagation on the neuromorphic platform SpiNNaker2 (NICE)](https://arxiv.org/abs/2412.15021) | On-chip training with EventProp; numbers in `04_applications.md` | skim |
+| [von Seeler et al. 2026, Road to scalability for efficient graph search on massively parallel neuromorphic hardware](https://arxiv.org/abs/2606.28907) | Shortest-path search (NEURO-MAPP) against Dijkstra on a CPU | skim |
+| [Chen et al. 2025, ON-OFF neuromorphic Ising machines using Fowler-Nordheim annealers (Nature Communications)](https://arxiv.org/abs/2406.05224) | Max-Cut solver NeuroSA, run on one SpiNNaker2 chip | skim |
+| [Jobst et al. 2025, An end-to-end DNN inference framework for the SpiNNaker2 neuromorphic MPSoC](https://arxiv.org/abs/2507.13736) | Non-spiking DNN inference (OctopuScheduler) | todo |
+| [Yan et al. 2021, Keyword spotting and adaptive control with a SpiNNaker 2 prototype and comparison with Loihi](https://arxiv.org/abs/2009.08921) | The only same-task comparison with another neuromorphic chip (Loihi 1) | skim |
+| [Rhodes et al. 2020, Real-time cortical simulation on neuromorphic hardware](https://arxiv.org/abs/1909.08665) | SpiNNaker1: cortical microcircuit in real time | skim |
+| [GWDG, SpiNNaker on the Future Technology Platform](https://docs.hpc.gwdg.de/services/ftp/neuromorphic-computing/spinnaker/index.html) | SpiNNaker2 access in Göttingen, py-spinnaker2 in a container | skim |
 
 ### Ecosystem and context
 
@@ -119,6 +126,15 @@ The main software for the workshop. Python interface for running experiments on 
 | [Horowitz 2014, Computing's energy problem (and what we can do about it), ISSCC](https://doi.org/10.1109/ISSCC.2014.6757323) | Energy per operation and memory access (45 nm), the standard reference for energy arguments | read |
 | [Blem, Menon, Sankaralingam 2013, Power struggles: revisiting the RISC vs. CISC debate (HPCA)](https://research.cs.wisc.edu/vertical/papers/2013/hpca13-isa-power-struggles.pdf) | Measurement study: the instruction set matters little for energy efficiency, the design point does (computing fundamentals, section 5) | read |
 | [Kudithipudi et al. 2025, Neuromorphic computing at scale (Nature)](https://www.nature.com/articles/s41586-024-08253-8) | Field overview, good for the workshop intro | todo |
+| [Davies et al. 2021, Advancing neuromorphic computing with Loihi: a survey of results and outlook (Proc. IEEE)](https://doi.org/10.1109/JPROC.2021.3067593) | Where Loihi helps and where not | todo |
+| [Meyer et al. 2024, A diagonal structured state space model on Loihi 2 for efficient streaming sequence processing](https://arxiv.org/abs/2409.15022) | 1000× less energy than a Jetson token by token, Jetson wins batched | skim |
+| [Abreu et al. 2025, Neuromorphic principles for efficient large language models on Intel Loihi 2](https://arxiv.org/abs/2503.18002) | MatMul-free 370M LLM on Loihi 2 | skim |
+| [Bos & Muir 2024, Micro-power spoken keyword spotting on Xylo Audio 2](https://arxiv.org/abs/2406.15112) | 291 µW keyword spotting | skim |
+| [Yao et al. 2024, Spike-based dynamic computing with asynchronous sensing-computing neuromorphic chip (Nature Communications)](https://pmc.ncbi.nlm.nih.gov/articles/PMC11127998/) | SynSense Speck, sub-mW event vision | skim |
+| [Dampfhoffer et al. 2023, Are SNNs really more energy-efficient than ANNs? (IEEE TETCI)](https://doi.org/10.1109/TETCI.2022.3214509) | Sparsity needed for SNNs to beat ANN accelerators | skim |
+| [Yan, Bai et al. 2024, Reconsidering the energy efficiency of spiking neural networks inference from analytical perspectives](https://arxiv.org/abs/2409.08290) | Spike rate below 5.7 % needed (T = 5) | skim |
+| [Yik et al. 2025, NeuroBench (Nature Communications)](https://arxiv.org/abs/2304.04640) | Community benchmark framework for neuromorphic algorithms and systems | todo |
+| [Lava (Intel), archived 2026-05-13](https://github.com/lava-nc/lava) | Loihi software framework, no longer maintained | skim |
 | [Brian2 simulator](https://briansimulator.org/) | Out of scope for now | skip |
 
 ## Further reading: optimisation and energy-based models
@@ -141,7 +157,9 @@ Useful for the motivation part of the workshop.
 
 | Source | What | Status |
 |---|---|---|
-| [SpiNNcloud Systems](https://spinncloud.com) | Manufacturer | read |
+| [Sparxity](https://sparxity.ai) | Manufacturer, called SpiNNcloud Systems until October 2026 (spinncloud.com redirects here) | read |
+| [Silicon Saxony 2026, Sparxity: sparse-native computing system announced at the Jülich Supercomputing Centre](https://silicon-saxony.de/en/sparxity-installation-of-a-sparse-native-computing-system-worth-several-million-dollars-announced-at-the-juelich-supercomputing-center/) | Press release of 28 October 2026: new company name, JUBIS system at Jülich | read |
+| [The Next Platform 2025, Sandia deploys SpiNNaker2 neuromorphic system](https://www.nextplatform.com/2025/06/16/sandia-deploys-spinnaker2-neuromorphic-system/) | Sandia system: 24 boards with 48 chips | skim |
 | [IEEE Spectrum 2025, Brain-inspired computing is ready for the big time](https://spectrum.ieee.org/neuromorphic-computing-2671121824) | | todo |
 | [BBC 2024, Could brain-like computers be a 'competition killer'?](https://www.bbc.com/news/articles/cx99qv2w1ddo) | | todo |
 | [The Register 2024, SpiNNcloud unveils Arm-based neuromorphic system](https://www.theregister.com/2024/05/08/spinncloud_systems_unveils_armbased_neuromorphic/) | | todo |

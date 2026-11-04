@@ -121,4 +121,4 @@ So that every notebook gives the same result on both paths:
 
 - [ ] Run the clustered SNN example, the NMNIST NIR demo and tutorial 08 on both backends and compare (section 4).
 - [ ] How participants without cluster access install the Brian2 path on their laptops: `pip install` of py-spinnaker2 builds the chip libraries, which needs the toolchain; alternatives are installing only the Python dependencies and putting `src/` on the `PYTHONPATH` (worked on macOS in September 2026), or the public Docker image that v0.8.2 introduced *(assumption, to check)*. Needs a tested one-page instruction before the workshop.
-- [ ] Report the two errors and the `lif_curr_exp` shift to SpiNNcloud.
+- [ ] Report the two errors and the `lif_curr_exp` shift to the vendor (Sparxity, formerly SpiNNcloud).

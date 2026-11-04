@@ -36,6 +36,4 @@ laptop ──VPN──> login node ──ssh / srun──> cx51 ──private ne
 - **Duration per run** (tiny network): about 60 s alone and 75–77 s with two at once (20 s of simulation each); 166–169 s with six at once (1 s of simulation). The six runs all finished at about the same time, so nobody finishes early.
 - **All boards busy:** the run waits for a free board (tested with 8 simultaneous runs) and meanwhile prints a harmless `All machines are busy … Retrying` message.
 - **cx51:** 40 CPU cores, 125 GB RAM, enough for the Python side of many sessions.
-- **Consequence:**
-    - about 90 chip runs per 45-minute hands-on, shared by all participants
-    - measured until all results were back: 1 run ≈ 1 min, 2 at once ≈ 1.3 min, 6 at once ≈ 2.8 min, 8 at once ≈ 4.1 min
+- **Consequence**, measured until all results were back: 1 run ≈ 1 min, 2 at once ≈ 1.3 min, 6 at once ≈ 2.8 min, 8 at once ≈ 4.1 min
