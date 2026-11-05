@@ -108,13 +108,17 @@ The main software for the workshop. Python interface for running experiments on 
 | [DVS gesture recognition via NIR (2025)](https://arxiv.org/abs/2504.06748) | Quantisation (PTQ, QAT) and 8-bit on-chip inference | read |
 | [Arfa, Vogginger, Mayr 2025, Hardware-aware fine-tuning of spiking Q-networks on the SpiNNaker2 neuromorphic platform (ICONS 2025)](https://arxiv.org/abs/2507.23562) | Reinforcement learning on chip, closed loop; code repository private (2026-11-04) | read |
 | [Nazeer et al. 2024, Language modeling on a SpiNNaker2 neuromorphic chip (IEEE AICAS)](https://arxiv.org/abs/2312.09084) | Event-based GRU language model; the source of the "18×" (batch size 1, 8.6× slower than an A100) | read |
-| [Béna et al. 2025, Event-based backpropagation on the neuromorphic platform SpiNNaker2 (NICE)](https://arxiv.org/abs/2412.15021) | On-chip training with EventProp; numbers in `04_applications.md` | skim |
-| [von Seeler et al. 2026, Road to scalability for efficient graph search on massively parallel neuromorphic hardware](https://arxiv.org/abs/2606.28907) | Shortest-path search (NEURO-MAPP) against Dijkstra on a CPU | skim |
-| [Chen et al. 2025, ON-OFF neuromorphic Ising machines using Fowler-Nordheim annealers (Nature Communications)](https://arxiv.org/abs/2406.05224) | Max-Cut solver NeuroSA, run on one SpiNNaker2 chip | skim |
-| [Jobst et al. 2025, An end-to-end DNN inference framework for the SpiNNaker2 neuromorphic MPSoC](https://arxiv.org/abs/2507.13736) | Non-spiking DNN inference (OctopuScheduler) | todo |
-| [Yan et al. 2021, Keyword spotting and adaptive control with a SpiNNaker 2 prototype and comparison with Loihi](https://arxiv.org/abs/2009.08921) | The only same-task comparison with another neuromorphic chip (Loihi 1) | skim |
+| [Béna et al. 2024, Event-based backpropagation on the neuromorphic platform SpiNNaker2 (NeurIPS workshop MLNCP)](https://arxiv.org/abs/2412.15021) | On-chip training with EventProp; numbers in `04_applications.md` | read |
+| [von Seeler et al. 2026, Road to scalability for efficient graph search on massively parallel neuromorphic hardware](https://arxiv.org/abs/2606.28907) | Shortest-path search (NEURO-MAPP) against Dijkstra on a CPU | read |
+| [Chen et al. 2025, ON-OFF neuromorphic Ising machines using Fowler-Nordheim annealers (Nature Communications)](https://arxiv.org/abs/2406.05224) | Max-Cut solver NeuroSA, run on one SpiNNaker2 chip; power numbers in the supplement, section S5 | read |
+| [Jobst et al. 2025, An end-to-end DNN inference framework for the SpiNNaker2 neuromorphic MPSoC](https://arxiv.org/abs/2507.13736) | Non-spiking DNN inference (OctopuScheduler) | read |
+| [Yan et al. 2021, Keyword spotting and adaptive control with a SpiNNaker 2 prototype and comparison with Loihi](https://arxiv.org/abs/2009.08921) | The only direct comparison with another neuromorphic chip found (Loihi 1) | read |
 | [Rhodes et al. 2020, Real-time cortical simulation on neuromorphic hardware](https://arxiv.org/abs/1909.08665) | SpiNNaker1: cortical microcircuit in real time | skim |
 | [GWDG, SpiNNaker on the Future Technology Platform](https://docs.hpc.gwdg.de/services/ftp/neuromorphic-computing/spinnaker/index.html) | SpiNNaker2 access in Göttingen, py-spinnaker2 in a container | skim |
+| [Jimenez Siegert et al. 2026, Rapid and energy-efficient ultra-large library screening for drug discovery on a SpiNNaker2 neuromorphic chip (Communications Chemistry)](https://www.nature.com/articles/s42004-026-02122-3) | Leipzig drug-discovery project, single chip, against a Jetson Orin Nano | skim |
+| [Bachelor's thesis, Göttingen 2026, Accelerating irregular parallel algorithms on SpiNNaker2 hardware](https://hps.vi4io.org/_media/research/theses/jake_accelerating_irregular_parallel_algorithms_on_spinnaker2_hardware.pdf) | The only multi-chip work found: one 48-chip board at GWDG, chip-to-chip communication failed | todo |
+| [JSC, project ESAB (Event-based Supercomputer for AI and Beyond)](https://www.fz-juelich.de/en/jsc/projects/esab) | Jülich's JUBIS system: 90 boards, 4,320 chips, funding, project | read |
+| [THOR: The Neuromorphic Commons (UTSA), news](https://www.neuromorphiccommons.com/news) | 56-board SpiNNaker2 system, open access by application | skim |
 
 ### Ecosystem and context
 
@@ -136,6 +140,27 @@ The main software for the workshop. Python interface for running experiments on 
 | [Yik et al. 2025, NeuroBench (Nature Communications)](https://arxiv.org/abs/2304.04640) | Community benchmark framework for neuromorphic algorithms and systems | todo |
 | [Lava (Intel), archived 2026-05-13](https://github.com/lava-nc/lava) | Loihi software framework, no longer maintained | skim |
 | [Brian2 simulator](https://briansimulator.org/) | Out of scope for now | skip |
+
+## History of neuromorphic computing
+
+Sources of `05_history.md`. Most papers were only available as abstract or metadata (marked `skim`); the note marks claims it could not confirm.
+
+| Source | What | Status |
+|---|---|---|
+| [Mead 1990, Neuromorphic electronic systems (Proc. IEEE)](https://doi.org/10.1109/5.58356) | The paper that named the field | todo |
+| [Levy & Calvert 2021, Communication consumes 35 times more energy than computation in the human cortex (PNAS)](https://pubmed.ncbi.nlm.nih.gov/33906943/) | Energy budget of the brain | skim |
+| [Merolla et al. 2014, A million spiking-neuron integrated circuit (Science)](https://doi.org/10.1126/science.1254642) | IBM TrueNorth | skim |
+| [Modha et al. 2023, Neural inference at the frontier of energy, space, and time (Science)](https://doi.org/10.1126/science.adh1174) | IBM NorthPole, not spiking | skim |
+| [Davies et al. 2018, Loihi: a neuromorphic manycore processor with on-chip learning (IEEE Micro)](https://doi.org/10.1109/MM.2018.112130359) | Intel Loihi | todo |
+| [Benjamin et al. 2014, Neurogrid (Proc. IEEE)](https://doi.org/10.1109/JPROC.2014.2313565) | Stanford's mixed-signal system | todo |
+| [Pei et al. 2019, Tianjic hybrid chip architecture (Nature)](https://doi.org/10.1038/s41586-019-1424-8) | Hybrid ANN/SNN chip, Tsinghua | skim |
+| [Moradi et al. 2017, DYNAPs](https://arxiv.org/abs/1708.04198) | Mixed-signal chip from Zurich, origin of SynSense | skim |
+| [Pehle et al. 2022, BrainScaleS-2 (Frontiers)](https://www.frontiersin.org/articles/10.3389/fnins.2022.795876/full) | Accelerated analog system, Heidelberg | skim |
+| [Knight & Furber 2016, Synapse-centric mapping of cortical models to SpiNNaker (Frontiers)](https://www.frontiersin.org/articles/10.3389/fnins.2016.00420/full) | SpiNNaker1 mapping | skim |
+| [University of Manchester 2018, million-processor machine switched on](https://www.manchester.ac.uk/about/news/human-brain-supercomputer-with-1million-processors-switched-on-for-first-time/) | SpiNNaker1 milestone | read |
+| [Design & Reuse 2021, SpiNNaker2 tapeout in GF 22FDX](https://www.design-reuse.com/news/50366/ai-chip-gf-22fdx-racyics-tu-dresden-manchester.html) | SpiNNaker2 tapeout | read |
+| [SPRIND, the SpiNNaker2 supercomputer](https://www.sprind.org/en/projects/mayr) | Funding of the Dresden system | read |
+| [Intel 2024, world's largest neuromorphic system (Hala Point)](https://www.intc.com/news-events/press-releases/detail/1691/intel-builds-worlds-largest-neuromorphic-system-to) | Hala Point, vendor | read |
 
 ## Further reading: optimisation and energy-based models
 
@@ -162,7 +187,7 @@ Useful for the motivation part of the workshop.
 | [The Next Platform 2025, Sandia deploys SpiNNaker2 neuromorphic system](https://www.nextplatform.com/2025/06/16/sandia-deploys-spinnaker2-neuromorphic-system/) | Sandia system: 24 boards with 48 chips | skim |
 | [IEEE Spectrum 2025, Brain-inspired computing is ready for the big time](https://spectrum.ieee.org/neuromorphic-computing-2671121824) | | todo |
 | [BBC 2024, Could brain-like computers be a 'competition killer'?](https://www.bbc.com/news/articles/cx99qv2w1ddo) | | todo |
-| [The Register 2024, SpiNNcloud unveils Arm-based neuromorphic system](https://www.theregister.com/2024/05/08/spinncloud_systems_unveils_armbased_neuromorphic/) | | todo |
+| [The Register 2024, SpiNNcloud unveils Arm-based neuromorphic system](https://www.theregister.com/2024/05/08/spinncloud_systems_unveils_armbased_neuromorphic/) | | read |
 | [EE Times podcast 2023, Steve Furber on SpiNNaker 1, 2 and beyond](https://www.eetimes.com/podcasts/arm-inventor-steve-furber-on-spinnaker-1-2-and-beyond/) | | todo |
 
 ## Local sources
