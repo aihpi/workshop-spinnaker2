@@ -103,7 +103,7 @@ Every observed neuron spiked in every step, and no core missed its 1 ms deadline
 
 - [x] **Spike activity verified** for 10, 1,000, 3,000 and 7,000 cores on 10 sampled populations each (previous section).
 - [ ] **What the controller measures:** the whole board including DRAM and voltage regulators, and maybe fans. A fan stepping up under heat would show up as power that isn't the chips'. Ask the admins or SpiNNcloud what the SNMP value covers and how often it is updated.
-- [ ] **One board only.** All runs used the first free board. Whether all 6 boards have the same 57 W baseline is not checked.
+- [ ] **One board only.** All runs used the first free board. Whether all 6 boards have the same 57 W baseline is not checked. A repeat of the 1,000-core runs on 2026-11-09 (energy demo, `04_workshop_material/demos/01_energy.ipynb`) read 60 W silent, as before, but 63 W active instead of 66 W; which board each run used was not recorded. The silent run also showed one dip to 57 W for about a second.
 - [ ] **Other users:** a tutorial was run on another board during the 100- and 1,000-core runs (14:13–14:15). Boards are locked per user, and the value is per board, so it should not affect the result; the three identical idle runs support this.
 - [ ] **Silent vs. active at 7,000 cores** and repeated runs per size were not measured (each 7,000-core run takes about 9 minutes, mostly for building the configuration on the host).
 

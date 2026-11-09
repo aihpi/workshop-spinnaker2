@@ -10,9 +10,10 @@ Hands-on notebooks and demos of the workshop "Neuromorphic Computing: Spiking Ne
 | `01_first_network.ipynb` | A first spiking network built by hand | 4 (hands-on 1) |
 | `02a_nir_minimal.ipynb` | From snnTorch via NIR to SpiNNaker2, small network | 6 (hands-on 2) |
 | `02b_nir_end_to_end.ipynb` | Train in snnTorch, export, run | 6 (hands-on 2) |
-| `demos/` | Instructor demos: energy, event-camera digits | 7 |
+| `data/` | Data for the notebooks (see its README for sources) | |
+| `demos/` | Instructor demos: energy, event-camera digits, Max-Cut | 7 |
 
-Notebooks 02a and later are still being written.
+Demos tested on the chip on 2026-11-09: Max-Cut finds the optimum of both graphs, NMNIST classifies its sample like Brian2, the energy demo reads 57 W empty, 60 W silent and 63 W active (66 W in the measurement of 2026-10-19). The demos need `tonic` and `networkx` in addition to `requirements.txt`. Notebooks tested on 2026-11-09 on cx51 (Brian2 and chip): 01 and 02a give identical spikes on Brian2 and on the chip; in 02b, training takes about 2 minutes on cx51 and 96 % of the output spikes land on the target.
 
 All notebooks run on the Brian2 simulator by default. Participants with access to the HPI cluster switch to the SpiNNaker2 chips at the end of each hands-on (`USE_HARDWARE = True`).
 
