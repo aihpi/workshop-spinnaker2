@@ -66,7 +66,7 @@ Notes on the install:
 
 Release `v0.8.2` (2026-09-23), installed on 2026-10-01. Its `snn-core` submodule points to commit `ccd54d0`; `setup_libs.sh` names the commit before it (`0341893`), which differs only in how the random generators are seeded at start-up and in stricter compiler flags. `pip list` still reports `0.8.0`, because `pyproject.toml` was not bumped; the installed code is v0.8.2.
 
-Compared with the previous pin (`6c9084fc`, v0.8.0 plus the circular-import hotfix), v0.8.1 and v0.8.2 allow repeated `run()` calls on the same `Hardware` object and several networks with the same name (both checked on a board on 2026-10-01). Neuron models and synapse formats are unchanged. The edits to the vendor tutorials made under v0.8.0 are kept as a `git stash` in the clone; their copies are in `04_spinncloud_tutorials/`.
+Compared with the previous pin (`6c9084fc`, v0.8.0 plus the circular-import hotfix), v0.8.1 and v0.8.2 allow repeated `run()` calls on the same `Hardware` object and several networks with the same name (both checked on a board on 2026-10-01). Neuron models and synapse formats are unchanged. The edits to the vendor tutorials made under v0.8.0 are kept as a `git stash` in the clone; their copies are in `_local/04_spinncloud_tutorials/`.
 
 ## Smoke test
 
@@ -82,3 +82,15 @@ The script writes `lif_output.png`. `plt.show()` produces no visible output on t
 ## Fallback without hardware
 
 The Brian2 backend of py-spinnaker2 runs the same networks on the CPU and needs none of the above. It is the fallback for workshop participants if the frame is unavailable. What it supports and where it differs from the chip: [`01_knowledge_base/03_brian2_fallback.md`](../01_knowledge_base/03_brian2_fallback.md).
+
+### Laptop install for Brian2 only
+
+Participants without cluster access use Brian2 on their own laptop. The step-by-step guide for them is in [`04_workshop_material/README.md`](../04_workshop_material/README.md), with the pinned packages in `04_workshop_material/requirements.txt`. Findings of the install test of 2026-11-09 (fresh virtual environment on cx51, Python 3.12, pip only):
+
+- **py-spinnaker2 is not on PyPI.** pip installs it from GitLab (`spinnaker2 @ git+https://gitlab.com/spinnaker2/py-spinnaker2.git@v0.8.2`), together with the vendor packages PACMAN2, SpiNNMan2, SpiNNMachine2, SpiNNUtilities2 and spinnaker2_stm. git must be installed.
+- **No chip toolchain needed.** The install works without cmake or ARM compilers; those are only needed to compile chip programs for runs on the hardware.
+- **Size and time:** 1.5 GB, of which torch (CPU version) about 1 GB; about 12 minutes on cx51 (torch 4.6 min, the rest 7 min).
+- **Version number:** pip reports `spinnaker2 0.8.0` after installing v0.8.2, because the vendor did not update the version in `pyproject.toml` (as for the cluster install above).
+- **Checked:** a small `lif` network on Brian2 and the NIR path snnTorch → NIR → py-spinnaker2 → Brian2.
+- **Not tested yet:** macOS, Windows, Python 3.13 and newer. Planned: a test on a Mac and on a Windows or Linux laptop before the workshop.
+

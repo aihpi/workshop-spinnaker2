@@ -42,9 +42,11 @@ After the cabling fix, allocation succeeded only sometimes. The boards became re
 
 **Build fails on a fresh clone.** Two causes: `cmake` missing from the conda environment, or a clone without `--recursive`, which leaves the `snn-core` submodule empty. The submodule was private until August 2026 and is now public.
 
+**`SpinnmanInvalidParameterException: … s2app.mem … doesn't exist`.** The chip program for this network isn't in the user's cache (`~/.cache/py-spinnaker2/apps/`), and rebuilding is switched off with `backend_settings.set_rebuild_apps(False)`. py-spinnaker2 compiles a separate variant, e.g. for networks spread over several chips ("Using multi-chip settings requires a re-build of the application binaries"), so a new kind of network can need a program that was never built. Fix: leave rebuilding on (the default). Switching it off only avoids the collision of two runs started at the same time by the same user, which compile into the same build folder (seen on 2026-11-09).
+
 ## 4. Mapping limits
 
-- Up to v0.8.0, a `Hardware` object runs **once**: a second `run()` on the same object fails, and network names must be unique within a session (`snn.Network.clear_names()` as workaround). Fixed in v0.8.1; the pinned v0.8.2 allows both. The notebooks in `04_spinncloud_tutorials/` still contain the old workarounds, which are harmless.
+- Up to v0.8.0, a `Hardware` object runs **once**: a second `run()` on the same object fails, and network names must be unique within a session (`snn.Network.clear_names()` as workaround). Fixed in v0.8.1; the pinned v0.8.2 allows both. The tutorial copies in `_local/04_spinncloud_tutorials/` still contain the old workarounds, which are harmless.
 - In the synfire chain of tutorial 00 (`lif_curr_exp`, 60 inputs per neuron, `v` and spikes recorded) at most **100** neurons fit on one core, not the 125 that the memory budget suggests. The limit depends on connectivity and recording; it is not a general cap for the model (documented cap: 256).
 - `mapping_only=True` performs placement and routing without touching the hardware, which makes network sizes testable without an allocated board.
 

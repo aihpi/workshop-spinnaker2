@@ -202,5 +202,4 @@ _local/
 # Vendor clone of py-spinnaker2 (see 03_setup/README.md), installed into the conda env
 /py-spinnaker2/
 
-# SpiNNcloud tutorial notebooks (vendor material, not our code; outputs contain internal infrastructure detail)
-/04_spinncloud_tutorials/
+# SpiNNcloud tutorial notebooks now live in _local/04_spinncloud_tutorials/ (ignored with _local/)

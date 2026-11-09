@@ -27,6 +27,8 @@ After the workshop, participants understand why neuromorphic hardware can save e
 
 ## Draft time budget
 
+Superseded by the schedule in `03_outline.md` (2026-11-09).
+
 | Block | Time |
 |---|---|
 | Motivation: why neuromorphic, energy | 20 min |
@@ -43,7 +45,7 @@ The frame handles about 2 runs per minute for all participants together, and eve
 - develop and debug on Brian2, chip only for the final run
 - several variants bundled into one network, so one run instead of several
 - pairs, and staggered start times per group
-- `set_rebuild_apps(False)` in every notebook (otherwise two runs started at once by the same user collide while compiling)
+- no `set_rebuild_apps(False)` in the notebooks: it stops py-spinnaker2 from compiling a chip program that isn't in the user's cache yet, so the first run of a new network type fails (seen on 2026-11-09 with a network that needed the multi-chip variant). It only matters when the same user starts two runs at once, which participants with their own accounts don't
 
 ## Open questions
 
