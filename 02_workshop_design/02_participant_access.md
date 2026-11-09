@@ -2,7 +2,7 @@
 
 - **Decision** (meeting with the cluster admins, 2026-11-04):
     - HPI participants run their code on cx51 (option A); they get access to the `pot-hpi-early-access` partition for the duration of the workshop
-    - outside participants get no access to cx51; they use the Brian2 simulator (option B)
+    - outside participants get no access to cx51; they use the Brian2 simulator (option B); at the end of the workshop they get instructions on how to get access to SpiNNaker2 chips afterwards (decided 2026-11-09)
 
 ## How access works today
 
@@ -24,7 +24,7 @@ laptop ──VPN──> login node ──ssh / srun──> cx51 ──private ne
 | Option | Participants need | Admin effort | Assessment |
 |---|---|---|---|
 | **A. Log in to cx51** (ssh, VS Code, Jupyter) | account, VPN, partition access | accounts, permissions | **recommended** for HPI participants |
-| **B. Brian2 on the laptop**, chip runs by the instructor | Python | none | **recommended** for outside participants; also saves chip time |
+| **B. Brian2 on the laptop** | Python | none | **recommended** for outside participants; also saves chip time |
 | **C. JupyterHub on cx51** | browser (+ VPN?) | higher, one-time | most convenient, if feasible in two weeks |
 | **D. Laptops connect to the boards via VPN** | route into the board network, full install incl. chip toolchain | high | **ruled out:** board locks only work on cx51 |
 

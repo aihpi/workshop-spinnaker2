@@ -16,7 +16,10 @@ Status 2026-11-05. Based on two web researches of 2026-11-04 (raw reports in `_l
   - [4.2 Where conventional hardware wins](#42-where-conventional-hardware-wins)
   - [4.3 Software](#43-software)
   - [4.4 Industry](#44-industry)
-- [5. Consequences for the workshop](#5-consequences-for-the-workshop)
+- [5. Demo options for the workshop](#5-demo-options-for-the-workshop)
+  - [5.1 Inventory](#51-inventory)
+  - [5.2 Ranking](#52-ranking)
+  - [5.3 Further consequences](#53-further-consequences)
 - [To check](#to-check)
 
 ## 1. Summary
@@ -134,14 +137,44 @@ The advantage for sensors is absolute power in the microwatt to milliwatt range.
 
 **Workshop:** one slide "where neuromorphic wins, where it doesn't" from 4.1 and 4.2, and the warning about advertised factors. Together with section 2, about 5 minutes of the motivation block.
 
-## 5. Consequences for the workshop
+## 5. Demo options for the workshop
 
-- **Motivation:** be honest about the trade. The energy gains are real, but at batch size 1 and often with longer run times. This matches the HPI measurement: small networks are invisible in the board power (`05_measurements/01_power_baseline/`).
-- **Demo candidates** from this research, to be evaluated on cx51:
-  1. the official QUBO Max-Cut example of py-spinnaker2, with NeuroSA and the graph search as published context;
-  2. the official NMNIST/NIR example, with the DVS Gesture paper as "a real paper does exactly this";
-  3. the CartPole reinforcement learning (Arfa et al. 2025), the most engaging for ML people, only if the authors grant access to the private repository and the code runs with v0.8 on the frame;
-  4. the official streaming pipeline, to show how a closed loop works.
+All options found for live use in the workshop: the vendor's tutorials and examples (py-spinnaker2 v0.8.2), the HPI measurements, and the code of the papers in section 2.1. "Tested here" refers to runs on the HPI frame: the deep-dive tutorials 00–05 since July 2026, the demo evaluation of 2026-11-05 for the NIR and Max-Cut examples and tutorial 08 (raw results in `_local/demo_eval/`, not tracked). Every chip run takes 60–70 s regardless of network size, and the frame handles about 2 runs per minute for all participants together (`02_workshop_design/02_participant_access.md`).
+
+### 5.1 Inventory
+
+| Option | Source | Tested here | Brian2 | Chip runs | Assessment |
+|---|---|---|---|---|---|
+| Hand-built first network (LIF, Poisson input, raster) | deep-dive tutorials 00–02 | yes (tutorials) | yes for `lif`, `poisson_process`, `spike_list` (`03_brian2_fallback.md`) | 1 | hands-on; own notebook still to write |
+| snnTorch → NIR → chip, minimal network | deep-dive tutorial 08 | yes, chip, Brian2 and snnTorch spike for spike identical | yes | 1 | hands-on |
+| Train in snnTorch, export, run (logo spike pattern) | example end-to-end NIR | yes, 78 % of chip spikes on the target, 95 % match with snnTorch | yes, although the notebook says no | 1, training 3 min on the CPU | hands-on; needs `snntorch==0.9.4`; trains each time step independently (batch dimension used as time) |
+| Pretrained event-camera digits (NMNIST) | example NIR demo | yes, 3 of 5 samples correct, same predictions as Brian2 | yes | 1 per sample | instructor demo; 170 MB dataset; its 20-sample subset contains only digits 0–3 |
+| Energy: silent vs. active network of the same size | HPI power measurement, `05_measurements/01_power_baseline/` | yes, 57 W empty, +3 W silent, +9 W active at 1,000 cores | no (no power measurement) | 2, about 2 min each at 1,000 cores | instructor demo, or the measured curves on a slide |
+| Max-Cut with QUBO neurons | example QUBO Max-Cut | yes; 5-node graph optimal; 8-node solves a wrong problem as written; 50- and 800-node no better than random (weights clipped) | no | 1 per graph | optional instructor demo with 5 or 8 nodes |
+| Clustered network (switching clusters) | example clustered SNN | no | yes, details can differ from the chip (`03_brian2_fallback.md`) | 1 | optional; brain-like dynamics rather than ML |
+| Synfire chain, conv2d, profiling and deadlines | deep-dive tutorials 00, 03, 05; synfire example | yes (tutorials) | conv2d and profiling not checked / chip only | 1 each | material for questions, not a separate demo |
+| Live streaming in and out | deep-dive tutorial 07, streaming examples | no | no | 1 | outlook only |
+| Custom neuron model in C (AdEx) | deep-dive tutorial 09 | no | no | 1 plus compiling | outlook only |
+| ANN-to-SNN conversion from TensorFlow | example hybrid MNIST CNN | no | not checked | 1 | drop: needs TensorFlow besides PyTorch |
+| Reinforcement learning, CartPole | Arfa et al. 2025 | no, repository private, access requested | — | one run per step would take minutes on the HPI frame | slide only |
+| DVS Gesture via NIR | Arfa et al. 2025 | no, needs unreleased branches | — | — | slide only |
+| Language model, graph search, on-chip training, Ising machine | section 2.1 | no code available | — | — | slide only |
+
+### 5.2 Ranking
+
+1. **Tutorial 08, snnTorch → NIR → chip.** The shortest path from PyTorch to the chip, the step ML participants care about most. The spike-for-spike match with snnTorch is a visible proof that the chip runs the same network, and the four conversion pitfalls (primer, section 8) can be taught on it. Runs on Brian2.
+2. **End-to-end NIR.** Adds the training step, so participants deploy a network they trained themselves; the logo makes the result easy to judge by eye. Needs the snnTorch pin and an honest note that the example trains each time step independently.
+3. **Hand-built first network.** Teaches the building blocks (populations, projections, neuron parameters, raster plots) that the NIR import produces automatically, so participants understand what `from_nir` returns. Tested through the vendor tutorials, but the workshop notebook has to be written.
+4. **Energy demo, silent vs. active.** The only energy evidence the HPI frame supports: small networks are invisible in the board power, large active ones are not. Measured here, so every number can be defended. Chip only, so instructor demo.
+5. **NMNIST.** Shows a real event-camera model on the chip and connects to the DVS Gesture paper. Pretrained, so no training time, but slow per sample and the bundled subset says little about accuracy.
+6. **Max-Cut, 5 or 8 nodes.** Shows that the chip can do more than neural networks, connected to the Ising-machine and graph-search papers. Chip only, and the larger graphs fail, so at most a short outlook.
+7. **Clustered network.** Interesting dynamics, but it speaks to neuroscience rather than to the ML audience, and it is untested here.
+
+Streaming, custom neuron models and the paper results belong in the outlook and the motivation slides. CartPole would only become a demo if the authors grant access and the closed loop runs within one chip run, which needs streaming.
+
+### 5.3 Further consequences
+
+- **Motivation:** the energy gains are real, but at batch size 1, often with longer run times, and published only for single chips (section 2). This matches the HPI measurement: small networks are invisible in the board power.
 - **Access elsewhere:** GWDG Göttingen offers SpiNNaker2 access with py-spinnaker2, relevant for participants after the workshop and for the contact with KISSKI.
 
 ## To check
