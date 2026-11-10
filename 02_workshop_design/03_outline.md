@@ -69,10 +69,10 @@ In total: theory 75 min, hands-on 75 min, demos 10 min, break 15 min, setup 5 mi
 
 ### 4. Hands-on 1: a first network (35 min)
 
-- Notebook still to write, based on the vendor's deep-dive tutorials 00–02.
-- Build a small network by hand: populations of `lif` neurons, Poisson or spike-list input, projections; record spikes and voltages; plot a raster.
-- Change one parameter (threshold, weight, input rate) and observe the effect on Brian2.
-- Last 5 minutes: HPI pairs run the same network on the chip and compare with Brian2.
+- Notebook `04_workshop_material/01_first_network.ipynb`, a short path through the vendor's deep-dive tutorials 00–02; every section points to the tutorial section and API docs it draws on.
+- One neuron with constant input (input–output curve vs. activation function), one neuron driven by input spikes (leak, timing), then a synfire chain of 5 groups of 50 `lif` neurons: a volley that sharpens from group to group.
+- Exercises change one argument of `run_chain` (weight, input jitter, leak, threshold): the wave dies out or the synaptic events double; discussion questions on coincidence detection and on energy growing with synaptic events.
+- Last 5 minutes: HPI pairs run the synfire chain on the chip and compare with Brian2 (identical spikes, tested on 2026-11-09).
 - Chip runs: 1 per HPI pair.
 
 ### 5. From PyTorch to the chip (10 min)
