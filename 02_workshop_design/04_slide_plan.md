@@ -64,7 +64,7 @@ Reduced to what block 5 and the hands-ons need: a neuron integrates, leaks, fire
 | 3.1 | From the biological neuron to LIF: the simplest model that still spikes (brief motivation) | P 1 (HH, FHN, LIF) |
 | 3.2 | LIF: integrate, leak, fire, reset | P 5 |
 | 3.3 | LIF in discrete time, as the chip computes it: $v[t] = \alpha v[t-1] + I[t]$ | P 7 |
-| 3.4 | Synapses: integer weight and delay; a spike arrives delay + 1 steps later; one line on quantisation (5-bit weights, like INT8) | P 10 → notebook 01, section 2 |
+| 3.4 | Synapses: weight and delay; a spike arrives delay + 1 steps later | P 10 → notebook 01, section 2 |
 | 3.5 | An LIF layer is a recurrent cell with binary output | P 22 |
 
 Moved out of the slides: the input–output curve vs. ReLU (participants find it in notebook 01 §1, Try and Discuss), weight quantisation in detail (P 12; comes back in block 7 with the 8-bit NIR weights), rate vs. timing codes (P 17; at most a remark at the NMNIST demo), the synfire preview (introduced in notebook 02).
@@ -76,10 +76,10 @@ Notebook `01_single_neuron`, Brian2 only. On screen: one slide with the task, th
 | Section | Participants do | Take-away |
 |---|---|---|
 | 0. Setup | run the imports and the backend helper | the same `run(net, steps)` for Brian2 and the chip |
-| 1. One neuron, constant input | vary `i_offset`; find the smallest input that makes the neuron spike | below a threshold input nothing happens; above it, the spike count grows with the input |
-| 2. Input spikes and synapses | compare three spikes from one input with two from two inputs; change `alpha_decay`; add an inhibitory weight | timing matters: the leak makes the neuron forget |
+| 1. One neuron, constant input | predict before running: the smallest spiking input and the shape of the spike-count curve; then check | below a critical input nothing happens; above it, the spike count grows with the input, in small steps (discrete time) |
+| 2. Input spikes, weights and delays | one cell with a "change these" block: spike times, one weight and one delay per input, leak; predict, then run | a spike adds its weight one step (plus delay) later; the leak makes the neuron forget; delays can make spikes coincide |
 
-**Discuss (plenary, about 3 min):** spike count vs. input compared with ReLU (§1); why timing matters here but not in a deep network (§2).
+**Discuss (plenary, about 3 min):** spike count vs. input compared with ReLU (§1); why timing matters here but not in a deep network; what delays plus coincidence could detect (both §2).
 
 The notebook ends with a pointer back to the slides.
 
@@ -178,10 +178,10 @@ Notebook `04_nir_end_to_end`.
 |---|---|---|
 | LIF equation, $\alpha$, threshold | idea and discrete update (3.2–3.3) | parameter effects, collapsible on the derivation (01 §1) |
 | Input–output curve vs. ReLU | not on slides | 01 §1, Try and Discuss |
-| Reset modes | not on slides | 01 §2, 03 exercises |
+| Reset modes | not on slides | 01 §1 and §2, 03 exercises |
 | `alpha_decay` and memory | not on slides | 01 §1–2 |
-| Delay + 1 | one sentence (3.4) | 01 §2, collapsible |
-| Weight range | one line on quantisation (3.4) | collapsible "why −15 to 15" (01 §2) |
+| Delay + 1 | one sentence (3.4) | 01 §2, collapsible and exercise |
+| Weight range | one line on 5.1 (128 KB per PE → packed synapses) | rule only in 01 §2; collapsible "why −15 to 15" in 02 §1 |
 | Synfire chain | not on slides | 02 §1 with exercises; sketch at the start of the hands-on |
 | Synaptic events and energy | link in 5.2, 9.1 | 02 §1 collapsible, Discuss |
 | Surrogate gradients | 7.1–7.2 | collapsible in 04 |
