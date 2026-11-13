@@ -63,11 +63,11 @@ Steps:
    conda create --name spinnaker2 python=3.12
    conda activate spinnaker2
    ```
-2. Install py-spinnaker2 0.8.2 from source (`--recursive` fetches the chip code, needed for runs on the chips):
+2. Install py-spinnaker2 0.8.5 from source (`--recursive` fetches the chip code, needed for runs on the chips):
    ```bash
    git clone --recursive https://gitlab.com/spinnaker2/py-spinnaker2.git
    cd py-spinnaker2
-   git checkout v0.8.2
+   git checkout v0.8.5
    git submodule update --init --recursive
    pip install .
    cd ..
@@ -88,7 +88,6 @@ How to connect to cx51 and run your networks on the chips is explained at the st
 ## Notes
 
 - If `uv sync` stops with a network timeout, run it again; it continues where it stopped. On a slow connection, allow more time per download: `UV_HTTP_TIMEOUT=120 uv sync`.
-- `pip list` shows py-spinnaker2 as version 0.8.0. That is expected: release 0.8.2 still carries the old number.
 - PyTorch is installed without GPU support: the download is much smaller, and the workshop doesn't need a GPU.
 
 ## License
