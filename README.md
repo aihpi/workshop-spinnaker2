@@ -40,7 +40,7 @@ Steps:
 You need:
 
 - about 3 GB of free space in your home directory
-- conda; if you don't have it yet, install [Miniforge](https://github.com/conda-forge/miniforge) into your home directory
+- conda; if you don't have it yet, run `setup-conda3` on the cluster, then log out and in again. The script installs Miniconda into `~/conda3` ([cluster documentation](https://docs.sc.hpi.de/cluster/software_installation/Python-Conda/)).
 
 You can install on any cluster node: your home directory is the same on all nodes, including cx51.
 
