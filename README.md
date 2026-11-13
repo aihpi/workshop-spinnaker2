@@ -39,10 +39,19 @@ Steps:
 
 You need:
 
+- an account on the HPI cluster and the Scientific Compute VPN, which is not the same as the HPI VPN ([access](https://docs.sc.hpi.de/cluster/processes/access/), [VPN](https://docs.sc.hpi.de/VPN/))
+- an SSH connection to the cluster ([SSH](https://docs.sc.hpi.de/ssh/))
 - about 3 GB of free space in your home directory
-- conda; if you don't have it yet, run `setup-conda3` on the cluster, answer `y`, then log out and in again. The script installs Miniconda into `~/conda3`; afterwards your prompt starts with `(base)`. Details: [cluster documentation](https://docs.sc.hpi.de/cluster/software_installation/Python-Conda/), [Install Miniconda3](https://docs.sc.hpi.de/cloud/software-installations/Install-Miniconda3/).
 
-You can install on any cluster node: your home directory is the same on all nodes, including cx51.
+Where to install:
+
+- Not on the login nodes (`hpc.sci.hpi.de`): they don't run scripts from your home directory.
+- Use a Run Node instead, `rx01.hpc.sci.hpi.de` or `rx02.hpc.sci.hpi.de` ([Run Nodes](https://docs.sc.hpi.de/cluster/Resources/Run-Nodes/)). Connect there with SSH in a terminal, or with VS Code Remote-SSH ([VS Code](https://docs.sc.hpi.de/cluster/software_installation/VS-Code/)).
+- Your home directory is the same on all nodes, so the environment is also available on cx51 during the workshop.
+
+conda:
+
+- If you don't have conda on the cluster yet, run `setup-conda3`, answer `y`, then log out and in again. The script installs Miniconda into `~/conda3`; afterwards your prompt starts with `(base)` ([Python / Conda](https://docs.sc.hpi.de/cluster/software_installation/Python-Conda/), [Install Miniconda3](https://docs.sc.hpi.de/cloud/software-installations/Install-Miniconda3/)).
 
 Steps:
 
@@ -70,7 +79,7 @@ Steps:
    ```bash
    git clone https://github.com/aihpi/workshop-spinnaker2.git
    ```
-5. Open `workshop-spinnaker2/04_workshop_material/00_setup_check.ipynb` in VS Code (Remote-SSH to the cluster), select the kernel `spinnaker2` and run all cells. If everything works, the notebook prints "Brian2 works." and shows a small plot.
+5. Open `workshop-spinnaker2/04_workshop_material/00_setup_check.ipynb` in VS Code (Remote-SSH to the Run Node), select the kernel `spinnaker2` and run all cells. If everything works, the notebook prints "Brian2 works." and shows a small plot.
 
 How to connect to cx51 and run your networks on the chips is explained at the start of the workshop.
 
