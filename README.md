@@ -3,7 +3,7 @@
 <h1>Workshop: Neuromorphic Computing on SpiNNaker2</h1>
 </div>
 
-This repository contains the setup for the SpiNNaker2 workshop. The workshop notebooks will be added shortly before the workshop; on the day, you get them with `git pull`.
+This repository contains the setup for the SpiNNaker2 workshop. The workshop materials will be added shortly before the workshop; on the day, you get them with `git pull`.
 
 ## Which setup?
 
