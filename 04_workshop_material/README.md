@@ -20,5 +20,5 @@ All notebooks run on the Brian2 simulator by default. Participants with access t
 
 ## Setup
 
-The participant install guide is the README of the `main` branch: laptop with uv (`pyproject.toml` and `uv.lock` in the repository root), HPI cluster with conda. Both pin Python 3.12, py-spinnaker2 0.8.2, PyTorch 2.15.0 (CPU), snnTorch 0.9.4, nirtorch 2.0.2, NIR 1.0.4 and numpy 2.3.4. The instructor demos additionally need `tonic`, `networkx` and `pandas`.
+The participant install guide is the README of the `main` branch: laptop with uv (`pyproject.toml` and `uv.lock` in the repository root), HPI cluster with conda. Both pin Python 3.12, py-spinnaker2 0.8.5, PyTorch 2.15.0 (CPU), snnTorch 0.9.4, nirtorch 2.0.2, NIR 1.0.4 and numpy 2.3.4. The instructor demos additionally need `tonic`, `networkx` and `pandas`.
 

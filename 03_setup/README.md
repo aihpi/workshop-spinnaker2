@@ -41,16 +41,23 @@ echo 'command' | srun -A aisc --partition=pot-hpi-early-access \
 
 ## Installing py-spinnaker2
 
-The library is **not** tracked in this repository. It is cloned next to the repository content as `py-spinnaker2/` (gitignored) and installed into a conda environment.
+The library is **not** tracked in this repository. It is cloned and installed into a conda environment. Since 2026-11-13 there are two environments on the cluster:
+
+| Environment | Version | Use |
+|---|---|---|
+| `spinnaker2-085` | v0.8.5 | the version participants install (README on `main`); development and tests |
+| `spinnaker2` | v0.8.2 | fallback, and the instructor demos (the energy demo shows a PE error with v0.8.5, see below) |
+
+The `spinnaker2` environment is installed from the clone `py-spinnaker2/` next to the repository content (gitignored). The commands below install v0.8.5; for v0.8.2, check out `v0.8.2` instead.
 
 ```bash
-conda create --name spinnaker2 python=3.12
-conda activate spinnaker2
+conda create --name spinnaker2-085 python=3.12
+conda activate spinnaker2-085
 
 git clone --recursive https://gitlab.com/spinnaker2/py-spinnaker2.git
 cd py-spinnaker2
-git checkout v0.8.2                         # pinned, see below
-git submodule update --init --recursive    # snn-core at the commit v0.8.2 points to
+git checkout v0.8.5                         # pinned, see below
+git submodule update --init --recursive    # snn-core at the commit v0.8.5 points to
 pip install .
 ```
 
@@ -63,7 +70,9 @@ Notes on the install:
 
 ### Pinned version
 
-Release `v0.8.2` (2026-09-23), installed on 2026-10-01. Its `snn-core` submodule points to commit `ccd54d0`; `setup_libs.sh` names the commit before it (`0341893`), which differs only in how the random generators are seeded at start-up and in stricter compiler flags. `pip list` still reports `0.8.0`, because `pyproject.toml` was not bumped; the installed code is v0.8.2.
+**v0.8.5** (2026-11-10), tested on 2026-11-13. Changes since v0.8.2: a fix for spikes injected from the host (v0.8.3), `LIBS_COMMIT` in `setup_libs.sh` matching the submodule pointer and a newer SpiNNMan (v0.8.4), options for board power-on and power-off in `hardware.run()` (v0.8.5). The chip code (`snn-core` `ccd54d0`) is the same as with v0.8.2, and `pip list` reports the correct version. Why the upgrade: with v0.8.2, a git install runs `setup_libs.sh`, which fails on macOS (bash 3.2, see `01_troubleshooting.md`). Tested with v0.8.5: all participant notebooks on Brian2 (uv, Linux and macOS) and 02–04 on the chip, identical to v0.8.2; Max-Cut and NMNIST demos as before. **Open issue:** in the energy demo (1,000 cores), the active run reported an error on PE `Chip_1_0_QPE_7_6_3` with undecodable logs, in 2 of 2 runs; v0.8.2 showed no error in the same demo. Reported to the vendor: to do.
+
+**v0.8.2**, the previous pin: release `v0.8.2` (2026-09-23), installed on 2026-10-01. Its `snn-core` submodule points to commit `ccd54d0`; `setup_libs.sh` names the commit before it (`0341893`), which differs only in how the random generators are seeded at start-up and in stricter compiler flags. `pip list` still reports `0.8.0`, because `pyproject.toml` was not bumped; the installed code is v0.8.2.
 
 Compared with the previous pin (`6c9084fc`, v0.8.0 plus the circular-import hotfix), v0.8.1 and v0.8.2 allow repeated `run()` calls on the same `Hardware` object and several networks with the same name (both checked on a board on 2026-10-01). Neuron models and synapse formats are unchanged. The edits to the vendor tutorials made under v0.8.0 are kept as a `git stash` in the clone; their copies are in `_local/04_spinncloud_tutorials/`.
 
@@ -86,7 +95,7 @@ The Brian2 backend of py-spinnaker2 runs the same networks on the CPU and needs 
 
 Participants without cluster access use Brian2 on their own laptop. Since 2026-11-13 they install with uv from `pyproject.toml` and `uv.lock` in the repository root; the step-by-step guide is the README of the `main` branch. Findings of the first install test of 2026-11-09 (fresh virtual environment on cx51, Python 3.12, pip only; the uv test of 2026-11-13 confirmed them and showed that py-spinnaker2 0.8.2 needs Python 3.12 or newer, because PACMAN2 requires it):
 
-- **py-spinnaker2 is not on PyPI.** pip installs it from GitLab (`spinnaker2 @ git+https://gitlab.com/spinnaker2/py-spinnaker2.git@v0.8.2`), together with the vendor packages PACMAN2, SpiNNMan2, SpiNNMachine2, SpiNNUtilities2 and spinnaker2_stm. git must be installed.
+- **py-spinnaker2 is not on PyPI.** pip installs it from GitLab (`spinnaker2 @ git+https://gitlab.com/spinnaker2/py-spinnaker2.git@v0.8.5`; v0.8.2 at the time of this test), together with the vendor packages PACMAN2, SpiNNMan2, SpiNNMachine2, SpiNNUtilities2 and spinnaker2_stm. git must be installed.
 - **No chip toolchain needed.** The install works without cmake or ARM compilers; those are only needed to compile chip programs for runs on the hardware.
 - **Size and time:** 1.5 GB, of which torch (CPU version) about 1 GB; about 12 minutes on cx51 (torch 4.6 min, the rest 7 min).
 - **Version number:** pip reports `spinnaker2 0.8.0` after installing v0.8.2, because the vendor did not update the version in `pyproject.toml` (as for the cluster install above).

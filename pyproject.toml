@@ -4,9 +4,7 @@ version = "0.1.0"
 description = "Environment for the SpiNNaker2 workshop of the AI Service Centre Berlin Brandenburg: py-spinnaker2 with the Brian2 simulator, PyTorch (CPU), snnTorch and NIR"
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    # release archive instead of git: a git install runs py-spinnaker2's setup_libs.sh,
-    # which fails with macOS's bash 3.2; laptops don't need the chip code it fetches
-    "spinnaker2 @ https://gitlab.com/spinnaker2/py-spinnaker2/-/archive/v0.8.2/py-spinnaker2-v0.8.2.tar.gz",
+    "spinnaker2 @ git+https://gitlab.com/spinnaker2/py-spinnaker2.git@v0.8.5",
     "torch==2.15.0",
     "snntorch==0.9.4",
     "nirtorch==2.0.2",
