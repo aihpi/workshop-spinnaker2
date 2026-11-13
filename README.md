@@ -11,7 +11,14 @@ Right now the repository only contains the setup. The workshop notebooks follow 
 
 ## Before the workshop: install the environment
 
-Please install the environment on your laptop before the workshop. Participants with access to the HPI cluster work there and can skip this section.
+Please install the environment before the workshop. There are two ways:
+
+| You are | You work on | Section |
+|---|---|---|
+| HPI participant with an account on the HPI cluster | the cluster node cx51, which is connected to the SpiNNaker2 chips | [On the HPI cluster (conda)](#on-the-hpi-cluster-conda) |
+| everyone else | your laptop, with the Brian2 simulator | [On your laptop (uv)](#on-your-laptop-uv) |
+
+### On your laptop (uv)
 
 You need about **3 GB of free disk space**, an internet connection and 5 to 15 minutes. The workshop runs on the Brian2 simulator, which computes the same spikes as the SpiNNaker2 chip, so no special hardware is needed.
 
@@ -37,7 +44,43 @@ The setup uses [git](https://git-scm.com/downloads), [uv](https://docs.astral.sh
 
 If a step fails, please send the error message to kisz@hpi.de before the workshop, or bring it along.
 
-The environment contains py-spinnaker2 0.8.2 with the Brian2 simulator, PyTorch (CPU version), snnTorch and NIR. `pip list` shows py-spinnaker2 as version 0.8.0; that is expected, because release 0.8.2 still carries the old version number.
+### On the HPI cluster (conda)
+
+On the cluster, the environment is a conda environment, as recommended by py-spinnaker2: runs on the chips compile a small program for the chip, which needs the full source of py-spinnaker2 and `cmake`. The home directory is the same on all cluster nodes, so you can install now on any node you can reach. During the workshop you get access to cx51, the node connected to the chips, and use the same environment there. You need about 3 GB of free space in your home directory, plus the space for Miniforge if you install it.
+
+If you have no conda yet, install [Miniforge](https://github.com/conda-forge/miniforge) into your home directory first. Then, on the cluster:
+
+1. Create the environment with Python 3.12 and `cmake`:
+   ```bash
+   conda create --name spinnaker2 python=3.12
+   conda activate spinnaker2
+   conda install -c conda-forge cmake
+   ```
+2. Install py-spinnaker2 from its source, at release 0.8.2. `--recursive` is needed, because the chip program is a separate repository included as a submodule:
+   ```bash
+   git clone --recursive https://gitlab.com/spinnaker2/py-spinnaker2.git
+   cd py-spinnaker2
+   git checkout v0.8.2
+   git submodule update --init --recursive
+   pip install .
+   cd ..
+   ```
+3. Install PyTorch (CPU version) and the other packages of the workshop:
+   ```bash
+   pip install torch==2.9.1 --index-url https://download.pytorch.org/whl/cpu
+   pip install snntorch==0.9.4 nirtorch==2.0.2 nir==1.0.4 numpy==2.3.4 matplotlib ipykernel
+   ```
+4. Clone this repository:
+   ```bash
+   git clone https://github.com/aihpi/workshop-spinnaker2.git
+   ```
+5. Open `workshop-spinnaker2/04_workshop_material/00_setup_check.ipynb` in VS Code (connected to the cluster with Remote-SSH), select the kernel `spinnaker2` and run all cells. The check uses the Brian2 simulator, so it works on any node. The cell before the plot prints "Brian2 works."
+
+How to connect VS Code to cx51 and how to start runs on the chips follows in the workshop.
+
+### Versions
+
+Both environments contain py-spinnaker2 0.8.2 with the Brian2 simulator, PyTorch (CPU version), snnTorch and NIR, with the same version of each of these packages. `pip list` shows py-spinnaker2 as version 0.8.0; that is expected, because release 0.8.2 still carries the old version number.
 
 ## Contact
 
