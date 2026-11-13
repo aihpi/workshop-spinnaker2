@@ -12,7 +12,11 @@ This repository contains the setup for the SpiNNaker2 workshop. The workshop mat
 | no HPI cluster account | [laptop (uv)](#laptop-uv) | you work with the Brian2 simulator, which computes the same spikes as the chips; how to get access to the chips is explained at the end of the workshop |
 | an HPI cluster account | [HPI cluster (conda)](#hpi-cluster-conda) | you get access to cx51, the cluster node connected to the SpiNNaker2 chips, for the duration of the workshop |
 
-Please install the environment before the workshop. If something fails, send the error message to kisz@hpi.de or bring it to the workshop.
+Please install the environment before the workshop:
+
+- The download is about 1.5 GB. Over the shared Wi-Fi in the room, with everyone installing at once, it would take much longer than at home.
+- If something fails, we can solve it with you beforehand. Send the error message to kisz@hpi.de, or bring it to the workshop.
+- The workshop has 3 hours. Installing beforehand leaves that time for the hands-on parts.
 
 ## Laptop (uv)
 
