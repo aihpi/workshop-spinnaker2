@@ -19,7 +19,7 @@ Please install the environment before the workshop. If something fails, send the
 You need:
 
 - about 3 GB of free disk space
-- Linux, macOS with Apple silicon (M1 or newer), or Windows with WSL; macOS with an Intel processor is not supported, because PyTorch no longer provides packages for it
+- Linux, macOS 14 or newer with Apple silicon (M1 or newer), or Windows with WSL; macOS with an Intel processor is not supported, because PyTorch no longer provides packages for it
 - [git](https://github.com/aihpi/workshop-getting-started/blob/main/03_workshop/guides/03_git_github.md), [uv](https://github.com/aihpi/workshop-getting-started/blob/main/03_workshop/guides/04_uv.md), [VS Code with Jupyter](https://github.com/aihpi/workshop-getting-started/blob/main/03_workshop/guides/06_jupyter.md); on Windows also [WSL](https://github.com/aihpi/workshop-getting-started/blob/main/03_workshop/guides/02_wsl.md)
 
 Steps:
@@ -59,7 +59,6 @@ Steps:
    ```bash
    conda create --name spinnaker2 python=3.12
    conda activate spinnaker2
-   conda install -c conda-forge cmake
    ```
 2. Install py-spinnaker2 0.8.2 from source (`--recursive` fetches the chip code, needed for runs on the chips):
    ```bash
@@ -72,7 +71,7 @@ Steps:
    ```
 3. Install the other packages:
    ```bash
-   pip install torch==2.9.1 --index-url https://download.pytorch.org/whl/cpu
+   pip install torch==2.15.0 --index-url https://download.pytorch.org/whl/cpu
    pip install snntorch==0.9.4 nirtorch==2.0.2 nir==1.0.4 numpy==2.3.4 matplotlib ipykernel
    ```
 4. Clone this repository:
