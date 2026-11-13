@@ -40,7 +40,7 @@ Steps:
 You need:
 
 - about 3 GB of free space in your home directory
-- conda; if you don't have it yet, run `setup-conda3` on the cluster, then log out and in again. The script installs Miniconda into `~/conda3` ([cluster documentation](https://docs.sc.hpi.de/cluster/software_installation/Python-Conda/)).
+- conda; if you don't have it yet, run `setup-conda3` on the cluster, answer `y`, then log out and in again. The script installs Miniconda into `~/conda3`; afterwards your prompt starts with `(base)`. Details: [cluster documentation](https://docs.sc.hpi.de/cluster/software_installation/Python-Conda/), [Install Miniconda3](https://docs.sc.hpi.de/cloud/software-installations/Install-Miniconda3/).
 
 You can install on any cluster node: your home directory is the same on all nodes, including cx51.
 
