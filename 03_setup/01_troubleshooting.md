@@ -40,7 +40,7 @@ After the cabling fix, allocation succeeded only sometimes. The boards became re
 
 **`ImportError` on `from spinnaker2 import snn`.** A circular import in v0.8.0 when `snn` is the first import of a session. Reported to the vendor and fixed in v0.8.1. On an affected version, importing `spinnaker2.hardware` first is the workaround. This hits the first cell of the vendor tutorial notebooks.
 
-**Build fails on a fresh clone.** Two causes: `cmake` missing from the conda environment, or a clone without `--recursive`, which leaves the `snn-core` submodule empty. The submodule was private until August 2026 and is now public.
+**Build fails on a fresh clone.** Two causes: `cmake` missing (cx51 has it system-wide since at least November 2026), or a clone without `--recursive`, which leaves the `snn-core` submodule empty. The submodule was private until August 2026 and is now public.
 
 **`SpinnmanInvalidParameterException: … s2app.mem … doesn't exist`.** The chip program for this network isn't in the user's cache (`~/.cache/py-spinnaker2/apps/`), and rebuilding is switched off with `backend_settings.set_rebuild_apps(False)`. py-spinnaker2 compiles a separate variant, e.g. for networks spread over several chips ("Using multi-chip settings requires a re-build of the application binaries"), so a new kind of network can need a program that was never built. Fix: leave rebuilding on (the default). Switching it off only avoids the collision of two runs started at the same time by the same user, which compile into the same build folder (seen on 2026-11-09).
 

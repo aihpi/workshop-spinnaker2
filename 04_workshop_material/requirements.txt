@@ -1,7 +1,0 @@
-# Workshop environment for the Brian2 simulator (laptops without cluster access).
-# Install PyTorch first: pip install torch --index-url https://download.pytorch.org/whl/cpu
-spinnaker2 @ git+https://gitlab.com/spinnaker2/py-spinnaker2.git@v0.8.2
-snntorch==0.9.4
-nirtorch==2.0.2
-nir==1.0.4
-numpy==2.3.4

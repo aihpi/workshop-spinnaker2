@@ -5,7 +5,7 @@ description = "Environment for the SpiNNaker2 workshop of the AI Service Centre 
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "spinnaker2 @ git+https://gitlab.com/spinnaker2/py-spinnaker2.git@v0.8.2",
-    "torch==2.9.1",
+    "torch==2.15.0",
     "snntorch==0.9.4",
     "nirtorch==2.0.2",
     "nir==1.0.4",

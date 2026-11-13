@@ -46,7 +46,6 @@ The library is **not** tracked in this repository. It is cloned next to the repo
 ```bash
 conda create --name spinnaker2 python=3.12
 conda activate spinnaker2
-conda install -c conda-forge cmake          # not covered by libs_install.sh
 
 git clone --recursive https://gitlab.com/spinnaker2/py-spinnaker2.git
 cd py-spinnaker2
@@ -58,7 +57,7 @@ pip install .
 Notes on the install:
 
 - `--recursive` is required: `snn-core` is a separate repository included as a submodule.
-- The system-level dependencies installed by `libs_install.sh` are already present on cx51 and persist across sessions. `cmake` is missing from that script and has to be installed per conda environment.
+- The system-level dependencies installed by `libs_install.sh` are already present on cx51 and persist across sessions. `cmake` is now installed system-wide on cx51 too (`/usr/bin/cmake` 3.28.3, checked 2026-11-13; the `spinnaker2` environment has no cmake of its own and builds the chip programs fine). Earlier it had to be installed per conda environment with `conda install -c conda-forge cmake`.
 - The install is **non-editable**. Changes to the library source need another `pip install .`.
 - Updating the clone needs `git pull --no-recurse-submodules` followed by `git submodule update --init --recursive`; a dangling submodule reference in intermediate history breaks the plain `git pull`.
 
@@ -85,7 +84,7 @@ The Brian2 backend of py-spinnaker2 runs the same networks on the CPU and needs 
 
 ### Laptop install for Brian2 only
 
-Participants without cluster access use Brian2 on their own laptop. The step-by-step guide for them is in [`04_workshop_material/README.md`](../04_workshop_material/README.md), with the pinned packages in `04_workshop_material/requirements.txt`. Findings of the install test of 2026-11-09 (fresh virtual environment on cx51, Python 3.12, pip only):
+Participants without cluster access use Brian2 on their own laptop. Since 2026-11-13 they install with uv from `pyproject.toml` and `uv.lock` in the repository root; the step-by-step guide is the README of the `main` branch. Findings of the first install test of 2026-11-09 (fresh virtual environment on cx51, Python 3.12, pip only; the uv test of 2026-11-13 confirmed them and showed that py-spinnaker2 0.8.2 needs Python 3.12 or newer, because PACMAN2 requires it):
 
 - **py-spinnaker2 is not on PyPI.** pip installs it from GitLab (`spinnaker2 @ git+https://gitlab.com/spinnaker2/py-spinnaker2.git@v0.8.2`), together with the vendor packages PACMAN2, SpiNNMan2, SpiNNMachine2, SpiNNUtilities2 and spinnaker2_stm. git must be installed.
 - **No chip toolchain needed.** The install works without cmake or ARM compilers; those are only needed to compile chip programs for runs on the hardware.
