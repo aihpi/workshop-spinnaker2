@@ -16,7 +16,6 @@ Please install the environment before the workshop:
 
 - The download is about 1.5 GB. Over the shared Wi-Fi in the room, with everyone installing at once, it would take much longer than at home.
 - If something fails, we can solve it with you beforehand. Send the error message to kisz@hpi.de, or bring it to the workshop.
-- The workshop has 3 hours. Installing beforehand leaves that time for the hands-on parts.
 
 ## Laptop (uv)
 
