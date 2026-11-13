@@ -1,0 +1,24 @@
+[project]
+name = "workshop-spinnaker2"
+version = "0.1.0"
+description = "Environment for the SpiNNaker2 workshop of the AI Service Centre Berlin Brandenburg: py-spinnaker2 with the Brian2 simulator, PyTorch (CPU), snnTorch and NIR"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "spinnaker2 @ git+https://gitlab.com/spinnaker2/py-spinnaker2.git@v0.8.2",
+    "torch==2.9.1",
+    "snntorch==0.9.4",
+    "nirtorch==2.0.2",
+    "nir==1.0.4",
+    "numpy==2.3.4",
+    "matplotlib",
+    "ipykernel",
+]
+
+# PyTorch without GPU support: a much smaller download, and enough for the workshop
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
