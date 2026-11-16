@@ -26,8 +26,7 @@ Draft of 2026-11-09 for the first date (18 November 2026, 14:00–17:00, H-2.57/
 |---|---|---|---|---|
 | 14:00 | 15 | 1 | Welcome and motivation: why neuromorphic computing | theory |
 | 14:15 | 5 | 2 | Setup check | organisation |
-| 14:20 | 20 | 3 | Spiking neural networks | theory |
-| 14:40 | 15 | 4 | Hands-on 1: one neuron, input spikes | hands-on |
+| 14:20 | 35 | 3 + 4 | Spiking neural networks, interleaved with hands-on 1 (one neuron, input spikes): slides 12 min, notebook 01 15 min, debrief slides 6 min | theory and hands-on |
 | 14:55 | 15 | 5 | SpiNNaker2 hardware | theory |
 | 15:10 | 20 | 6 | Hands-on 2: synfire chain, chip run | hands-on |
 | 15:30 | 15 | – | Break (instructor starts the energy runs) | |
@@ -43,7 +42,7 @@ In total: theory 75 min, hands-on 75 min, demos 10 min, break 15 min, setup 5 mi
 
 ### 1. Welcome and motivation: why neuromorphic computing (15 min)
 
-- Welcome, agenda; whoever hasn't installed the environment starts the install now (about 12 min, see block 2).
+- Welcome, agenda; whoever hasn't installed the environment starts the install now (5 to 15 min, see block 2).
 - The energy problem of AI hardware; the brain at about 20 W, with communication costing more than computation (`05_history.md`).
 - Three slides of history: Mead's analog chips, the big programmes (TrueNorth, Human Brain Project, Loihi), SpiNNaker from Furber's idea to SpiNNaker2 (`05_history.md`).
 - The core idea: neurons communicate with spikes and stay silent in between; sparse activity saves energy.
@@ -52,23 +51,18 @@ In total: theory 75 min, hands-on 75 min, demos 10 min, break 15 min, setup 5 mi
 ### 2. Setup check (5 min)
 
 - After block 1, so that problems can be fixed during block 3 and before hands-on 1.
-- Goal: every pair has a working environment before the first hands-on. Installing should happen beforehand (participant mail, install guide), but is also possible in the room: a fresh install takes about 12 min and 1.5 GB, so whoever hasn't installed starts at 14:00, and it finishes during block 1. HPI participants on cx51 need no install.
+- Goal: every pair has a working environment before the first hands-on. Installing should happen beforehand (participant mail, install guide), but is also possible in the room: a fresh install takes 5 to 15 min and downloads about 0.5 GB (README on `main`), so whoever hasn't installed starts at 14:00, and it finishes during block 1. HPI participants on cx51 need no install.
 - HPI participants open the environment on cx51, outside participants their local Brian2 environment; everyone runs `00_setup_check.ipynb` (imports, one tiny Brian2 run, about 10 s).
 - Pairs form now: one working laptop per pair is enough.
 - Problems are collected and solved during block 3 by a second person, if available.
 
-### 3. Spiking neural networks (20 min)
+### 3 + 4. Spiking neural networks, interleaved with hands-on 1 (35 min)
 
-- The LIF neuron: integrate, leak, fire, reset; discrete time steps as on the chip (primer, sections 2–3).
-- Synapses: integer weights and delays.
-- **Comparison with deep learning:** an LIF layer is a recurrent cell with binary output (primer, section 8).
-- Just enough for hands-on 1, which follows directly: participants apply the LIF model before seeing the hardware. Slides in `04_slide_plan.md`; the block takes about 12 of its 20 minutes.
+Decided 2026-11-16: blocks 3 and 4 are interleaved. The slides explain what participants need before they can try anything; what they can find out by changing parameters is left to notebook 01; a short debrief collects it. Slide content in `05_slide_content_part1.md`, block 3.
 
-### 4. Hands-on 1: one neuron, input spikes (15 min)
-
-- Notebook `04_workshop_material/01_single_neuron.ipynb`, Brian2 only; a short path through the vendor's deep-dive tutorials 00–02, every section points to the tutorial section and API docs it draws on.
-- One neuron with constant input (input–output curve vs. activation function), one neuron driven by input spikes (leak, timing).
-- The notebook ends with a pointer back to the slides.
+- Slides before the notebook (about 12 min): from the biological neuron to LIF (Hodgkin-Huxley, FitzHugh-Nagumo, LIF; optional, with an optional detour on the FitzHugh-Nagumo equations), the artificial neuron next to the spiking neuron (refresher), the LIF neuron (integrate, leak, fire, reset), the update rule in discrete time as a map of the parameters, synapses with weight and delay (primer, sections 2–4).
+- Notebook `04_workshop_material/01_single_neuron.ipynb` (about 15 min), Brian2 only: one neuron with constant input (critical input, input–output curve vs. activation function), one neuron driven by input spikes (leak, timing, delays, clipping). The notebook ends with a pointer back to the slides.
+- Debrief slides after the notebook (about 6 min): what participants found (critical input and the ReLU-like curve; spikes that arrive together fire the neuron), weights as small integers (quantisation), an LIF layer as a recurrent cell with binary output (primer, section 8), the bridge to the hardware block.
 
 ### 5. SpiNNaker2 hardware (15 min)
 
