@@ -93,7 +93,7 @@ Decided 2026-11-16: blocks 3 and 4 are interleaved. The slides explain what part
 - **Notebook `04_direction_trained.ipynb` (about 17 min):** a bar moving across an 8 × 8 event camera, four directions, three speeds, noise and lost events; training about half a minute, test accuracy per direction and speed, wrong examples as animations, NIR conversion on Brian2, weight images and hidden activity per direction, chip run. One Try (a strong leak, `beta = 0.3`), one Discuss (training off the chip, inference on it); further Try items under "If you want more".
 - About 10 min buffer.
 - Chip runs: 1 per HPI pair (notebook 04).
-- The old notebooks `03_nir_minimal.ipynb` and `04_nir_end_to_end.ipynb` are no longer part of the workshop.
+- The old notebooks `03_nir_minimal.ipynb` and `04_nir_end_to_end.ipynb` are archived in `04_workshop_material/archive/`.
 
 ### 9. Instructor demos (10 min)
 
