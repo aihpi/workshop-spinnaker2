@@ -1,7 +1,7 @@
 """Slide figure for slide 7.4: the answer of a spiking classifier is the output neuron that fires most often.
 
-Trains the network of notebook 04 exactly as the notebook does (its code cells 0 to 4 are executed, without the
-animation), then runs one test example (a bar moving right) and draws the four output neurons' spikes over the
+Trains the network of notebook 04 exactly as the notebook does (its code cells up to the training cell are executed,
+without the animation), then runs one test example (a bar moving right) and draws the four output neurons' spikes over the
 30 time steps, with the spike count of each. The counts are what the loss sees: cross-entropy of the counts, as
 with the logits of a classifier. Measured in snnTorch (the converted network gives the same answer, notebook 04,
 section 5).
@@ -18,10 +18,11 @@ import matplotlib.pyplot as plt
 ACCENT, GREY, DARK = "#B1063A", "#83888C", "#212427"  # accent: HPI red (slide style); change here for the block colour
 NOTEBOOK = Path(__file__).resolve().parents[3] / "04_workshop_material" / "04_direction_trained.ipynb"
 
-# --- train the network as notebook 04 does (cells 0 to 4: setup, generator, data, network, training) ---
+# --- train the network as notebook 04 does (its code cells up to and including the training cell) ---
 cells = ["".join(c["source"]) for c in json.load(open(NOTEBOOK))["cells"] if c["cell_type"] == "code"]
+last = next(k for k, code in enumerate(cells) if "optimizer = torch.optim.Adam" in code)
 g = {}
-for code in cells[:5]:
+for code in cells[:last + 1]:
     code = "\n".join(line for line in code.split("\n") if not line.startswith("animate("))  # keeps the rng sequence
     exec(compile(code, "notebook04", "exec"), g)
 plt.close("all")
