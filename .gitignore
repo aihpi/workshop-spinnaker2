@@ -206,6 +206,8 @@ _local/
 
 # Files written by the workshop notebooks when they run
 /04_workshop_material/logo_network.nir
+/04_workshop_material/direction_*.gif
+/04_workshop_material/detector_*.gif
 /04_workshop_material/demos/data/nmnist/
 /04_workshop_material/demos/output/
 **/spinnaker2_diagnostics/
