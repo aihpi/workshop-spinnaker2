@@ -607,7 +607,7 @@ Notebook `04_workshop_material/02_direction_detector.ipynb`. Accent colour: HPI 
 - Kicker: HANDS-ON 2 · NOTEBOOK 02
 - Title: Hands-on 2: build a network and run it on the chip
 - Subtitle (two lines, no bullets): Notebook 04_workshop_material/02_direction_detector.ipynb, 20 minutes. Build a layer of two neurons that tells in which direction a dot moves across four pixels, with weights and delays as matrices.
-- Visual (to make): four pixels in a row, each connected to two detectors; the connections of the rightward detector labelled with their delays 3, 2, 1, 0, so that a dot moving right makes all four spikes arrive together; schematic
+- Visual: `02_workshop_design/slides/figures/b6_detector.png` (made by `b6_make_detector.py`: four pixels in a row, each connected to two detectors; the rightward connections labelled with their delays 3, 2, 1, 0, the leftward ones with "?" (to fill in); a dot moving right makes all four spikes arrive in step 9; schematic)
 - Below the figure, a short two-column text block (the one exception to "no bullets" on this slide, because it is the task):
   - left, "Everyone (Brian2)": "Sections 1 to 3: fill in the delays of the leftward detector and run it · Section 5: Try 1, 2 and 4, then 3 if time"
   - right, "HPI cluster pairs (chip)": "Section 4, as soon as section 3 works: set USE_HARDWARE = True and run the cell once · A chip run takes about a minute, mostly powering up and booting the board · 6 boards for everyone: if all are busy, your run waits"
@@ -631,7 +631,7 @@ Slide 6.1
 - Kicker: HANDS-ON 2 · NOTEBOOK 02
 - Title: Hands-on 2: build a network and run it on the chip
 - Subtitle (two lines): "Notebook 04_workshop_material/02_direction_detector.ipynb, 20 minutes. Build a layer of two neurons that tells in which direction a dot moves across four pixels, with weights and delays as matrices."
-- Figure: [to make: four pixels connected to two detectors, rightward delays 3, 2, 1, 0], below the subtitle, centred, aspect ratio kept, using about the upper half of the remaining space.
+- Figure: /sc/home/david.goll/projects/spinnaker/workshop-spinnaker2/02_workshop_design/slides/figures/b6_detector.png, below the subtitle, centred, aspect ratio kept, using about the upper half of the remaining space.
 - Below the figure, two text columns of equal width (at least 16 pt, plain text, short bullet lines allowed here because this is the task):
   Left, heading "Everyone (Brian2)":
     · Sections 1 to 3: fill in the delays of the leftward detector and run it
@@ -645,17 +645,6 @@ Slide 6.1
 Report the final slide order of blocks 5 and 6.
 ```
 
-## For block 7 (part 2): moved from block 3
+## Block 7 onwards
 
-Part 2 is not planned in this file yet. This slide was moved here from the end of block 3 on 2026-11-16: it opens block 7, where training with backpropagation through time and surrogate gradients follows.
-
-### Slide 7.1: An LIF layer is a recurrent cell with spikes as output
-
-- Kicker: (block 7 style, to be decided) · DEEP LEARNING
-- Title: An LIF layer is a recurrent cell with spikes as output
-- Subtitle (two lines, no bullets): Like an RNN, the layer carries its state from step to step: v[t] = α · v[t−1] + W · x[t]. The output is a spike, 0 or 1, instead of a continuous activation, and the same weights act in every step.
-- Visual: `01_knowledge_base/figures/01_primer_snn_basics/08_lif_unrolled.png` (an LIF layer unrolled over three time steps, drawn like an RNN; the knowledge-base figure as it is)
-- Source line: "Source: Spiking Neurons and Networks, section 8 (workshop knowledge base)"
-- No bullets, no boxes, no speaker notes
-
-Facts behind the slide: Figure 22 of the SNN note; training works as for an RNN, with backpropagation through time, except that the step function has no useful gradient (surrogate gradients, block 7). Role: refresher of the RNN cell and opening of block 7: the next slide shows that the step function has no useful gradient (surrogate gradients).
+Part 2 (block 7 onwards, including the slide on the LIF layer as a recurrent cell, moved from block 3) is in `06_slide_content_part2.md`.
