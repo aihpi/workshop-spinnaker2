@@ -609,12 +609,12 @@ Notebook `04_workshop_material/02_direction_detector.ipynb`. Accent colour: HPI 
 - Subtitle (two lines, no bullets): Notebook 04_workshop_material/02_direction_detector.ipynb, 20 minutes. Build a layer of two neurons that tells in which direction a dot moves across four pixels, with weights and delays as matrices.
 - Visual: `02_workshop_design/slides/figures/b6_detector.png` (made by `b6_make_detector.py`: four pixels in a row, each connected to two detectors; the rightward connections labelled with their delays 3, 2, 1, 0, the leftward ones with "?" (to fill in); a dot moving right makes all four spikes arrive in step 9; schematic)
 - Below the figure, a short two-column text block (the one exception to "no bullets" on this slide, because it is the task):
-  - left, "Everyone (Brian2)": "Sections 1 to 3: fill in the delays of the leftward detector and run it · Section 5: Try 1, 2 and 4, then 3 if time"
+  - left, "Everyone (Brian2)": "Section 2: fill in the delays of both detectors · Section 3: run it and check the answer"
   - right, "HPI cluster pairs (chip)": "Section 4, as soon as section 3 works: set USE_HARDWARE = True and run the cell once · A chip run takes about a minute, mostly powering up and booting the board · 6 boards for everyone: if all are busy, your run waits"
 - Source line: none (task slide)
 - No boxes, no speaker notes
 
-Facts behind the slide: notebook 02 sections 1 (the input, animation and raster), 2 (weight and delay matrices; participants fill in the leftward delays), 3 (run and read the answer, animation), 4 (chip run, compares with Brian2 and reads `time_done`, once per pair as soon as section 3 works), 5 (Try 1, 2 and 4 core, 3 if time), 6 (what you built); the API reference is a collapsible at the start; about one minute per chip run, mostly power-up and boot, regardless of network size; one run reserves one of 6 boards and waits if all are busy (`02_participant_access.md`, capacity; notebook 02, section 3). Why development happens on Brian2 (moved here from block 5): same code, seconds instead of a minute, no waiting for a board.
+Facts behind the slide: notebook 02 sections 1 (the input, animation and raster), 2 (weight and delay matrices; participants fill in the delays of both detectors), 3 (run and read the answer, animation, Discuss), 4 (chip run, plotted next to Brian2, reads `time_done`, once per pair as soon as section 3 works), closing paragraph; no further Try items (cut on 2026-11-17); the py-spinnaker2 reference is a collapsible in section 3; about one minute per chip run, mostly power-up and boot, regardless of network size; one run reserves one of 6 boards and waits if all are busy (`02_participant_access.md`, capacity; notebook 02, section 3). Why development happens on Brian2 (moved here from block 5): same code, seconds instead of a minute, no waiting for a board.
 
 ### PowerPoint prompt for block 6 (slides 6.0 and 6.1)
 
@@ -634,8 +634,8 @@ Slide 6.1
 - Figure: /sc/home/david.goll/projects/spinnaker/workshop-spinnaker2/02_workshop_design/slides/figures/b6_detector.png, below the subtitle, centred, aspect ratio kept, using about the upper half of the remaining space.
 - Below the figure, two text columns of equal width (at least 16 pt, plain text, short bullet lines allowed here because this is the task):
   Left, heading "Everyone (Brian2)":
-    · Sections 1 to 3: fill in the delays of the leftward detector and run it
-    · Section 5: Try 1, 2 and 4, then 3 if time
+    · Section 2: fill in the delays of both detectors
+    · Section 3: run it and check the answer
   Right, heading "HPI cluster pairs (chip)":
     · Section 4, as soon as section 3 works: set USE_HARDWARE = True and run the cell once
     · A chip run takes about a minute, mostly powering up and booting the board

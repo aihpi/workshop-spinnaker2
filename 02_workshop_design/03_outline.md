@@ -75,8 +75,8 @@ Decided 2026-11-16: blocks 3 and 4 are interleaved. The slides explain what part
 ### 6. Hands-on 2: direction detector, chip run (20 min)
 
 - Notebook `02_direction_detector.ipynb`: a dot moves across four pixels; two `lif` detectors, written as a weight matrix and a delay matrix, tell its direction by coincidence detection. Participants fill in the delays of the leftward detector.
-- Chip run as soon as the network works (section 4, before the Try items): HPI pairs run the detector on the chip, compare the answer with Brian2 and read `time_done` (how busy the PE was per step). Pairs reach this point at different times, so the runs spread over the 6 boards.
-- Exercises (section 5): a slower dot, a missing pixel, a lower threshold, a third detector for slow dots; discussion on where the direction information lies (timing, not which pixels fired).
+- Chip run as soon as the network works (section 4): HPI pairs run the detector on the chip, compare the answer with Brian2 and read `time_done` (how busy the PE was per step). Pairs reach this point at different times, so the runs spread over the 6 boards.
+- The exercise is section 2: fill in the delays of both detectors so that each fires only for its direction. Discussion on where the direction information lies (timing, not which pixels fired). No further Try items (cut on 2026-11-17 for time).
 - The API reference of notebook 01 is a collapsible in notebook 02, not part of the exercise time.
 - Chip runs: 1 per HPI pair. The synfire-chain notebook is archived (`04_workshop_material/archive/`).
 
