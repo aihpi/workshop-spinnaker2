@@ -28,10 +28,10 @@ Draft of 2026-11-09 for the first date (18 November 2026, 14:00–17:00, H-2.57/
 | 14:15 | 5 | 2 | Setup check | organisation |
 | 14:20 | 35 | 3 + 4 | Spiking neural networks, interleaved with hands-on 1 (one neuron, input spikes): slides 12 min, notebook 01 15 min, debrief slides 6 min | theory and hands-on |
 | 14:55 | 15 | 5 | SpiNNaker2 hardware | theory |
-| 15:10 | 20 | 6 | Hands-on 2: synfire chain, chip run | hands-on |
+| 15:10 | 20 | 6 | Hands-on 2: direction detector, chip run | hands-on |
 | 15:30 | 15 | – | Break (instructor starts the energy runs) | |
 | 15:45 | 10 | 7 | From PyTorch to the chip | theory |
-| 15:55 | 40 | 8 | Hands-on 3: NIR | hands-on |
+| 15:55 | 40 | 8 | Hands-on 3: the direction task, trained and run via NIR | hands-on |
 | 16:35 | 10 | 9 | Instructor demos: energy, event-camera digits, Max-Cut | demo |
 | 16:45 | 15 | 10 | Applications, an honest take, Q&A | theory and discussion |
 | 17:00 | | | End | |
@@ -62,35 +62,38 @@ Decided 2026-11-16: blocks 3 and 4 are interleaved. The slides explain what part
 
 - Slides before the notebook (about 12 min): from the biological neuron to LIF (Hodgkin-Huxley, FitzHugh-Nagumo, LIF; optional, with an optional detour on the FitzHugh-Nagumo equations), the artificial neuron next to the spiking neuron (refresher), the LIF neuron (integrate, leak, fire, reset), the update rule in discrete time as a map of the parameters, synapses with weight and delay (primer, sections 2–4).
 - Notebook `04_workshop_material/01_single_neuron.ipynb` (about 15 min), Brian2 only: one neuron with constant input (critical input, input–output curve vs. activation function), one neuron driven by input spikes (leak, timing, delays, clipping). The notebook ends with a pointer back to the slides.
-- Debrief slides after the notebook (about 6 min): what participants found (critical input and the ReLU-like curve; spikes that arrive together fire the neuron), weights as small integers (quantisation), an LIF layer as a recurrent cell with binary output (primer, section 8), the bridge to the hardware block.
+- Debrief slides after the notebook (about 6 min): what participants found (critical input and the ReLU-like curve; spikes that arrive together fire the neuron), weights as small integers (quantisation), the bridge to the hardware block.
 
 ### 5. SpiNNaker2 hardware (15 min)
 
 - Between hands-on 1 and 2: answers "where does this run?" after participants have run their first neurons, and prepares the energy discussion and the chip run of hands-on 2.
 - Chip: 152 ARM cores, local SRAM, accelerators; neurons are software, so any model can run (`02_hardware_energy.md`).
 - From chip to board to frame: the HPI frame with 6 boards of 48 chips.
-- What happens during a run: board reservation, power-up and boot, about one minute per run regardless of network size; why development happens on Brian2 (`02_participant_access.md`, capacity).
-- Brian2 as the simulator behind the same Python code (`03_brian2_fallback.md`).
+- Why weights are small integers: one synapse is one 16-bit word in the PE's memory (primer, section 4).
+- Moved on 2026-11-16: the time per chip run and Brian2 for development to the hands-on slide of block 6; the energy cost of a run to blocks 9 and 10.
 
-### 6. Hands-on 2: synfire chain, chip run (20 min)
+### 6. Hands-on 2: direction detector, chip run (20 min)
 
-- Notebook `02_synfire_chain.ipynb`: a synfire chain of 5 groups of 50 `lif` neurons, a volley that sharpens from group to group.
-- Exercises change one argument of `run_chain` (weight, input jitter, leak, threshold): the wave dies out or the synaptic events double; discussion questions on coincidence detection and on energy growing with synaptic events.
-- Last 5 minutes: HPI pairs run the synfire chain on the chip and compare with Brian2 (identical spikes, tested on 2026-11-09).
-- Chip runs: 1 per HPI pair.
+- Notebook `02_direction_detector.ipynb`: a dot moves across four pixels; two `lif` detectors, written as a weight matrix and a delay matrix, tell its direction by coincidence detection. Participants fill in the delays of the leftward detector.
+- Chip run as soon as the network works (section 4, before the Try items): HPI pairs run the detector on the chip, compare the answer with Brian2 and read `time_done` (how busy the PE was per step). Pairs reach this point at different times, so the runs spread over the 6 boards.
+- Exercises (section 5): a slower dot, a missing pixel, a lower threshold, a third detector for slow dots; discussion on where the direction information lies (timing, not which pixels fired).
+- The API reference of notebook 01 is a collapsible in notebook 02, not part of the exercise time.
+- Chip runs: 1 per HPI pair. The synfire-chain notebook is archived (`04_workshop_material/archive/`).
 
 ### 7. From PyTorch to the chip (10 min)
 
+- An LIF layer is a recurrent cell with binary output, as the opening (primer, section 8; moved here from block 3 on 2026-11-16).
 - Training spiking networks: surrogate gradients in two slides (primer, section 8).
 - NIR as an exchange format, "ONNX for spiking networks".
 - The conversion rule for snnTorch models: `cfg.dt = 1e-4`, `FORWARD` integrator, matching reset rule, one-step delay per projection (primer, section 8).
 
-### 8. Hands-on 3: NIR (40 min)
+### 8. Hands-on 3: the direction task, trained and run via NIR (40 min)
 
-- **Notebook `03_nir_minimal.ipynb` (15 min), based on tutorial 08:** a small snnTorch network, exported to NIR, converted, run on Brian2; spike-for-spike comparison with snnTorch.
-- **Notebook `04_nir_end_to_end.ipynb` (25 min), based on the end-to-end NIR example:** train a network in snnTorch to reproduce a logo spike pattern (about 3 min on the CPU of cx51, laptops to be tested), export, check on Brian2; HPI pairs run it on the chip.
-- To mention: the example trains each time step independently, for simplicity.
-- Chip runs: 1 per HPI pair (notebook 04), notebook 03 optional.
+- **Notebook `03_direction_nir.ipynb` (about 12 min), adapted in parts from tutorial 08:** the four-pixel task of notebook 02, trained in snnTorch (a few seconds), exported to NIR and converted with the rule for snnTorch models (`dt = 1e-4`, `FORWARD`, the right reset); the converted network has integer weights and fires exactly the same spikes as snnTorch, shifted by one step per projection. No exercises in the workshop part: participants run and read. A marked section "After the workshop" holds breaking the conversion on purpose, how the trained network tells the direction without delays (inhibition as a veto), and a chip run.
+- **Notebook `04_direction_trained.ipynb` (about 17 min):** a bar moving across an 8 × 8 event camera, four directions, three speeds, noise and lost events; training about half a minute, test accuracy per direction and speed, wrong examples as animations, NIR conversion on Brian2, weight images and hidden activity per direction, chip run. One Try (a strong leak, `beta = 0.3`), one Discuss (training off the chip, inference on it); further Try items under "If you want more".
+- About 10 min buffer.
+- Chip runs: 1 per HPI pair (notebook 04).
+- The old notebooks `03_nir_minimal.ipynb` and `04_nir_end_to_end.ipynb` are no longer part of the workshop.
 
 ### 9. Instructor demos (10 min)
 

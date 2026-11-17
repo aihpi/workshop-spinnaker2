@@ -322,27 +322,27 @@ Not slides: participants work in `04_workshop_material/01_single_neuron.ipynb` o
 
 ### Part 3: slides after the notebook (14:47, about 6 min)
 
-### Slide 3.6: What you found: input and output, like a ReLU in steps
+### Slide 3.6: What you found: below a critical input nothing happens, above it the neuron fires almost like a ReLU
 
 - Kicker: SPIKING NETWORKS · DEBRIEF
-- Title: What you found: below a critical input nothing happens, above it the neuron fires like a ReLU, in steps
+- Title: What you found: below a critical input nothing happens, above it the neuron fires almost like a ReLU
 - Subtitle (two lines, no bullets): Each step, the input only has to replace what leaks away, so the critical input is (1 − α) · threshold. Above it, the spike count grows almost linearly, in small steps, because the neuron can only fire on a whole time step.
-- Visual: the spike count against the input from notebook 01, section 1 (the 81-neuron sweep; a screenshot of the notebook output with threshold 10 and alpha_decay 0.9, so the numbers match what participants saw), with a ReLU drawn in for comparison if possible
-- Source line: "Source: notebook 01, section 1; Spiking Neurons and Networks, section 2.5 (workshop knowledge base)"
+- Visual: `02_workshop_design/slides/figures/b3_debrief_fi.png` (made by `b3_make_debrief_fi.py`, py-spinnaker2 on Brian2 with the values of notebook 01, section 1: 81 neurons, i_offset 0 to 4, threshold 10, alpha_decay 0.9, 1,000 steps; critical input 1.0 marked; a ReLU through the critical input with a least-squares slope for comparison, labelled as such)
+- Source line: "Source: notebook 01, section 1 (Brian2); Spiking Neurons and Networks, section 2.5 (workshop knowledge base)"
 - No bullets, no boxes, no speaker notes
 
-Facts behind the slide: critical input (1 − α) · threshold = 1.0 for alpha_decay 0.9 and threshold 10, which the input has to exceed, not just reach (notebook 01, section 1); the steps come from the discrete clock (notebook 01, collapsible "Why the curve has small steps").
+Facts and talking points: no spikes up to i_offset 1.0; just above it the count jumps to about 35 and then grows almost linearly to 343 at i_offset 4 (the figure script checks the critical input). Why the ReLU comparison matters: a spiking neuron with a constant input behaves on average like a ReLU, which is the basis of converting trained deep networks into spiking networks (the NMNIST demo in block 9 is such a converted network). Its limit: this holds for a constant or averaged input (a rate code), and carrying a value precisely as a rate costs many steps and spikes. Slide 3.7 shows the other side, where the neuron is not like a ReLU.
 
 ### Slide 3.7: What you found: spikes that arrive together fire the neuron
 
 - Kicker: SPIKING NETWORKS · DEBRIEF
 - Title: What you found: spikes that arrive together fire the neuron
-- Subtitle (two lines, no bullets): Because the potential leaks, isolated spikes fade before the next one arrives, while the same spikes close together add up and cross the threshold. The neuron becomes a coincidence detector, which a ReLU neuron is not.
-- Visual: `01_knowledge_base/figures/01_primer_snn_basics/03_discrete_update.png` again, with two annotations: "isolated spikes (steps 2 and 6): leak away" and "spikes close together (steps 12 to 14, 20 to 23): output spike"
-- Source line: "Source: Spiking Neurons and Networks, section 3, Figure 7 (workshop knowledge base)"
+- Subtitle (two lines, no bullets): Because the potential leaks, spikes spread out in time fade before the next one arrives, while the same spikes arriving together cross the threshold. A delay can make spikes coincide: the neuron becomes a coincidence detector, which a ReLU is not.
+- Visual: keep the figure that is on this slide in the deck now (unchanged)
+- Source line: "Source: notebook 01, section 2 (Brian2); Spiking Neurons and Networks, section 3 (workshop knowledge base)"
 - No bullets, no boxes, no speaker notes
 
-Facts behind the slide: Figure 7 caption of the SNN note. Participants have just found this in notebook 01, section 2 (Try 1, Discuss); notebook 02 builds a network of coincidence detectors.
+Facts and talking points: left, input 0 fires the neuron at step 10 (three spikes, two steps apart), inputs 1 and 2 reach only 9.85 (two spikes, two steps apart); right, with delay 2 both spikes of inputs 1 and 2 arrive in step 33 and fire the neuron. Optional, from Try 6: an input at step 20 still leaves 0.83 at step 30, enough to make inputs 1 and 2 fire; the neuron remembers a spike from twelve steps earlier. Notebook 02 builds a network of such coincidence detectors.
 
 ### Slide 3.8: On the chip, weights are small integers
 
@@ -355,17 +355,307 @@ Facts behind the slide: Figure 7 caption of the SNN note. Participants have just
 
 Facts behind the slide: Figure 12 of the SNN note, 5000 normally distributed weights mapped onto [−15, 15]; with a scale that keeps 99 % in range, 13 % of the weights become 0 and the rest take 30 distinct values. Why the range is so narrow (each synapse is one packed word in the core's memory) is block 5. Role: refresher of quantisation in deep learning.
 
-### Slide 3.9: An LIF layer is a recurrent cell with spikes as output
+Transition to the hardware block (spoken): "Why only −15 to 15? The answer is in the hardware, the next block."
 
-- Kicker: SPIKING NETWORKS · DEEP LEARNING
+Time: part 1 about 12 min (3.1 and 3.1b optional), notebook 01 about 15 min, part 3 about 5 min; about 32 min of the 35 min of blocks 3 and 4 together. The slide "An LIF layer is a recurrent cell" moved to block 7 on 2026-11-16 (see the end of this file).
+
+### PowerPoint prompt for part 3 (debrief slides 3.6 to 3.8)
+
+```
+Rework the three debrief slides of block 3 (SPIKING NETWORKS) that come after the hands-on slide for notebook 01. Keep the block 3 style exactly (section label, kicker, title, subtitle, source line, slide number, HPI orange accent). Do not change any other slide.
+
+Order after the hands-on slide: (1) input and output, (2) timing, (3) weights. If the deck has a slide "An LIF layer is a recurrent cell with spikes as output" in block 3, move it out of block 3 to the end of the deck (it belongs to block 7, after the break). Create a slide if it does not exist yet; otherwise update it.
+
+Slide 1 (debrief, input and output)
+- Kicker: SPIKING NETWORKS · DEBRIEF
+- Title: What you found: below a critical input nothing happens, above it the neuron fires almost like a ReLU
+- Subtitle (two lines): "Each step, the input only has to replace what leaks away, so the critical input is (1 − α) · threshold. Above it, the spike count grows almost linearly, in small steps, because the neuron can only fire on a whole time step."
+- Figure: /sc/home/david.goll/projects/spinnaker/workshop-spinnaker2/02_workshop_design/slides/figures/b3_debrief_fi.png, below the subtitle, full content width, aspect ratio kept (2:1), as large as the space allows, centred. Replace any placeholder or older figure on this slide.
+- Source line: "Source: notebook 01, section 1 (Brian2); Spiking Neurons and Networks, section 2.5 (workshop knowledge base)"
+
+Slide 2 (debrief, timing)
+- Kicker: SPIKING NETWORKS · DEBRIEF
+- Title: What you found: spikes that arrive together fire the neuron
+- Subtitle (two lines): "Because the potential leaks, spikes spread out in time fade before the next one arrives, while the same spikes arriving together cross the threshold. A delay can make spikes coincide: the neuron becomes a coincidence detector, which a ReLU is not."
+- Figure: keep the current figure and its annotations as they are.
+- Source line: "Source: notebook 01, section 2 (Brian2); Spiking Neurons and Networks, section 3 (workshop knowledge base)"
+
+Slide 3 (weights), last slide of block 3
+- Kicker: SPIKING NETWORKS · WEIGHTS
+- Title: On the chip, weights are small integers
+- Subtitle (two lines): "For lif, weights are whole numbers from −15 to 15 and delays from 0 to 7. Like quantising a deep network, trained weights have to be scaled and rounded; values outside the range are clipped without a warning."
+- Figure: keep 04_weight_quantization.png as it is.
+- Source line: "Source: Spiking Neurons and Networks, section 4 (workshop knowledge base); py-spinnaker2 v0.8 code"
+
+No bullets, no boxes, no speaker notes. Report the final slide order of block 3.
+```
+
+## Block 5: SpiNNaker2 hardware (14:55, 15 min)
+
+Style for all slides of this block: same elements as the block 1 and block 3 slides in `slides/block1_draft.pptx` (section label in the side band, kicker line above the title, title, subtitle, one visual, source line, slide number). Accent colour: to be decided. Section label: "SPINNAKER2 HARDWARE". Kicker: "SPINNAKER2 HARDWARE · <topic>".
+
+Structure: a zoom from the code down to one processing element (PE). The block starts with the path from Python to the cores, then follows the work step by step: where it lands (installation), inside the chip, inside one PE in one time step, one PE over many time steps. Figures are the knowledge-base figures as they are. What py-spinnaker2's code looks like is not on the slides (notebook 01 introduces it, notebook 02 sums it up); this block explains what py-spinnaker2 does with the network.
+
+### Slide 5.0: divider
+
+- Same divider as the other blocks in the deck (section number, section title, time)
+- Section number: 5
+- Section title: SpiNNaker2 hardware
+- Section time: 14:55 · 15 min
+
+### Slide 5.1: From Python to the cores
+
+- Kicker: SPINNAKER2 HARDWARE · FROM PYTHON TO THE CHIP
+- Title: From Python to the cores: what happens when you call hw.run
+- Subtitle (two lines, no bullets): You describe the network in Python and choose the neuron model by name. py-spinnaker2 turns it into network data (parameters, weights, routing tables) and compiles the neuron model's C code for the ARM cores, sends both to the board, and every core runs its part directly on the hardware, without an operating system.
+- Visual: `01_knowledge_base/figures/00_computing_fundamentals/06_bare_metal_cross_compilation.png` (computing fundamentals, Figure 5), as large as possible
+- Source line: "Source: Computing Fundamentals, section 6 (workshop knowledge base)"
+- No bullets, no boxes, no speaker notes
+
+Facts behind the slide (`00_computing_fundamentals.md`, section 6, Figure 5): ① the user describes the network in Python and selects the model by name (e.g. `lif`); the C code of the models is part of py-spinnaker2; ② on the host, py-spinnaker2 creates the network data and cross-compiles the model's C code for the ARM cores (CMake, `arm-none-eabi-gcc`, results cached); ③ both are sent to the board via Ethernet; ④ each core runs the machine code bare-metal: a timer interrupt wakes it once per time step, it updates its neurons and sends spikes, then sleeps. Own C code is only needed for custom neuron models (an outlook, not part of the workshop). Transition: "Where does this land? Let us follow it."
+
+### Slide 5.2: Where your network runs
+
+- Kicker: SPINNAKER2 HARDWARE · INSTALLATION
+- Title: Where your network runs: from the cluster to one chip
+- Subtitle (two lines, no bullets): py-spinnaker2 runs on the cluster node cx51, which talks to a frame of 6 boards over Ethernet. A run reserves one board with 48 chips, 7,104 cores available for your network; each chip is about 1 cm × 1 cm with 152 processing elements.
+- Visual: `01_knowledge_base/figures/02_hardware_energy/01_installation_hierarchy.png` (hardware note, Figure 1), as large as possible
+- Source line: "Source: Hardware and Energy, sections 1 and 5 (workshop knowledge base)"
+- No bullets, no boxes, no speaker notes
+
+Facts behind the slide (`02_hardware_energy.md`, Figure 1): panels A to D: rack, frame with 6 boards and a management controller that powers and boots them, one board with 48 chips with their own DRAM and links to their neighbours, one chip with 152 PEs and their local SRAM. One board: 7,296 PEs, 7,104 available to a run. The arrangement of chips and links on the board is schematic.
+
+### Slide 5.3: Inside one chip
+
+- Kicker: SPINNAKER2 HARDWARE · CHIP
+- Title: Inside one chip: 152 small cores, each with its own memory
+- Subtitle (two lines, no bullets): Four processing elements (PEs) form a quad PE (QPE); each PE is an ARM core with 128 KB of local memory. A spike leaves its PE as a small packet: by default py-spinnaker2 sends one packet to each PE with target neurons; the router can also copy a single packet to all of them (multicast).
+- Visual: `01_knowledge_base/figures/02_hardware_energy/01_chip_schematic.png` (hardware note, Figure 2), as large as possible
+- Source line: "Source: Hardware and Energy, sections 1, 2 and 4 (workshop knowledge base); Scholze et al. 2026; py-spinnaker2 tutorial 06"
+- No bullets, no boxes, no speaker notes
+
+Facts behind the slide (`02_hardware_energy.md`, Figure 2): A: 38 QPEs of 4 PEs, the router in the middle, links to neighbouring chips, the DRAM interface and Ethernet; the red arrows show the path of one spike. B: one QPE, whose 4 PEs share one connection to the network-on-chip. C: what one PE contains. Arrangement and spike path are schematic, not the physical floorplan. A neuron is software on a PE; one PE simulates up to 256 `lif` neurons.
+
+### Slide 5.4: Inside one PE, in one time step
+
+- Kicker: SPINNAKER2 HARDWARE · ONE TIME STEP
+- Title: Inside one PE: what happens in one time step
+- Subtitle (two lines, no bullets): A timer wakes the core. It reads the spikes that arrived, looks up their synapses in its memory and adds the weights to its neurons, updates all its neurons and sends the new spikes. Then it sleeps until the next tick.
+- Visual: `01_knowledge_base/figures/02_hardware_energy/02_pe_function.png` (hardware note, Figure 3), as large as possible
+- Source line: "Source: Hardware and Energy, section 2 (workshop knowledge base); Scholze et al. 2026; py-spinnaker2 tutorial 06; snn-core code"
+- No bullets, no boxes, no speaker notes
+
+Facts behind the slide (`02_hardware_energy.md`, Figure 3): ① the timer wakes the core; ② spike packets from the previous step were written into a spike buffer in SRAM by the DMA, in the background; ③ the core reads the buffered spikes and the synapse tables (targets and weights); ④ it adds the weights and updates the states of all its neurons in SRAM; ⑤ neurons that crossed the threshold send a spike packet. Everything the core needs sits in its own SRAM, so no step waits for DRAM. This is the step of slide 3.4 (v[t] = α · v[t−1] + I_syn[t] + i_offset) as the chip executes it.
+
+### Slide 5.5: One PE over ten time steps
+
+- Kicker: SPINNAKER2 HARDWARE · TIME STEPS
+- Title: One PE over ten time steps: work, then sleep
+- Subtitle (two lines, no bullets): Each step starts with a timer tick. The more spikes arrive, the longer the core works; in a sparse network it sleeps most of the time. If too many spikes arrive in one step, the work does not fit and the next step starts late.
+- Visual: `01_knowledge_base/figures/02_hardware_energy/02_pe_timestep.png` (hardware note, Figure 4), as large as possible
+- Source line: "Source: Hardware and Energy, sections 2 and 7 (workshop knowledge base); illustration, durations made up"
+- No bullets, no boxes, no speaker notes
+
+Facts behind the slide (`02_hardware_energy.md`, Figure 4): timer-driven steps of 1 ms (configurable); first processing the arrived spikes (orange), then updating the neurons and sending spikes (blue), sleeping for the rest of the step (grey); spike counts and durations are made up (illustration). Important for the energy discussion: every neuron is updated in every step, spiking or not; the part that grows with activity is the spike processing. In a sparse network the PE sleeps most of the time, which is where the saving comes from (section 6). Step 6 shows a violated real-time deadline (section 7).
+
+For questions: "What happens if a step overruns?"
+
+- No crash: the run continues, the chip logs "Deadline missed in systick …" (`lif` chip code, `lib/lif_neuron/main.c`)
+- The results may be off: the late work spills into the next steps, spikes can land in the wrong step
+- How you notice: py-spinnaker2 prints "Some PEs returned some errors! Results may be corrupted!" after the run; `profile=True` gives `deadline_flag` > 0 per step; `record=["time_done"]` shows the margin per step
+- Not on Brian2: it has no real time and silently ignores `sys_tick_in_s`
+- Remedy: a longer time step, `hw.run(net, steps, sys_tick_in_s=2e-3)` (same spikes, twice the wall-clock time), or fewer neurons per core with `pop.set_max_atoms_per_core(n)` or `iterative_mapping=True`
+- Unlikely in this workshop: memory is the tighter limit; tutorial 05 (10,000 synaptic events per step on one PE) missed no deadline on the HPI chips
+
+Sources: `02_hardware_energy.md`, section 7; `01_primer_snn_basics.md`, section 3; `03_brian2_fallback.md`, section 1; py-spinnaker2 v0.8.5 source (`hardware.py`, `tools/chip_logger.py`, `tools/profiling.py`).
+
+### Slide 5.6: Why weights are small integers
+
+- Kicker: SPINNAKER2 HARDWARE · MEMORY
+- Title: Why weights are small integers: one synapse is one 16-bit word
+- Subtitle (two lines, no bullets): Every PE keeps the synapses of its neurons in its own 128 KB of memory, about 68 KiB of which is left for the network with lif. To fit, each synapse is packed into 16 bits: 4 bits weight plus a sign, 3 bits delay, 8 bits for the target neuron.
+- Visual: a drawing of the 16-bit word (to be drawn): 16 boxes in a row, grouped into four labelled fields, "weight (4 bits)" and "sign (1 bit)" in the block's accent colour, "delay (3 bits)", "target neuron (8 bits)" in grey; under each field what follows from it: "−15 to 15", "0 to 7", "at most 256 neurons per PE". Order of the fields schematic.
+- Source line: "Source: Spiking Neurons and Networks, section 4; Hardware and Energy, section 3 (workshop knowledge base); py-spinnaker2 v0.8.5 code"
+- No bullets, no boxes, no speaker notes
+
+Facts behind the slide: py-spinnaker2 v0.8.5, `neuron_models/lif_neuron.py`: the synapse word of `lif` is `SynapseWordSpec(word_size=16, weight=4, delay=3, synapse_type=1, target=8)`; the 1-bit field is called `synapse_type` in the code (excitatory or inhibitory) and acts as the sign. `01_primer_snn_basics.md`, section 4: "each synapse is stored as one 16-bit word with 4 bits for the weight, 3 for the delay, 1 for the sign and 8 for the target"; weights outside the range are clipped and fractions rounded toward zero; `02_hardware_energy.md`, section 3 and Figure 5: about 68 KiB per PE left for the network with `lif`; section 7: most models, including `lif`, hold at most 256 neurons per PE, limited by the 8-bit target index. Variants trade the budgets: `lif_no_delay` drops the delay for 8-bit weights. The physical order of the fields in the word is not claimed. This answers the question left open in block 3 ("Why only −15 to 15?").
+
+Transition to slide 5.7 (spoken): "Other neuron models split these 16 bits differently, or compute differently."
+
+### Slide 5.7: Neurons are software: the chip runs more than LIF
+
+- Kicker: SPINNAKER2 HARDWARE · NEURON MODELS
+- Title: Neurons are software: the chip runs more than LIF
+- Subtitle (two lines, no bullets): Other models add an adaptive threshold, noise or richer dynamics, and variants split the 16 bits differently. Today we only use lif; the other models are documented for you to explore.
+- Visual: a simple table (thin grey lines, bold header, model names in monospace), at least 16 pt:
+
+| Model | What it adds | Used for |
+|---|---|---|
+| `lif` | the model of this workshop | – |
+| `lif_no_delay` | no delay, weights −127 to 127 | trained networks imported via NIR (after the break) |
+| `alif` | a threshold that rises after each spike and decays back | longer memory, e.g. sequence tasks |
+| `lif_prob` | fires with a probability once above the threshold | sampling, optimisation |
+| `izhikevich` | biological firing patterns such as bursting | neuroscience |
+| `qubo_neuron` | built for optimisation problems | the Max-Cut demo at the end of the afternoon |
+
+- One line below the table, normal text size: "Read more: Spiking Neurons and Networks, section 5 (workshop knowledge base) · vendor tutorial 01, section 2 (neuron models) · your own model: vendor tutorial 09 · all models and parameters: py-spinnaker2 API docs, neuron models"
+- Source line: "Source: Spiking Neurons and Networks, section 5 (workshop knowledge base); py-spinnaker2 v0.8.5"
+- No bullets, no boxes, no speaker notes
+
+Facts behind the slide: all six model names checked in py-spinnaker2 v0.8.5 (`snn.Population(neuron_model=...)`); `lif_no_delay` uses `SynapseWordSpec(weight=7, delay=0, synapse_type=1, target=8)`, i.e. weights −127 to 127 and no delay (`neuron_models/lif_neuron.py`); the NIR import maps LIF neurons onto `lif_no_delay` (`01_primer_snn_basics.md`, section 8). "What it adds" and "used for" follow `01_primer_snn_basics.md`, section 5 (ALIF, Izhikevich, probabilistic LIF, QUBO neuron). Vendor tutorial 01 is "Core concepts: populations, neuron models & parameters", section 2 "Neuron models"; tutorial 09 is "Custom neuron models basics". The SNN note plans 1 min for this ("name them, show that the chip is programmable and not fixed to one model"). Custom neuron models in C are an outlook for block 10.
+
+Transition (spoken): "That is where your network runs. Now you build a larger one yourself: notebook 02."
+
+Moved to other blocks (decided 2026-11-16): what a chip run costs in energy (board baseline 57 W, cost per neuron and step and per spike, small networks invisible on the power meter) goes to block 9 (energy demo) and block 10; the time per chip run (about a minute, mostly power-up and boot, 6 boards shared) and why development happens on Brian2 go to the hands-on slide of block 6 (notebook 02).
+
+### PowerPoint prompt for block 5 (slides 5.0 to 5.5; slides 5.6 and 5.7 in the prompt below)
+
+```
+Add block 5 ("SPINNAKER2 HARDWARE") to the deck, directly after the last slide of block 3 ("On the chip, weights are small integers"). Use exactly the same slide elements as the block 1 and block 3 content slides (section label in the side band, kicker line above the title, title, subtitle, one figure, source line, slide number) and the same divider design as the other blocks. Accent colour for this block: HPI blue (#007A9E) for the side band, the divider and the title rule. Do not change any other slide.
+
+Figure paths are relative to /sc/home/david.goll/projects/spinnaker/workshop-spinnaker2/. Place each figure below the subtitle, aspect ratio kept, as large as the space allows, centred. No bullets, no boxes, no speaker notes.
+
+Slide 5.0 (divider)
+- Section number: 5
+- Section title: SpiNNaker2 hardware
+- Section time: 14:55 · 15 min
+
+Slide 5.1
+- Kicker: SPINNAKER2 HARDWARE · FROM PYTHON TO THE CHIP
+- Title: From Python to the cores: what happens when you call hw.run
+- Subtitle (two lines): "You describe the network in Python and choose the neuron model by name. py-spinnaker2 turns it into network data (parameters, weights, routing tables) and compiles the neuron model's C code for the ARM cores, sends both to the board, and every core runs its part directly on the hardware, without an operating system."
+- Figure: 01_knowledge_base/figures/00_computing_fundamentals/06_bare_metal_cross_compilation.png
+- Source line: "Source: Computing Fundamentals, section 6 (workshop knowledge base)"
+
+Slide 5.2
+- Kicker: SPINNAKER2 HARDWARE · INSTALLATION
+- Title: Where your network runs: from the cluster to one chip
+- Subtitle (two lines): "py-spinnaker2 runs on the cluster node cx51, which talks to a frame of 6 boards over Ethernet. A run reserves one board with 48 chips, 7,104 cores available for your network; each chip is about 1 cm × 1 cm with 152 processing elements."
+- Figure: 01_knowledge_base/figures/02_hardware_energy/01_installation_hierarchy.png
+- Source line: "Source: Hardware and Energy, sections 1 and 5 (workshop knowledge base)"
+
+Slide 5.3
+- Kicker: SPINNAKER2 HARDWARE · CHIP
+- Title: Inside one chip: 152 small cores, each with its own memory
+- Subtitle (two lines): "Four processing elements (PEs) form a quad PE (QPE); each PE is an ARM core with 128 KB of local memory. A spike leaves its PE as a small packet: by default py-spinnaker2 sends one packet to each PE with target neurons; the router can also copy a single packet to all of them (multicast)."
+- Figure: 01_knowledge_base/figures/02_hardware_energy/01_chip_schematic.png
+- Source line: "Source: Hardware and Energy, sections 1, 2 and 4 (workshop knowledge base); Scholze et al. 2026; py-spinnaker2 tutorial 06"
+
+Slide 5.4
+- Kicker: SPINNAKER2 HARDWARE · ONE TIME STEP
+- Title: Inside one PE: what happens in one time step
+- Subtitle (two lines): "A timer wakes the core. It reads the spikes that arrived, looks up their synapses in its memory and adds the weights to its neurons, updates all its neurons and sends the new spikes. Then it sleeps until the next tick."
+- Figure: 01_knowledge_base/figures/02_hardware_energy/02_pe_function.png
+- Source line: "Source: Hardware and Energy, section 2 (workshop knowledge base); Scholze et al. 2026; py-spinnaker2 tutorial 06; snn-core code"
+
+Slide 5.5
+- Kicker: SPINNAKER2 HARDWARE · TIME STEPS
+- Title: One PE over ten time steps: work, then sleep
+- Subtitle (two lines): "Each step starts with a timer tick. The more spikes arrive, the longer the core works; in a sparse network it sleeps most of the time. If too many spikes arrive in one step, the work does not fit and the next step starts late."
+- Figure: 01_knowledge_base/figures/02_hardware_energy/02_pe_timestep.png
+- Source line: "Source: Hardware and Energy, sections 2 and 7 (workshop knowledge base); illustration, durations made up"
+
+Report the final slide order of block 5.
+```
+
+### PowerPoint prompt for block 5, slides 5.6 and 5.7
+
+```
+Add two slides at the end of block 5 ("SPINNAKER2 HARDWARE"), directly after the slide "One PE over ten time steps: work, then sleep". Use the same slide elements and accent colour as the other block 5 slides. Do not change any other slide. No bullets, no boxes, no speaker notes.
+
+Slide 5.6
+- Kicker: SPINNAKER2 HARDWARE · MEMORY
+- Title: Why weights are small integers: one synapse is one 16-bit word
+- Subtitle (two lines): "Every PE keeps the synapses of its neurons in its own 128 KB of memory, about 68 KiB of which is left for the network with lif. To fit, each synapse is packed into 16 bits: 4 bits weight plus a sign, 3 bits delay, 8 bits for the target neuron."
+- Visual, drawn with shapes, centred below the subtitle, as wide as the content area: a row of 16 equal small squares (one per bit), grouped into four fields by a thicker outline and a label above each field:
+  "weight (4 bits)" | "sign (1 bit)" | "delay (3 bits)" | "target neuron (8 bits)"
+  Fill the weight and sign squares in the block's accent colour, the delay and target squares in light grey.
+  Under the fields, in larger text: under weight and sign together "weights −15 to 15", under delay "delays 0 to 7", under target "at most 256 neurons per PE".
+  Small grey note below the row: "order of the fields schematic"
+- Source line: "Source: Spiking Neurons and Networks, section 4; Hardware and Energy, section 3 (workshop knowledge base); py-spinnaker2 v0.8.5 code"
+
+Slide 5.7 (last slide of block 5)
+- Kicker: SPINNAKER2 HARDWARE · NEURON MODELS
+- Title: Neurons are software: the chip runs more than LIF
+- Subtitle (two lines): "Other models add an adaptive threshold, noise or richer dynamics, and variants split the 16 bits differently. Today we only use lif; the other models are documented for you to explore."
+- Visual: a table with three columns (thin grey lines, bold header, model names in a monospace font), at least 16 pt:
+  Model | What it adds | Used for
+  lif | the model of this workshop | –
+  lif_no_delay | no delay, weights −127 to 127 | trained networks imported via NIR (after the break)
+  alif | a threshold that rises after each spike and decays back | longer memory, e.g. sequence tasks
+  lif_prob | fires with a probability once above the threshold | sampling, optimisation
+  izhikevich | biological firing patterns such as bursting | neuroscience
+  qubo_neuron | built for optimisation problems | the Max-Cut demo at the end of the afternoon
+- One line below the table, normal text size: "Read more: Spiking Neurons and Networks, section 5 (workshop knowledge base) · vendor tutorial 01, section 2 (neuron models) · your own model: vendor tutorial 09 · all models and parameters: py-spinnaker2 API docs, neuron models"
+- Source line: "Source: Spiking Neurons and Networks, section 5 (workshop knowledge base); py-spinnaker2 v0.8.5"
+
+Report the final slide order of block 5.
+```
+
+## Block 6: hands-on 2 (15:10, 20 min)
+
+Notebook `04_workshop_material/02_direction_detector.ipynb`. Accent colour: HPI orange, as for hands-on 1 (to be confirmed).
+
+### Slide 6.0: divider
+
+- Section number: 6
+- Section title: Hands-on 2: a network on the chip
+- Section time: 15:10 · 20 min
+
+### Slide 6.1: Hands-on 2: a network on the chip
+
+- Kicker: HANDS-ON 2 · NOTEBOOK 02
+- Title: Hands-on 2: build a network and run it on the chip
+- Subtitle (two lines, no bullets): Notebook 04_workshop_material/02_direction_detector.ipynb, 20 minutes. Build a layer of two neurons that tells in which direction a dot moves across four pixels, with weights and delays as matrices.
+- Visual (to make): four pixels in a row, each connected to two detectors; the connections of the rightward detector labelled with their delays 3, 2, 1, 0, so that a dot moving right makes all four spikes arrive together; schematic
+- Below the figure, a short two-column text block (the one exception to "no bullets" on this slide, because it is the task):
+  - left, "Everyone (Brian2)": "Sections 1 to 3: fill in the delays of the leftward detector and run it · Section 5: Try 1, 2 and 4, then 3 if time"
+  - right, "HPI cluster pairs (chip)": "Section 4, as soon as section 3 works: set USE_HARDWARE = True and run the cell once · A chip run takes about a minute, mostly powering up and booting the board · 6 boards for everyone: if all are busy, your run waits"
+- Source line: none (task slide)
+- No boxes, no speaker notes
+
+Facts behind the slide: notebook 02 sections 1 (the input, animation and raster), 2 (weight and delay matrices; participants fill in the leftward delays), 3 (run and read the answer, animation), 4 (chip run, compares with Brian2 and reads `time_done`, once per pair as soon as section 3 works), 5 (Try 1, 2 and 4 core, 3 if time), 6 (what you built); the API reference is a collapsible at the start; about one minute per chip run, mostly power-up and boot, regardless of network size; one run reserves one of 6 boards and waits if all are busy (`02_participant_access.md`, capacity; notebook 02, section 3). Why development happens on Brian2 (moved here from block 5): same code, seconds instead of a minute, no waiting for a board.
+
+### PowerPoint prompt for block 6 (slides 6.0 and 6.1)
+
+```
+Add block 6 to the deck, directly after the last slide of block 5 ("Neurons are software: the chip runs more than LIF"). Use the same slide elements as the hands-on slide of block 3 (section label in the side band, kicker, title, subtitle, figure, slide number) and the same divider design as the other blocks. Accent colour: HPI orange (#DD6108). Do not change any other slide. No boxes, no speaker notes.
+
+Slide 6.0 (divider)
+- Section number: 6
+- Section title: Hands-on 2: a network on the chip
+- Section time: 15:10 · 20 min
+
+Slide 6.1
+- Section label: HANDS-ON 2
+- Kicker: HANDS-ON 2 · NOTEBOOK 02
+- Title: Hands-on 2: build a network and run it on the chip
+- Subtitle (two lines): "Notebook 04_workshop_material/02_direction_detector.ipynb, 20 minutes. Build a layer of two neurons that tells in which direction a dot moves across four pixels, with weights and delays as matrices."
+- Figure: [to make: four pixels connected to two detectors, rightward delays 3, 2, 1, 0], below the subtitle, centred, aspect ratio kept, using about the upper half of the remaining space.
+- Below the figure, two text columns of equal width (at least 16 pt, plain text, short bullet lines allowed here because this is the task):
+  Left, heading "Everyone (Brian2)":
+    · Sections 1 to 3: fill in the delays of the leftward detector and run it
+    · Section 5: Try 1, 2 and 4, then 3 if time
+  Right, heading "HPI cluster pairs (chip)":
+    · Section 4, as soon as section 3 works: set USE_HARDWARE = True and run the cell once
+    · A chip run takes about a minute, mostly powering up and booting the board
+    · 6 boards for everyone: if all are busy, your run waits
+- No source line.
+
+Report the final slide order of blocks 5 and 6.
+```
+
+## For block 7 (part 2): moved from block 3
+
+Part 2 is not planned in this file yet. This slide was moved here from the end of block 3 on 2026-11-16: it opens block 7, where training with backpropagation through time and surrogate gradients follows.
+
+### Slide 7.1: An LIF layer is a recurrent cell with spikes as output
+
+- Kicker: (block 7 style, to be decided) · DEEP LEARNING
 - Title: An LIF layer is a recurrent cell with spikes as output
 - Subtitle (two lines, no bullets): Like an RNN, the layer carries its state from step to step: v[t] = α · v[t−1] + W · x[t]. The output is a spike, 0 or 1, instead of a continuous activation, and the same weights act in every step.
 - Visual: `01_knowledge_base/figures/01_primer_snn_basics/08_lif_unrolled.png` (an LIF layer unrolled over three time steps, drawn like an RNN; the knowledge-base figure as it is)
 - Source line: "Source: Spiking Neurons and Networks, section 8 (workshop knowledge base)"
 - No bullets, no boxes, no speaker notes
 
-Facts behind the slide: Figure 22 of the SNN note; training works as for an RNN, with backpropagation through time, except that the step function has no useful gradient (surrogate gradients, block 7). Role: refresher of the RNN cell and bridge to part 2.
-
-Transition to the hardware block (spoken): "Where does such a network run, and what does it cost? That is the next block."
-
-Time: part 1 about 12 min (3.1 and 3.1b optional), notebook 01 about 15 min, part 3 about 6 min; 33 min of the 35 min of blocks 3 and 4 together.
+Facts behind the slide: Figure 22 of the SNN note; training works as for an RNN, with backpropagation through time, except that the step function has no useful gradient (surrogate gradients, block 7). Role: refresher of the RNN cell and opening of block 7: the next slide shows that the step function has no useful gradient (surrogate gradients).
