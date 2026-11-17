@@ -32,7 +32,7 @@ Draft of 2026-11-09 for the first date (18 November 2026, 14:00–17:00, H-2.57/
 | 15:30 | 15 | – | Break (instructor starts the energy runs) | |
 | 15:45 | 10 | 7 | From PyTorch to the chip | theory |
 | 15:55 | 40 | 8 | Hands-on 3: the direction task, trained and run via NIR | hands-on |
-| 16:35 | 10 | 9 | Instructor demos: energy, event-camera digits, Max-Cut | demo |
+| 16:35 | 10 | 9 | Instructor demos: how data gets in, and energy measurement | demo |
 | 16:45 | 15 | 10 | Applications, an honest take, Q&A | theory and discussion |
 | 17:00 | | | End | |
 
@@ -97,9 +97,11 @@ Decided 2026-11-16: blocks 3 and 4 are interleaved. The slides explain what part
 
 ### 9. Instructor demos (10 min)
 
-- **Energy:** results of the runs started in the break, a silent and an active network on 1,000 cores (measured on 2026-10-19: 57 W empty board, 60 W silent, 66 W active). Message: small networks are invisible, the board costs 57 W just for being on, spiking activity is what costs energy. Backup: the measured curves.
-- **Event-camera digits (NMNIST):** a pretrained convolutional spiking network, one sample live on the chip, connecting to the DVS Gesture paper.
-- **Max-Cut:** the vendor's QUBO example on the 5- and 8-node graphs, with the 8-node bug fixed: spiking neurons with noise search for the best cut of a graph, so the chip does more than neural networks. Connects to the Ising-machine and graph-search papers (`04_applications.md`, section 2.1). The larger graphs are left out, they give random results.
+No interactive part any more: the instructor shows, teases and links; no code, no details (decided 2026-11-18). Slides: `06_slide_content_part2.md`, block 9.
+
+- **How data gets in (about 3 min):** one slide with the basics of encoding, the same MNIST digit as latency code (116 spikes) and rate code (619 spikes), from the knowledge base; then the vendor's examples page (spinnaker2.gitlab.io/py-spinnaker2/examples) live in the browser, three examples in one sentence each: NMNIST (event camera, no encoding needed), clustered SNN (Poisson input, a rate code), Max-Cut (the chip does more than classify). No live NMNIST or Max-Cut run; `demos/02_nmnist.ipynb` and `demos/03_maxcut.ipynb` stay prepared.
+- **Energy (main demo, about 6 min, always shown):** a silent and an active network on 1,000 cores of one board (`demos/01_energy.ipynb`), runs started in the break. Measured on 2026-10-19: 57 W empty board, 60 W silent, 66 W active; above the baseline, about 0.6 nJ per synaptic event (rough). Message: the board costs 57 W just for being on, small networks are invisible in that number, spiking activity is what costs energy, and every energy number needs its baseline. Bridge from the encoding slide: fewer spikes, less energy. The measured curves are the main version; the live run is a bonus (with v0.8.5, the active run reported a PE error on 2026-11-09, see `_local/00_todos_workshop.md`).
+- **Read on:** one links slide (knowledge base, snnTorch tutorial 1, examples page, power measurement guide, our measurement).
 
 ### 10. Applications, an honest take, Q&A (15 min)
 
@@ -112,9 +114,9 @@ Decided 2026-11-16: blocks 3 and 4 are interleaved. The slides explain what part
 ## Chip time
 
 - Per HPI pair: 2–3 chip runs in total (notebooks 02 and 04, optionally 03).
-- Instructor: 2 energy runs in the break; 1–2 NMNIST runs and 2 Max-Cut runs started at the end of hands-on 3, so the results are ready for block 9.
+- Instructor: 2 energy runs in the break. NMNIST and Max-Cut are not run in the workshop.
 - The frame handles about 2 runs per minute for everyone together, and each run takes about one minute (`02_participant_access.md`). Even 10 HPI pairs starting at the same time would wait about 5 minutes; staggered starts at the end of each hands-on avoid this.
-- If the frame fails, everyone continues on Brian2; the energy and NMNIST demos fall back to measured curves and recorded results.
+- If the frame fails, everyone continues on Brian2; the energy demo falls back to the measured curves.
 
 ## Coverage of the announcement
 
@@ -144,4 +146,4 @@ Tracked in `_local/00_todos_workshop.md`:
 - [x] Maximum number of participants: 20 (decided 2026-11-09), i.e. 10 pairs.
 - [ ] Whether a second person helps with setup problems and questions during the hands-on.
 - [ ] Training time of the end-to-end NIR example on participants' laptops.
-- [x] Max-Cut: live instructor demo in block 9 with the 5- and 8-node graphs (decided 2026-11-09).
+- [x] Max-Cut: prepared, but not run in block 9 for lack of time; mentioned on the vendor's examples page (decided 2026-11-18, replaces the decision of 2026-11-09).

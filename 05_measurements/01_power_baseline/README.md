@@ -26,7 +26,7 @@ The power value covers the whole board: 48 chips with their memory, and whatever
 
 Found in the pilot run (`00_pilot.py`, `data/pilot.parquet`):
 
-- **Resolution: 1 W.** Every value is a whole number of watts.
+- **Resolution: 3 W.** Every value is a whole number of watts and, without exception, a multiple of 3: all runs of 2026-10-19 and the demo runs of 2026-11-09 to 2026-11-18 read only 57, 60, 63, 66, 69, 84 or 87 W (checked 2026-11-18). A true value between two levels shows up as a reading that flips between them. Why the controller reports in 3 W steps is not known *(assumption, to check: the supply current is measured in coarse steps, e.g. 0.25 A at 12 V)*.
 - **Sampling: one value every 0.104 s** (192 per 20 s), not 0.2 s as the docs say for the 48-node board.
 - **But the value changes at most about once per second.** In the full-board run it switches between 84 and 87 W in steps of about 1 s (Figure 1, right). The controller apparently updates its reading about once per second, and the library reads the same value several times.
 - **Lag:** at the start of a run the value reaches its new level 0.3–1 s after `sim_start`. The analysis therefore uses only the part after 2 s ("steady" power).
@@ -62,7 +62,7 @@ Full table with sample counts, minimum and maximum: `data/summary.csv`.
 
 ![Power traces](01_power_traces.png)
 
-***Figure 1.** Board power during the 20 s simulation window of each run, one panel per mode. The empty board stays at 57 W in all three runs (no drift over the 35 minutes of measurements). Loaded cores without spikes (middle) add 3 W, for 1,000 and for 3,000 cores alike. With spikes (right), 1 to 100 cores stay at 57 W, larger networks rise in whole-watt steps; the full board flips between 84 and 87 W about once per second. Curves of equal value lie on top of each other. The dotted line marks the start of the steady part used for the means. **Source:** measured on one 48-node board of the HPI cluster on 2026-10-19 with `record_power=True`, plotted by `02_analyse.py`.*
+***Figure 1.** Board power during the 20 s simulation window of each run, one panel per mode. The empty board stays at 57 W in all three runs (no drift over the 35 minutes of measurements). Loaded cores without spikes (middle) add 3 W, for 1,000 and for 3,000 cores alike. With spikes (right), 1 to 100 cores stay at 57 W, larger networks rise in steps of 3 W; the full board flips between 84 and 87 W about once per second. Curves of equal value lie on top of each other. The dotted line marks the start of the steady part used for the means. **Source:** measured on one 48-node board of the HPI cluster on 2026-10-19 with `record_power=True`, plotted by `02_analyse.py`.*
 
 <br>
 
@@ -78,11 +78,11 @@ Full table with sample counts, minimum and maximum: `data/summary.csv`.
 - **Running cores without spikes cost little:** about 3 W, the same for 1,000 and 3,000 cores. That fits cores that sleep between timer ticks (`02_hardware_energy.md`, section 2).
 - **Spiking is what costs energy:** with 1,000 cores, spikes add 6 W on top of the 3 W of the silent network.
 - **The increase is not proportional to the work:** 3,000 active cores add only 3 W more than 1,000, while 7,000 add another 17 W. The check below shows that every core does exactly the same work in all sizes, so the cause is not missing spikes or missed deadlines. It lies in how the board's power or its reading scales (e.g. which chips are in use, voltage regulators, fans), which these measurements can't separate.
-- **Energy per synaptic event, roughly:** the spike-related power divided by the events per second gives 0.6 nJ (1,000 cores: 6 W / 10¹⁰ events/s), 0.3 nJ (3,000 cores: 9 W / 3·10¹⁰) and 0.4 nJ (7,000 cores: 26 W / 7·10¹⁰), each including the neuron updates and the sending of the spikes. The test chip in Höppner et al. 2021 needs 0.20–0.26 nJ per synaptic event plus 1.5–1.9 nJ per neuron update, so the order of magnitude agrees. Given the 1 W resolution and the non-proportional increase, this is a rough estimate, not a measurement of the chip's energy per event.
+- **Energy per synaptic event, roughly:** the spike-related power divided by the events per second gives 0.6 nJ (1,000 cores: 6 W / 10¹⁰ events/s), 0.3 nJ (3,000 cores: 9 W / 3·10¹⁰) and 0.4 nJ (7,000 cores: 26 W / 7·10¹⁰), each including the neuron updates and the sending of the spikes. The test chip in Höppner et al. 2021 needs 0.20–0.26 nJ per synaptic event plus 1.5–1.9 nJ per neuron update, so the order of magnitude agrees. Given the 3 W resolution and the non-proportional increase, this is a rough estimate, not a measurement of the chip's energy per event.
 
 ## What it means for the workshop
 
-- **Participants can't measure their own networks.** A workshop network (an MNIST-sized 784–128–10 network uses about 6 cores, `02_hardware_energy.md`, Figure 5) is far below what the 1 W reading can show. Any such measurement would just read 57 W.
+- **Participants can't measure their own networks.** A workshop network (an MNIST-sized 784–128–10 network uses about 6 cores, `02_hardware_energy.md`, Figure 5) is far below what the 3 W reading can show. Any such measurement would just read 57 W.
 - **A demo can show energy.** A run with 1,000 or more active cores, or the full board, shows a clear difference: silent vs. active at the same size isolates the cost of the spikes (Figure 2). That makes a good instructor demo, or a shared run that participants look at.
 - **The core message holds and becomes concrete:** the board costs 57 W just for being on, and only massive spiking activity becomes visible. This is the baseline problem of `02_hardware_energy.md`, section 9, now with measured numbers.
 
