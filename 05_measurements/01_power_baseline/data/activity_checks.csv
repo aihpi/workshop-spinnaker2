@@ -1,0 +1,5 @@
+n_cores,time_steps,watched_pops,spikes_per_neuron_min,spikes_per_neuron_mean,spikes_per_neuron_max,steps_with_missed_deadline,watched_pes_with_misses,callback_us_median,callback_us_max,power_second_half_W,started
+10,2000,10,2000,2000.0,2000,0,0,778.0,857,57.0,2026-10-19T15:15:15
+1000,2000,10,2000,2000.0,2000,0,0,854.0,854,61.5,2026-10-19T15:18:25
+3000,2000,10,2000,2000.0,2000,0,0,854.0,854,69.0,2026-10-19T15:23:22
+7000,2000,10,2000,2000.0,2000,0,0,815.0,855,84.0,2026-10-19T15:33:15

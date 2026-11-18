@@ -3,92 +3,50 @@
 <h1>Workshop: Neuromorphic Computing on SpiNNaker2</h1>
 </div>
 
-This repository contains the setup for the SpiNNaker2 workshop. The workshop materials will be added shortly before the workshop; on the day, you get them with `git pull`.
+Material of a 3-hour hands-on workshop on the SpiNNaker2 neuromorphic chip, for ML researchers and software developers. You learn why neuromorphic hardware can save energy, the basics of spiking neurons and networks, and how to run your own spiking networks on SpiNNaker2 chips with [py-spinnaker2](https://spinnaker2.gitlab.io/py-spinnaker2/).
+
+![Workshop: Neuromorphic computing, programming spiking neural networks on SpiNNaker2](00_aisc/img/title.webp)
 
 ## Which setup?
 
-| You have | Setup | During the workshop |
+| You have | Guide | During the workshop |
 |---|---|---|
-| no HPI cluster account | [laptop (uv)](#laptop-uv) | you work with the Brian2 simulator, which computes the same spikes as the chips; how to get access to the chips is explained at the end of the workshop |
-| an HPI cluster account | [HPI cluster (conda)](#hpi-cluster-conda) | you get access to cx51, the cluster node connected to the SpiNNaker2 chips, for the duration of the workshop |
+| an HPI cluster account | [HPI cluster (conda)](03_setup/01_participants_hpi_cluster.md) | you work on cx51, the cluster node connected to the SpiNNaker2 chips, in VS Code |
+| no HPI cluster account | [laptop (uv)](03_setup/02_participants_laptop.md) | you work with the Brian2 simulator, which computes the same spikes as the chips; how to get access to the chips is explained at the end of the workshop |
 
-Please install the environment before the workshop:
+## What you have to do
 
-- The download is about 0.5 GB. Over the shared Wi-Fi in the room, with everyone installing at once, it would take much longer than at home.
-- If something fails, we can solve it with you beforehand. Send the error message to kisz@hpi.de, or bring it to the workshop.
+Each guide starts with a short table for your situation:
 
-## Laptop (uv)
+- **You have not installed anything yet:** follow your guide from the start. The download is about 0.5 GB.
+- **You installed after our mail of 13 November:** the packages have not changed since then. Run `git pull` in your copy of the repository (on the laptop also `uv sync`, which only checks your environment), then follow the part of your guide on opening the repository in VS Code.
+- **HPI cluster:** then set up the VS Code connection to cx51 (in the cluster guide).
 
-You need:
+Then open `04_workshop_material/00_setup_check.ipynb` and run it. If something fails, ask us.
 
-- about 3 GB of free disk space
-- Linux, macOS 14 or newer with Apple silicon (M1 or newer), or Windows with WSL; macOS with an Intel processor is not supported, because PyTorch no longer provides packages for it
-- [git](https://github.com/aihpi/workshop-getting-started/blob/main/03_workshop/guides/03_git_github.md), [uv](https://github.com/aihpi/workshop-getting-started/blob/main/03_workshop/guides/04_uv.md), [VS Code with Jupyter](https://github.com/aihpi/workshop-getting-started/blob/main/03_workshop/guides/06_jupyter.md); on Windows also [WSL](https://github.com/aihpi/workshop-getting-started/blob/main/03_workshop/guides/02_wsl.md)
+## What is in this repository
 
-Steps:
+| Folder | Content |
+|---|---|
+| [`04_workshop_material/`](04_workshop_material/) | The hands-on notebooks: setup check, one neuron, a direction detector built by hand, the same task trained in snnTorch and run via NIR; the instructor demos in `demos/` |
+| [`03_setup/`](03_setup/) | Setup guides for the HPI cluster and the laptop, and `enter_cx51.sh` to reserve the SpiNNaker2 node |
+| [`01_knowledge_base/`](01_knowledge_base/) | Background notes written for this workshop, with figures and sources (below) |
+| [`02_slides/`](02_slides/) | The workshop slides (PowerPoint) |
+| [`05_measurements/`](05_measurements/) | Measurements on the chips: the power of a 48-chip board with silent and spiking networks |
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/aihpi/workshop-spinnaker2.git
-   cd workshop-spinnaker2
-   ```
-2. Install Python 3.12 and all packages into the folder `.venv/` (takes 5 to 15 minutes):
-   ```bash
-   uv sync
-   ```
-3. Open `04_workshop_material/00_setup_check.ipynb` in VS Code, select the kernel `.venv (Python 3.12)` and run all cells. If everything works, the notebook prints "Brian2 works." and shows a small plot.
+The background notes build on each other:
 
-## HPI cluster (conda)
+- [Computing Fundamentals](01_knowledge_base/00_computing_fundamentals.md): processors, memory, the von Neumann bottleneck, ARM cores and bare-metal programming
+- [Spiking Neurons and Networks](01_knowledge_base/01_primer_snn_basics.md): neuron models, synapses, encoding, network types, training spiking networks and why spikes can save energy
+- [Hardware and Energy](01_knowledge_base/02_hardware_energy.md): the SpiNNaker2 chip, its processing elements, memory and communication, power management and what its energy numbers mean
+- [Brian2 Fallback](01_knowledge_base/03_brian2_fallback.md): the Brian2 backend of py-spinnaker2 compared with the chip
+- [Applications](01_knowledge_base/04_applications.md): published results on SpiNNaker2 and other neuromorphic chips, and where they win
+- [History](01_knowledge_base/05_history.md): from SpiNNaker to SpiNNaker2 and Sparxity
+- [Sources](01_knowledge_base/sources.md): all papers, documentation and links
 
-You need:
+## Author
 
-- an account on the HPI cluster and the Scientific Compute VPN, which is not the same as the HPI VPN ([access](https://docs.sc.hpi.de/cluster/processes/access/), [VPN](https://docs.sc.hpi.de/VPN/))
-- an SSH connection to the cluster ([SSH](https://docs.sc.hpi.de/ssh/))
-- about 3 GB of free space in your home directory
-
-Where to install:
-
-- Not on the login nodes (`hpc.sci.hpi.de`): they don't run scripts from your home directory.
-- Use a Run Node instead, `rx01.hpc.sci.hpi.de` or `rx02.hpc.sci.hpi.de` ([Run Nodes](https://docs.sc.hpi.de/cluster/Resources/Run-Nodes/)). Connect there with SSH in a terminal, or with VS Code Remote-SSH ([VS Code](https://docs.sc.hpi.de/cluster/software_installation/VS-Code/)).
-- Your home directory is the same on all nodes, so the environment is also available on cx51 during the workshop.
-
-conda:
-
-- If you don't have conda on the cluster yet, run `setup-conda3`, answer `y`, then log out and in again. The script installs Miniconda into `~/conda3`; afterwards your prompt starts with `(base)` ([Python / Conda](https://docs.sc.hpi.de/cluster/software_installation/Python-Conda/), [Install Miniconda3](https://docs.sc.hpi.de/cloud/software-installations/Install-Miniconda3/)).
-
-Steps:
-
-1. Create the environment:
-   ```bash
-   conda create --name spinnaker2 python=3.12
-   conda activate spinnaker2
-   ```
-2. Install py-spinnaker2 0.8.5 from source (`--recursive` fetches the chip code, needed for runs on the chips):
-   ```bash
-   git clone --recursive https://gitlab.com/spinnaker2/py-spinnaker2.git
-   cd py-spinnaker2
-   git checkout v0.8.5
-   git submodule update --init --recursive
-   pip install .
-   cd ..
-   ```
-3. Install the other packages:
-   ```bash
-   pip install torch==2.15.0 --index-url https://download.pytorch.org/whl/cpu
-   pip install snntorch==0.9.4 nirtorch==2.0.2 nir==1.0.4 numpy==2.3.4 matplotlib ipykernel
-   ```
-4. Clone this repository:
-   ```bash
-   git clone https://github.com/aihpi/workshop-spinnaker2.git
-   ```
-5. Open `workshop-spinnaker2/04_workshop_material/00_setup_check.ipynb` in VS Code (Remote-SSH to the Run Node), select the kernel `spinnaker2` and run all cells. If everything works, the notebook prints "Brian2 works." and shows a small plot.
-
-How to connect to cx51 and run your networks on the chips is explained at the start of the workshop.
-
-## Notes
-
-- If `uv sync` stops with a network timeout, run it again; it continues where it stopped. On a slow connection, allow more time per download: `UV_HTTP_TIMEOUT=120 uv sync`.
-- PyTorch is installed without GPU support: the download is much smaller, and the workshop doesn't need a GPU.
+- [David Goll](https://hpi.de/kisz), AI Service Centre Berlin Brandenburg
 
 ## License
 
@@ -98,4 +56,4 @@ MIT, see [LICENSE](LICENSE).
 
 <img src="00_aisc/img/logo_bmftr_de.png" alt="Logo of the Federal Ministry of Research, Technology and Space" style="width:170px;"/>
 
-The [AI Service Centre Berlin Brandenburg](https://hpi.de/kisz) is funded by the [Federal Ministry of Research, Technology and Space](https://www.bmftr.bund.de/) under the funding code 01IS22092.
+The [AI Service Centre Berlin Brandenburg](https://hpi.de/kisz) is funded by the [Federal Ministry of Research, Technology and Space](https://www.bmftr.bund.de/) under the funding code 16IS22092.

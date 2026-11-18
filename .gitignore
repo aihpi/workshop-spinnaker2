@@ -208,4 +208,7 @@ _local/
 /04_workshop_material/logo_network.nir
 /04_workshop_material/demos/data/nmnist/
 /04_workshop_material/demos/output/
+/04_workshop_material/direction_*.gif
+/04_workshop_material/detector_*.gif
 **/spinnaker2_diagnostics/
+
