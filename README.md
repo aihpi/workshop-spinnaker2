@@ -1,48 +1,59 @@
 <div style="background-color: #ffffff; color: #000000; padding: 10px;">
 <img src="00_aisc/img/logo_aisc_bmftr.jpg">
-<h1> Workshop: Neuromorphic Computing on SpiNNaker2
+<h1>Workshop: Neuromorphic Computing on SpiNNaker2</h1>
 </div>
 
-Material for a 3-hour hands-on workshop on the SpiNNaker2 neuromorphic chip, aimed at ML researchers and software developers. Participants learn why neuromorphic hardware can save energy, the basics of spiking neurons and networks, and how to run their own spiking networks on SpiNNaker2 chips with [py-spinnaker2](https://spinnaker2.gitlab.io/py-spinnaker2/).
+Material of a 3-hour hands-on workshop on the SpiNNaker2 neuromorphic chip, for ML researchers and software developers. You learn why neuromorphic hardware can save energy, the basics of spiking neurons and networks, and how to run your own spiking networks on SpiNNaker2 chips with [py-spinnaker2](https://spinnaker2.gitlab.io/py-spinnaker2/).
 
-![Screenshot of the application](00_aisc/img/screenshot_app.png)
+![Where a network runs: from the HPI cluster to one SpiNNaker2 chip](01_knowledge_base/figures/02_hardware_energy/01_installation_hierarchy.png)
 
-Replace `00_aisc/img/screenshot_app.png` with a screenshot of your application. Keep the image under the description so it is the first thing a visitor sees after the title; a 1280 by 720 PNG renders well on GitHub.
+## Which setup?
 
-> **Status:** planning. Dates: 18 November 2026, 14:00–17:00, and 9 December 2026, 10:00–13:00.
+| You have | Guide | During the workshop |
+|---|---|---|
+| an HPI cluster account | [HPI cluster (conda)](03_setup/01_participants_hpi_cluster.md) | you work on cx51, the cluster node connected to the SpiNNaker2 chips, in VS Code |
+| no HPI cluster account | [laptop (uv)](03_setup/02_participants_laptop.md) | you work with the Brian2 simulator, which computes the same spikes as the chips; how to get access to the chips is explained at the end of the workshop |
 
-## Repository structure
+## What you have to do
+
+Each guide starts with a short table for your situation:
+
+- **You have not installed anything yet:** follow your guide from the start. The download is about 0.5 GB.
+- **You installed after our mail of 13 November:** the packages have not changed since then. Run `git pull` in your copy of the repository (on the laptop also `uv sync`, which only checks your environment), then follow the part of your guide on opening the repository in VS Code.
+- **HPI cluster:** then set up the VS Code connection to cx51 (in the cluster guide).
+
+Then open `04_workshop_material/00_setup_check.ipynb` and run it. If something fails, ask us.
+
+## What is in this repository
 
 | Folder | Content |
 |---|---|
-| `00_aisc/` | AISC logos and images |
-| `01_knowledge_base/` | Notes, sources and figures |
-| `02_workshop_design/` | Brief, outline and demo plans |
-| `03_setup/` | Running py-spinnaker2 on the HPI cluster, troubleshooting |
-| `04_workshop_material/` | The workshop's hands-on notebooks, instructor demos and the install guide for participants |
-| `05_measurements/` | Measurements on the chips, e.g. the power baseline of a board, with scripts and data |
+| [`04_workshop_material/`](04_workshop_material/) | The hands-on notebooks: setup check, one neuron, a direction detector built by hand, the same task trained in snnTorch and run via NIR; the instructor demos in `demos/` |
+| [`03_setup/`](03_setup/) | Setup guides for the HPI cluster and the laptop, and `enter_cx51.sh` to reserve the SpiNNaker2 node |
+| [`01_knowledge_base/`](01_knowledge_base/) | Background notes written for this workshop, with figures and sources (below) |
+| [`02_slides/`](02_slides/) | The figures of the slides, with the scripts that generate them |
+| [`05_measurements/`](05_measurements/) | Measurements on the chips: the power of a 48-chip board with silent and spiking networks |
 
-## Setup
+The background notes build on each other:
 
-The workshop runs on the SpiNNaker2 frame attached to the HPI cluster node cx51. Installation, the pinned py-spinnaker2 version and the smoke test are described in [`03_setup/README.md`](03_setup/README.md); failure modes seen so far in [`03_setup/01_troubleshooting.md`](03_setup/01_troubleshooting.md).
-
-py-spinnaker2 itself is **not** tracked here. It is cloned as `py-spinnaker2/` next to the repository content and installed into a conda environment; the directory is gitignored.
-
-## Workshop outline
-
-TODO, see `02_workshop_design/brief.md` for the current draft.
+- [Computing Fundamentals](01_knowledge_base/00_computing_fundamentals.md): processors, memory, the von Neumann bottleneck, ARM cores and bare-metal programming
+- [Spiking Neurons and Networks](01_knowledge_base/01_primer_snn_basics.md): neuron models, synapses, encoding, network types, training spiking networks and why spikes can save energy
+- [Hardware and Energy](01_knowledge_base/02_hardware_energy.md): the SpiNNaker2 chip, its processing elements, memory and communication, power management and what its energy numbers mean
+- [Brian2 Fallback](01_knowledge_base/03_brian2_fallback.md): the Brian2 backend of py-spinnaker2 compared with the chip
+- [Applications](01_knowledge_base/04_applications.md): published results on SpiNNaker2 and other neuromorphic chips, and where they win
+- [History](01_knowledge_base/05_history.md): from SpiNNaker to SpiNNaker2 and Sparxity
+- [Sources](01_knowledge_base/sources.md): all papers, documentation and links
 
 ## Author
 
-- [David Goll](https://hpi.de/kisz)
+- [David Goll](https://hpi.de/kisz), AI Service Centre Berlin Brandenburg
 
 ## License
 
-[MIT](LICENSE)
-
----
+MIT, see [LICENSE](LICENSE).
 
 ## Acknowledgements
-<img src="00_aisc/img/logo_bmftr_de.png" alt="drawing" style="width:170px;"/>
 
-The [AI Service Centre Berlin Brandenburg](http://hpi.de/kisz) is funded by the [Federal Ministry of Research, Technology and Space](https://www.bmbf.de/) under the funding code 01IS22092.
+<img src="00_aisc/img/logo_bmftr_de.png" alt="Logo of the Federal Ministry of Research, Technology and Space" style="width:170px;"/>
+
+The [AI Service Centre Berlin Brandenburg](https://hpi.de/kisz) is funded by the [Federal Ministry of Research, Technology and Space](https://www.bmftr.bund.de/) under the funding code 01IS22092.

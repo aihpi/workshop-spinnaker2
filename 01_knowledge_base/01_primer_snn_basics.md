@@ -695,7 +695,7 @@ hw.run(net, 50)  # 50 timesteps; the keyword is time_steps, not timesteps
 
 The parameters not given (`i_offset`, `v_init`, `v_reset`, `reset`) take their defaults. Some pages of the py-spinnaker2 documentation call `hw.run(net, timesteps=…)`; this fails with `ValueError: time_steps must be provided`, because the parameter is called `time_steps`.
 
-The HPI cluster runs py-spinnaker2 v0.8.2 (see [`03_setup/`](../03_setup/README.md)), where the same `Hardware` object can run several times and re-running such a cell works; each run clears the previous run's recordings, so results have to be read before the next run. In v0.8.0, a `Hardware` object runs only once and network names must be unique within a session, so older notebooks create a new hardware object per run and call `snn.Network.clear_names()` (py-spinnaker2 changelog; both checked on the cluster).
+The HPI cluster runs py-spinnaker2 v0.8.2 (see [`03_setup/01_participants_hpi_cluster.md`](../03_setup/01_participants_hpi_cluster.md)), where the same `Hardware` object can run several times and re-running such a cell works; each run clears the previous run's recordings, so results have to be read before the next run. In v0.8.0, a `Hardware` object runs only once and network names must be unique within a session, so older notebooks create a new hardware object per run and call `snn.Network.clear_names()` (py-spinnaker2 changelog; both checked on the cluster).
 
 **Architectures:**
 
@@ -817,7 +817,7 @@ The saving depends on **sparsity**. With dense activity or many timesteps (rate 
 
 ## To check on the cluster
 
-Answered from the py-spinnaker2 code and the chip-side C code on 2026-09-30, no longer on this list: the timestep length (`sys_tick_in_s`, default 1 ms), floating point for $v$ and the parameters, the models supported by the Brian2 backend, `lif_prob` above threshold, the step size of `izhikevich`, the encoder parameters, the NIR type mapping, and the weight range of `*_no_delay_1024`. Answered on the cluster on 2026-10-01: the installed version, now v0.8.2 (section 7, [`03_setup/`](../03_setup/README.md)).
+Answered from the py-spinnaker2 code and the chip-side C code on 2026-09-30, no longer on this list: the timestep length (`sys_tick_in_s`, default 1 ms), floating point for $v$ and the parameters, the models supported by the Brian2 backend, `lif_prob` above threshold, the step size of `izhikevich`, the encoder parameters, the NIR type mapping, and the weight range of `*_no_delay_1024`. Answered on the cluster on 2026-10-01: the installed version, now v0.8.2 (section 7; instructor setup notes, not in the repository).
 
 - [ ] Which integrator models from Norse or Sinabs need in the NIR import (`EXPONENTIAL` assumed, section 8, rule for snnTorch models).
 - [ ] **Validate the figures against the chip.** The chip-model figures are simulated with NumPy reimplementations of the update rules (`figures/01_primer_snn_basics/make_figures.py`), checked against the chip code but not run with py-spinnaker2. Run the same inputs on the chip, record `v` and spikes, and compare. The chip records $v$ after the reset, so compare spikes and the values between spikes, or reconstruct $v$ before the reset. Stochastic models need a different `seed` per run. Small test networks already confirm several update rules on the chip: `lif` with reset by subtraction, arrival at `delay + 1`, mixed excitatory and inhibitory weights, `alif`, and the threshold test $v \geq$ threshold (`03_brian2_fallback.md`, section 3).

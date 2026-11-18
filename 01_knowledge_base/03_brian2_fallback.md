@@ -2,7 +2,7 @@
 
 What the Brian2 backend of py-spinnaker2 can and can't do, and how closely it matches the chip. The fallback for workshop participants without cluster access and for the case that the hardware fails on the day. Builds on the primer (`01_primer_snn_basics.md`) for the neuron models and on `02_hardware_energy.md` for what only the chip provides.
 
-Sources: the py-spinnaker2 v0.8.2 code (`src/spinnaker2/brian2_sim.py`) and docs ([Brian2 backend](https://spinnaker2.gitlab.io/py-spinnaker2/user_guide/brian2.html)), and a comparison run on 2026-10-01: the same small networks on a 48-node board of the HPI cluster and on the Brian2 backend (Brian2 2.10.1) on cx51. The scripts are in `03_setup/compare_brian2_chip.py` and `03_setup/brian2_edge_cases.py`.
+Sources: the py-spinnaker2 v0.8.2 code (`src/spinnaker2/brian2_sim.py`) and docs ([Brian2 backend](https://spinnaker2.gitlab.io/py-spinnaker2/user_guide/brian2.html)), and a comparison run on 2026-10-01: the same small networks on a 48-node board of the HPI cluster and on the Brian2 backend (Brian2 2.10.1) on cx51. The scripts `compare_brian2_chip.py` and `brian2_edge_cases.py` are in the instructor setup notes, not in the repository.
 
 ## Contents
 
@@ -56,7 +56,7 @@ For the primer this means: Figures 7–13 have a Brian2 counterpart, Figure 17 (
 
 ## 3. Differences from the chip
 
-Measured on 2026-10-01 with the same networks on both backends (`03_setup/compare_brian2_chip.py`, 60 timesteps).
+Measured on 2026-10-01 with the same networks on both backends (script `compare_brian2_chip.py` in the instructor setup notes, not in the repository; 60 timesteps).
 
 **Identical spike times and membrane potentials** for: `lif` with reset by subtraction, delays (arrival at `delay + 1`), excitatory and inhibitory weights on the same neuron, `alif` with adaptive threshold and reset to `v_reset`, and a `lif` → `lif` chain of two layers. For `lif` and `alif`, Brian2 integrates $dv/dt = -v/\tau + i_\text{offset}/\Delta t$ with the Euler method and $\tau = \Delta t / (1 - \alpha)$, which gives exactly the chip's update $v \leftarrow \alpha v + i_\text{offset}$ (primer, section 3).
 
@@ -72,7 +72,7 @@ Measured on 2026-10-01 with the same networks on both backends (`03_setup/compar
 | `poisson_process` with `Tref` = 3, `p` = 0.2 | 0.125 spikes per step, i.e. $p/(1 + p\,T_\text{ref})$ | 0.201 spikes per step | Brian2 uses a plain `PoissonGroup` and ignores `Tref` |
 | Same `seed` | reproducible on the chip | reproducible in Brian2 | different random generators, so the spike trains differ between the backends |
 
-**Errors in the backend** (py-spinnaker2 v0.8.2, reproduced with `03_setup/brian2_edge_cases.py`):
+**Errors in the backend** (py-spinnaker2 v0.8.2, reproduced with `brian2_edge_cases.py` in the instructor setup notes, not in the repository):
 
 - `record=["spikes"]` on a `poisson_process` population fails with `TypeError: Can only add objects of type BrianObject …`. Workaround: relay the Poisson spikes through a `lif` population (`alpha_decay` 0, threshold 1, weight 2) and record that.
 - `quantize_weights=False` fails with `NameError: cannot access free variable 'S_inh'` as soon as a projection has excitatory weights.
@@ -101,7 +101,7 @@ From the py-spinnaker2 code and examples (fact-check of 2026-09-30), not yet run
 - **Need a board:** the QUBO example (`qubo_neuron`), the end-to-end NIR example (48-node board, 795 cores), the streaming examples.
 - The clustered SNN example combines both weak spots of section 3: `poisson_process` input (here without `Tref`, so no difference) and `lif_curr_exp` neurons that fire without input, because their rest lies above the threshold (primer, section 7). Such spikes are shifted like the `i_offset`-driven ones in section 3. On Brian2 its raster can differ in detail from the chip; the switching between clusters should look the same *(assumption, to check)*.
 
-**Workshop:** decides which demos have a fallback; see the demo evaluation in `02_workshop_design/`.
+**Workshop:** decides which demos have a fallback; see the demo evaluation in the instructor notes (not in the repository).
 
 ## 5. Rules for workshop notebooks
 

@@ -1,6 +1,6 @@
 # Power baseline of a 48-node board
 
-Measured on 2026-10-19 on the HPI cluster (cx51, py-spinnaker2 v0.8.2). Question: can the power measurement of py-spinnaker2 show the energy of a network, and how large does the network have to be? This decides whether participants measure their own energy in hands-on 2 (`02_workshop_design/brief.md`).
+Measured on 2026-10-19 on the HPI cluster (cx51, py-spinnaker2 v0.8.2). Question: can the power measurement of py-spinnaker2 show the energy of a network, and how large does the network have to be? This decides whether participants measure their own energy in hands-on 2 (the first workshop brief, archived outside the repository).
 
 ## Contents
 
@@ -109,7 +109,7 @@ Every observed neuron spiked in every step, and no core missed its 1 ms deadline
 
 ## How to reproduce
 
-On cx51 in the conda env `spinnaker2` (`03_setup/README.md`), from this folder:
+On cx51 in the conda env `spinnaker2` (instructor setup notes, `_local/03_setup_instructor/`, not in the repository), from this folder:
 
 ```bash
 python 00_pilot.py                            # one 20 s idle run, prints the raw trace

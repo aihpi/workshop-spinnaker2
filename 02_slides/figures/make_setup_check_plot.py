@@ -12,7 +12,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 HERE = Path(__file__).resolve().parent
-NOTEBOOK = HERE.parents[2] / "04_workshop_material" / "00_setup_check.ipynb"
+NOTEBOOK = HERE.parents[1] / "04_workshop_material" / "00_setup_check.ipynb"
 
 code_cells = ["".join(c["source"]) for c in json.load(open(NOTEBOOK))["cells"] if c["cell_type"] == "code"]
 namespace = {}

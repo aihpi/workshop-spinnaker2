@@ -3,7 +3,7 @@
 Measured on the HPI cluster on 2026-10-19 (05_measurements/01_power_baseline/, py-spinnaker2 v0.8.2): one 48-node
 board, 20 s runs. Silent: 1,000 cores with 100 lif neurons each, all-to-all, no spikes. Active: the same network,
 every neuron spikes in every step (10 billion synaptic events per second). The reading comes in 3 W steps and
-changes about once per second; the steady value is the mean after the first 2 s, as in demos/01_energy.ipynb.
+changes about once per second; the steady value is the mean after the first 2 s, as in 04_workshop_material/demos/01_energy.ipynb.
 The script checks the steady values against the measurement (57, 60, 66 W).
 Run: uv run --with numpy --with matplotlib --with pandas --with pyarrow python b9_make_power.py
 """
@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 ACCENT, GREY, DARK = "#B1063A", "#83888C", "#212427"  # accent: HPI red (slide style); change here for the block colour
-DATA = Path(__file__).resolve().parents[3] / "05_measurements" / "01_power_baseline" / "data"
+DATA = Path(__file__).resolve().parents[2] / "05_measurements" / "01_power_baseline" / "data"
 RUNS = [("idle_1", "empty board", GREY, 57), ("silent_1000", "1,000 cores, silent", DARK, 60),
         ("active_1000", "1,000 cores, every neuron spikes", ACCENT, 66)]
 

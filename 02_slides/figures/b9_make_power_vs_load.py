@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 ACCENT, GREY, DARK = "#B1063A", "#83888C", "#212427"  # accent: HPI red (slide style); change here for the block colour
-DATA = Path(__file__).resolve().parents[3] / "05_measurements" / "01_power_baseline" / "data" / "summary.csv"
+DATA = Path(__file__).resolve().parents[2] / "05_measurements" / "01_power_baseline" / "data" / "summary.csv"
 
 runs = pd.read_csv(DATA)
 idle = runs[runs["mode"] == "idle"].steady_W.mean()

@@ -16,7 +16,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 ACCENT, GREY, DARK = "#B1063A", "#83888C", "#212427"  # accent: HPI red (slide style); change here for the block colour
-NOTEBOOK = Path(__file__).resolve().parents[3] / "04_workshop_material" / "04_direction_trained.ipynb"
+NOTEBOOK = Path(__file__).resolve().parents[2] / "04_workshop_material" / "04_direction_trained.ipynb"
 
 # --- train the network as notebook 04 does (its code cells up to and including the training cell) ---
 cells = ["".join(c["source"]) for c in json.load(open(NOTEBOOK))["cells"] if c["cell_type"] == "code"]

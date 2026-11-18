@@ -46,7 +46,7 @@ Each result ran on a single chip on a test board. The baselines are the ones the
 | Optimisation: Ising machine (NeuroSA) for [Max-Cut](https://en.wikipedia.org/wiki/Maximum_cut), annealing with spiking neurons | chip power 561.9 mW at 300 MHz. Solutions similar to or better than the CPU version on some Gset graphs, but slower in absolute time | laptop CPU (Intel Core Ultra 9): system 15.93 W, of which "CPU core" 11.63 W; scaled linearly to 300 MHz by the authors: 1.39 W | CPU version public, SpiNNaker2 version on request | Chen et al. 2025, Nature Communications, supplement S5 |
 | Non-spiking DNN inference, PyTorch → ONNX → INT8 → chip (OctopuScheduler) | MNIST network 784–512–256–16, called a "dummy model" by the authors: 98.34 % on chip, 688 µs per inference at batch size 1, host transfers excluded, at most 8 PEs | none, no energy measured | not stated | Jobst et al. 2025 (preprint) |
 
-The reinforcement learning table in the paper says "for one episode", but the numbers fit one inference step: 0.335 W × 0.020 s = 0.0067 J, while an episode of 200 steps at 10 ms lasts 2 s. The paper calls the chip's value "dynamic power"; whether the baseline power of the chip is included is not stated. It ran on a single-chip test board; on the HPI frame every run takes about a minute because the board is booted each time (`02_workshop_design/02_participant_access.md`), so a closed loop with one run per step would not work there.
+The reinforcement learning table in the paper says "for one episode", but the numbers fit one inference step: 0.335 W × 0.020 s = 0.0067 J, while an episode of 200 steps at 10 ms lasts 2 s. The paper calls the chip's value "dynamic power"; whether the baseline power of the chip is included is not stated. It ran on a single-chip test board; on the HPI frame every run takes about a minute because the board is booted each time (capacity tests of 2026-11-04, instructor notes, not in the repository), so a closed loop with one run per step would not work there.
 
 **Energy wins at batch size 1, often with longer run times.**
 
@@ -139,7 +139,7 @@ The advantage for sensors is absolute power in the microwatt to milliwatt range.
 
 ## 5. Demo options for the workshop
 
-All options found for live use in the workshop: the vendor's tutorials and examples (py-spinnaker2 v0.8.2), the HPI measurements, and the code of the papers in section 2.1. "Tested here" refers to runs on the HPI frame: the deep-dive tutorials 00–05 since July 2026, the demo evaluation of 2026-11-05 for the NIR and Max-Cut examples and tutorial 08 (raw results in `_local/demo_eval/`, not tracked). Every chip run takes 60–70 s regardless of network size, and the frame handles about 2 runs per minute for all participants together (`02_workshop_design/02_participant_access.md`).
+All options found for live use in the workshop: the vendor's tutorials and examples (py-spinnaker2 v0.8.2), the HPI measurements, and the code of the papers in section 2.1. "Tested here" refers to runs on the HPI frame: the deep-dive tutorials 00–05 since July 2026, the demo evaluation of 2026-11-05 for the NIR and Max-Cut examples and tutorial 08 (raw results in `_local/demo_eval/`, not tracked). Every chip run takes 60–70 s regardless of network size, and the frame handles about 2 runs per minute for all participants together (capacity tests of 2026-11-04, instructor notes, not in the repository).
 
 ### 5.1 Inventory
 
