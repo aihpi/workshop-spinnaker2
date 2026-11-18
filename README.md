@@ -5,7 +5,7 @@
 
 Material of a 3-hour hands-on workshop on the SpiNNaker2 neuromorphic chip, for ML researchers and software developers. You learn why neuromorphic hardware can save energy, the basics of spiking neurons and networks, and how to run your own spiking networks on SpiNNaker2 chips with [py-spinnaker2](https://spinnaker2.gitlab.io/py-spinnaker2/).
 
-![Where a network runs: from the HPI cluster to one SpiNNaker2 chip](01_knowledge_base/figures/02_hardware_energy/01_installation_hierarchy.png)
+![Workshop: Neuromorphic computing, programming spiking neural networks on SpiNNaker2](00_aisc/img/title.webp)
 
 ## Which setup?
 
