@@ -212,5 +212,3 @@ _local/
 /04_workshop_material/detector_*.gif
 **/spinnaker2_diagnostics/
 
-# Workshop decks: kept locally, not in the public repository
-/02_slides/*.pptx

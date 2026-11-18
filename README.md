@@ -31,7 +31,7 @@ Then open `04_workshop_material/00_setup_check.ipynb` and run it. If something f
 | [`04_workshop_material/`](04_workshop_material/) | The hands-on notebooks: setup check, one neuron, a direction detector built by hand, the same task trained in snnTorch and run via NIR; the instructor demos in `demos/` |
 | [`03_setup/`](03_setup/) | Setup guides for the HPI cluster and the laptop, and `enter_cx51.sh` to reserve the SpiNNaker2 node |
 | [`01_knowledge_base/`](01_knowledge_base/) | Background notes written for this workshop, with figures and sources (below) |
-| [`02_slides/`](02_slides/) | The figures of the slides, with the scripts that generate them |
+| [`02_slides/`](02_slides/) | The workshop slides (PowerPoint) |
 | [`05_measurements/`](05_measurements/) | Measurements on the chips: the power of a 48-chip board with silent and spiking networks |
 
 The background notes build on each other:
